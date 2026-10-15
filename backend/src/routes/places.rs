@@ -5,6 +5,8 @@ use crate::models::response::ApiResponse;
 use crate::services::place::PlaceService;
 use crate::utils::error::ApiError;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -24,8 +26,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 #[get("/trips/{trip_id}/places")]
 pub async fn get_places(
     trip_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let place_service = PlaceService::new();
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.get_places(*trip_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -37,8 +40,9 @@ pub async fn get_places(
 pub async fn create_place(
     trip_id: web::Path<Uuid>,
     request: web::Json<CreatePlaceRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let place_service = PlaceService::new();
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.create_place(*trip_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Created().json(response),
@@ -49,8 +53,9 @@ pub async fn create_place(
 #[get("/places/{place_id}")]
 pub async fn get_place(
     place_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let place_service = PlaceService::new();
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.get_place(*place_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -62,8 +67,9 @@ pub async fn get_place(
 pub async fn update_place(
     place_id: web::Path<Uuid>,
     request: web::Json<UpdatePlaceRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let place_service = PlaceService::new();
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.update_place(*place_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -74,8 +80,9 @@ pub async fn update_place(
 #[delete("/places/{place_id}")]
 pub async fn delete_place(
     place_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let place_service = PlaceService::new();
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.delete_place(*place_id).await {
         Ok(response) => HttpResponse::Ok().json(response),

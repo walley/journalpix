@@ -7,6 +7,8 @@ use crate::services::photo::PhotoService;
 use crate::utils::error::ApiError;
 use crate::utils::file::get_file_extension;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -26,8 +28,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 #[get("/places/{place_id}/photos")]
 pub async fn get_photos_for_place(
     place_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let photo_service = PhotoService::new("./uploads", "./thumbnails").unwrap();
+    let photo_service = PhotoService::new("./uploads", "./thumbnails", db_pool.get_ref().clone()).unwrap();
     
     match photo_service.get_photos(Some(*place_id), Uuid::new_v4()).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -40,8 +43,9 @@ pub async fn upload_photo_to_place(
     place_id: web::Path<Uuid>,
     user_id: web::Path<Uuid>,
     payload: Multipart,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let photo_service = PhotoService::new("./uploads", "./thumbnails").unwrap();
+    let photo_service = PhotoService::new("./uploads", "./thumbnails", db_pool.get_ref().clone()).unwrap();
     
     let mut fields = payload.into_fields();
     
@@ -72,8 +76,9 @@ pub async fn upload_photo_to_place(
 #[get("/photos/{photo_id}")]
 pub async fn get_photo(
     photo_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let photo_service = PhotoService::new("./uploads", "./thumbnails").unwrap();
+    let photo_service = PhotoService::new("./uploads", "./thumbnails", db_pool.get_ref().clone()).unwrap();
     
     match photo_service.get_photo(*photo_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -85,8 +90,9 @@ pub async fn get_photo(
 pub async fn update_photo(
     photo_id: web::Path<Uuid>,
     request: web::Json<UpdatePhotoRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let photo_service = PhotoService::new("./uploads", "./thumbnails").unwrap();
+    let photo_service = PhotoService::new("./uploads", "./thumbnails", db_pool.get_ref().clone()).unwrap();
     
     match photo_service.update_photo(*photo_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -97,8 +103,9 @@ pub async fn update_photo(
 #[delete("/photos/{photo_id}")]
 pub async fn delete_photo(
     photo_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let photo_service = PhotoService::new("./uploads", "./thumbnails").unwrap();
+    let photo_service = PhotoService::new("./uploads", "./thumbnails", db_pool.get_ref().clone()).unwrap();
     
     match photo_service.delete_photo(*photo_id).await {
         Ok(response) => HttpResponse::Ok().json(response),

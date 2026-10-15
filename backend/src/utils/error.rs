@@ -2,7 +2,7 @@ use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
 use std::fmt;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub enum ApiError {
     NotFound(String),
     BadRequest(String),
@@ -74,14 +74,7 @@ impl ResponseError for ApiError {
     }
 }
 
-impl From<diesel::result::Error> for ApiError {
-    fn from(err: diesel::result::Error) -> Self {
-        match err {
-            diesel::result::Error::NotFound => ApiError::NotFound("Resource not found".to_string()),
-            _ => ApiError::DatabaseError(format!("{:?}", err)),
-        }
-    }
-}
+impl std::error::Error for ApiError {}
 
 impl From<std::io::Error> for ApiError {
     fn from(err: std::io::Error) -> Self {

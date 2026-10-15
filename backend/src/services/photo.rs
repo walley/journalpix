@@ -5,17 +5,22 @@ use crate::utils::exif::ExifService;
 use crate::utils::file::FileService;
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
+#[derive(Debug, Clone)]
 pub struct PhotoService {
     file_service: FileService,
     exif_service: ExifService,
+    db_pool: Arc<DatabaseConnection>,
 }
 
 impl PhotoService {
-    pub fn new(upload_dir: &str, thumbnail_dir: &str) -> Result<Self, ApiError> {
+    pub fn new(upload_dir: &str, thumbnail_dir: &str, db_pool: Arc<DatabaseConnection>) -> Result<Self, ApiError> {
         Ok(Self {
             file_service: FileService::new(upload_dir, thumbnail_dir)?,
             exif_service: ExifService::new(),
+            db_pool,
         })
     }
 
@@ -144,7 +149,7 @@ impl PhotoService {
         Ok(ApiResponse::success(photo))
     }
 
-    pub async fn delete_photo(&self, photo_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+    pub async fn delete_photo(&self, _photo_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
         Ok(ApiResponse::message("Photo deleted successfully".to_string()))
     }
 
