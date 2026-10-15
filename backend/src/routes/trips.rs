@@ -4,6 +4,8 @@ use crate::models::response::ApiResponse;
 use crate::services::trip::TripService;
 use crate::utils::error::ApiError;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -19,8 +21,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 #[get("/trips")]
 pub async fn get_trips(
     user_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let trip_service = TripService::new();
+    let trip_service = TripService::new(db_pool.get_ref().clone());
     
     match trip_service.get_trips(*user_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -32,8 +35,9 @@ pub async fn get_trips(
 pub async fn create_trip(
     user_id: web::Path<Uuid>,
     request: web::Json<CreateTripRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let trip_service = TripService::new();
+    let trip_service = TripService::new(db_pool.get_ref().clone());
     
     match trip_service.create_trip(*user_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Created().json(response),
@@ -44,8 +48,9 @@ pub async fn create_trip(
 #[get("/trips/{trip_id}")]
 pub async fn get_trip(
     trip_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let trip_service = TripService::new();
+    let trip_service = TripService::new(db_pool.get_ref().clone());
     
     match trip_service.get_trip(*trip_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -57,8 +62,9 @@ pub async fn get_trip(
 pub async fn update_trip(
     trip_id: web::Path<Uuid>,
     request: web::Json<UpdateTripRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let trip_service = TripService::new();
+    let trip_service = TripService::new(db_pool.get_ref().clone());
     
     match trip_service.update_trip(*trip_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -69,8 +75,9 @@ pub async fn update_trip(
 #[delete("/trips/{trip_id}")]
 pub async fn delete_trip(
     trip_id: web::Path<Uuid>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let trip_service = TripService::new();
+    let trip_service = TripService::new(db_pool.get_ref().clone());
     
     match trip_service.delete_trip(*trip_id).await {
         Ok(response) => HttpResponse::Ok().json(response),

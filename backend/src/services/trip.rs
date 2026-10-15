@@ -3,12 +3,17 @@ use crate::models::response::ApiResponse;
 use crate::utils::error::ApiError;
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
-pub struct TripService;
+#[derive(Debug, Clone)]
+pub struct TripService {
+    db_pool: Arc<DatabaseConnection>,
+}
 
 impl TripService {
-    pub fn new() -> Self {
-        TripService
+    pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
+        TripService { db_pool }
     }
 
     pub async fn create_trip(
@@ -120,7 +125,7 @@ impl TripService {
         Ok(ApiResponse::success(trip))
     }
 
-    pub async fn delete_trip(&self, trip_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+    pub async fn delete_trip(&self, _trip_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
         Ok(ApiResponse::message("Trip deleted successfully".to_string()))
     }
 }

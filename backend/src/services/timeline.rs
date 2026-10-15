@@ -5,12 +5,17 @@ use crate::models::trip::TripResponse;
 use crate::utils::error::ApiError;
 use chrono::{NaiveDate, Utc};
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
-pub struct TimelineService;
+#[derive(Debug, Clone)]
+pub struct TimelineService {
+    db_pool: Arc<DatabaseConnection>,
+}
 
 impl TimelineService {
-    pub fn new() -> Self {
-        TimelineService
+    pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
+        TimelineService { db_pool }
     }
 
     pub async fn get_timeline(&self, trip_id: Uuid) -> Result<ApiResponse<TripTimeline>, ApiError> {
@@ -122,7 +127,7 @@ impl TimelineService {
     pub async fn reorder_timeline(
         &self,
         trip_id: Uuid,
-        new_order: Vec<Uuid>,
+        _new_order: Vec<Uuid>,
     ) -> Result<ApiResponse<TripTimeline>, ApiError> {
         let timeline = self.get_timeline(trip_id).await?;
         Ok(timeline)

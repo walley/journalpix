@@ -4,6 +4,8 @@ use crate::models::response::ApiResponse;
 use crate::services::user::UserService;
 use crate::utils::auth::AuthService;
 use crate::utils::error::ApiError;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -18,8 +20,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 pub async fn register(
     request: web::Json<CreateUserRequest>,
     auth_service: web::Data<AuthService>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let user_service = UserService::new();
+    let user_service = UserService::new(db_pool.get_ref().clone());
     
     match user_service.create_user(request.into_inner(), &auth_service).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -31,8 +34,9 @@ pub async fn register(
 pub async fn login(
     request: web::Json<LoginRequest>,
     auth_service: web::Data<AuthService>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
-    let user_service = UserService::new();
+    let user_service = UserService::new(db_pool.get_ref().clone());
     
     match user_service.login(request.into_inner(), &auth_service).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -43,8 +47,10 @@ pub async fn login(
 #[get("/auth/me")]
 pub async fn get_current_user(
     auth_service: web::Data<AuthService>,
-    user_service: web::Data<UserService>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
+    let user_service = UserService::new(db_pool.get_ref().clone());
+    
     match user_service.get_user(Uuid::new_v4()).await {
         Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => e.error_response(),

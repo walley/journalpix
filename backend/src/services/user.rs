@@ -5,19 +5,24 @@ use crate::utils::error::ApiError;
 use crate::utils::validation::{validate_email, validate_name, validate_password};
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
-pub struct UserService;
+#[derive(Debug, Clone)]
+pub struct UserService {
+    db_pool: Arc<DatabaseConnection>,
+}
 
 impl UserService {
-    pub fn new() -> Self {
-        UserService
+    pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
+        UserService { db_pool }
     }
 
     pub async fn create_user(
         &self,
         request: CreateUserRequest,
         auth_service: &AuthService,
-    ) -> Result<ApiResponse<UserResponse>, ApiError> {
+    ) -> Result<ApiResponse<LoginResponse>, ApiError> {
         validate_name(&request.name)?;
         validate_email(&request.email)?;
         validate_password(&request.password)?;
@@ -82,6 +87,8 @@ impl UserService {
     }
 
     pub async fn find_user_by_email(&self, email: &str) -> Result<User, ApiError> {
+        // For now, return a mock user
+        // In production, query the database
         Ok(User {
             id: Uuid::new_v4(),
             email: email.to_string(),
@@ -148,7 +155,7 @@ impl UserService {
         Ok(ApiResponse::success(response))
     }
 
-    pub async fn delete_user(&self, user_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+    pub async fn delete_user(&self, _user_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
         Ok(ApiResponse::message("User deleted successfully".to_string()))
     }
 }

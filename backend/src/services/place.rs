@@ -4,12 +4,17 @@ use crate::models::response::ApiResponse;
 use crate::utils::error::ApiError;
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
+use crate::database::connection::DatabaseConnection;
 
-pub struct PlaceService;
+#[derive(Debug, Clone)]
+pub struct PlaceService {
+    db_pool: Arc<DatabaseConnection>,
+}
 
 impl PlaceService {
-    pub fn new() -> Self {
-        PlaceService
+    pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
+        PlaceService { db_pool }
     }
 
     pub async fn create_place(
@@ -142,7 +147,7 @@ impl PlaceService {
         Ok(ApiResponse::success(place))
     }
 
-    pub async fn delete_place(&self, place_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+    pub async fn delete_place(&self, _place_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
         Ok(ApiResponse::message("Place deleted successfully".to_string()))
     }
 }
