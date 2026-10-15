@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,6 +42,9 @@ fun HomeScreen(navController: NavController) {
             CenterAlignedTopAppBar(
                 title = { Text("JournalPix") },
                 actions = {
+                    IconButton(onClick = { navController.navigate("about") }) {
+                        Icon(Icons.Default.Info, contentDescription = "About")
+                    }
                     IconButton(onClick = { authViewModel.logout() }) {
                         Icon(Icons.Default.Logout, contentDescription = "Logout")
                     }
@@ -71,7 +75,19 @@ fun HomeScreen(navController: NavController) {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No trips yet. Create your first trip!")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "No trips",
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("No trips yet")
+                            Text("Create your first trip!")
+                        }
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -153,6 +169,7 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
+            .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

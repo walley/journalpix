@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.journalpix.ui.screen.AboutScreen
 import com.journalpix.ui.screen.AuthScreen
 import com.journalpix.ui.screen.HomeScreen
 import com.journalpix.ui.screen.TimelineScreen
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             MapScreen(navController, tripId)
                         }
+                        composable("about") { AboutScreen(navController) }
                     }
                 }
             }
