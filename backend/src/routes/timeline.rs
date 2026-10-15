@@ -1,4 +1,4 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder, Error};
 use crate::models::response::ApiResponse;
 use crate::services::timeline::TimelineService;
 use crate::utils::error::ApiError;
@@ -17,11 +17,11 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 pub async fn get_timeline(
     trip_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let timeline_service = TimelineService::new(db_pool.get_ref().clone());
     
     match timeline_service.get_timeline(*trip_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }

@@ -1,5 +1,4 @@
-use actix_web::{post, get, put, delete, web, HttpResponse, Responder};
-use actix_multipart::Multipart;
+use actix_web::{post, get, put, delete, web, HttpResponse, Responder, Error};
 use crate::models::place::{CreatePlaceRequest, UpdatePlaceRequest};
 use crate::models::response::ApiResponse;
 use crate::services::place::PlaceService;
@@ -27,12 +26,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 pub async fn get_places(
     trip_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.get_places(*trip_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }
 
@@ -41,12 +40,12 @@ pub async fn create_place(
     trip_id: web::Path<Uuid>,
     request: web::Json<CreatePlaceRequest>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.create_place(*trip_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Created().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Created().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }
 
@@ -54,12 +53,12 @@ pub async fn create_place(
 pub async fn get_place(
     place_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.get_place(*place_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }
 
@@ -68,12 +67,12 @@ pub async fn update_place(
     place_id: web::Path<Uuid>,
     request: web::Json<UpdatePlaceRequest>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.update_place(*place_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }
 
@@ -81,11 +80,11 @@ pub async fn update_place(
 pub async fn delete_place(
     place_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let place_service = PlaceService::new(db_pool.get_ref().clone());
     
     match place_service.delete_place(*place_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => Ok(e.error_response()),
     }
 }

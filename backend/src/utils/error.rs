@@ -31,6 +31,8 @@ impl fmt::Display for ApiError {
     }
 }
 
+impl std::error::Error for ApiError {}
+
 impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
         match self {
@@ -73,8 +75,6 @@ impl ResponseError for ApiError {
         }
     }
 }
-
-impl std::error::Error for ApiError {}
 
 impl From<std::io::Error> for ApiError {
     fn from(err: std::io::Error) -> Self {

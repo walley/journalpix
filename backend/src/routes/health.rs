@@ -1,4 +1,4 @@
-use actix_web::{get, HttpResponse, Responder};
+use actix_web::{get, HttpResponse, Responder, Error};
 use serde::Serialize;
 
 #[derive(Serialize)]

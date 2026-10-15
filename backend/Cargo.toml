@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 # Web framework
 actix-web = "4.4"
-actix-multipart = "0.6"
+actix-multipart = "0.8"
 actix-cors = "0.7"
 actix-web-httpauth = "0.8"
 
