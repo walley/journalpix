@@ -53,6 +53,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { 
+                        // Navigate to map view
+                        navController.navigate("map/$tripId")
+                    }) {
+                        Icon(Icons.Default.Map, contentDescription = "View on map")
+                    }
                     IconButton(onClick = { showCreatePlaceDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = "Add Place")
                     }
