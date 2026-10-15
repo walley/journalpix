@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.screen.AuthScreen
 import com.journalpix.ui.screen.HomeScreen
 import com.journalpix.ui.screen.TimelineScreen
+import com.journalpix.ui.map.MapScreen
 import com.journalpix.ui.theme.JournalPixTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,6 +37,10 @@ class MainActivity : ComponentActivity() {
                         composable("timeline/{tripId}") { backStackEntry ->
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             TimelineScreen(navController, tripId)
+                        }
+                        composable("map/{tripId}") { backStackEntry ->
+                            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                            MapScreen(navController, tripId)
                         }
                     }
                 }
