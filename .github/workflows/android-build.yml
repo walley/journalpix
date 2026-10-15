@@ -1,0 +1,127 @@
+name: Android Build and Release
+
+on:
+  push:
+    branches: [ github, main ]
+    paths:
+      - 'android/**'
+  pull_request:
+    branches: [ github, main ]
+    paths:
+      - 'android/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk-version: 26.2.11394342
+      
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./android/gradlew
+        working-directory: .
+      
+      - name: Build debug APK
+        run: ./android/gradlew assembleDebug
+        working-directory: .
+      
+      - name: Build release APK
+        run: ./android/gradlew assembleRelease
+        working-directory: .
+        env:
+          # Add your signing config if needed
+          # ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+          # ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          # ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: journalpix-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: journalpix-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/github' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Get version name
+        id: version
+        run: |
+          VERSION=$(grep 'versionName' android/app/build.gradle | sed -E "s/.*versionName \"([^\"]+)\".*/\1/")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: JournalPix v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          body: |
+            ## JournalPix Travel Vlog App
+            
+            ### Changes in this release:
+            - Complete Android app with Rust backend
+            - Map view with OpenMapView integration
+            - SQLite and PostgreSQL database support
+            - Timeline view with editable trips and places
+            - Photo upload with EXIF geolocation extraction
+            
+            ### Assets:
+            - Debug APK for testing
+            - Release APK for production
+          files: |
+            artifacts/journalpix-debug-apk/app-debug.apk
+            artifacts/journalpix-release-apk/app-release.apk
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
