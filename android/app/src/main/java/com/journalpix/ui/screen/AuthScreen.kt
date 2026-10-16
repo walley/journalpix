@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -22,18 +21,17 @@ import com.journalpix.viewmodel.AuthViewModel
 fun AuthScreen(navController: NavController) {
     val authViewModel: AuthViewModel = remember { AuthViewModel() }
     var isLogin by remember { mutableStateOf(true) }
-    var email by remember { mutableStateOf("") }
+    // Pre-fill demo credentials for quick local testing
+    var email by remember { mutableStateOf(AuthViewModel.DEMO_EMAIL) }
     var name by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    
-    val context = LocalContext.current
-    
+    var password by remember { mutableStateOf(AuthViewModel.DEMO_PASSWORD) }
+
     if (authViewModel.isLoggedIn.value) {
         navController.navigate("home") {
             popUpTo("auth") { inclusive = true }
         }
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,9 +43,9 @@ fun AuthScreen(navController: NavController) {
             text = if (isLogin) "Login" else "Register",
             style = MaterialTheme.typography.headlineMedium
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         if (!isLogin) {
             OutlinedTextField(
                 value = name,
@@ -58,7 +56,7 @@ fun AuthScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
-        
+
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -67,9 +65,9 @@ fun AuthScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -79,9 +77,9 @@ fun AuthScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         if (authViewModel.isLoading.value) {
             CircularProgressIndicator()
         } else {
@@ -105,16 +103,32 @@ fun AuthScreen(navController: NavController) {
             ) {
                 Text(if (isLogin) "Login" else "Register")
             }
+
+            if (isLogin) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        authViewModel.loginAsDemo {
+                            navController.navigate("home") {
+                                popUpTo("auth") { inclusive = true }
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Continue as Demo (demo / demo)")
+                }
+            }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         TextButton(
             onClick = { isLogin = !isLogin }
         ) {
             Text(if (isLogin) "Don't have an account? Register" else "Already have an account? Login")
         }
-        
+
         authViewModel.errorMessage.value?.let { error ->
             Spacer(modifier = Modifier.height(16.dp))
             AlertDialog(

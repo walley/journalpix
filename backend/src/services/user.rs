@@ -64,6 +64,28 @@ impl UserService {
         if request.email.is_empty() || request.password.is_empty() {
             return Err(ApiError::ValidationError("Email and password are required".to_string()));
         }
+
+        // Temporary demo account for local/dev testing
+        let email_lower = request.email.trim().to_lowercase();
+        if (email_lower == "demo"
+            || email_lower == "demo@demo.local"
+            || email_lower == "demo@journalpix.app")
+            && request.password == "demo"
+        {
+            let demo_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001")
+                .unwrap_or_else(|_| Uuid::new_v4());
+            let token = auth_service.create_token(demo_id, "demo@journalpix.app".to_string())?;
+            let response = UserResponse {
+                id: demo_id,
+                email: "demo@journalpix.app".to_string(),
+                name: "Demo User".to_string(),
+                created_at: Utc::now(),
+            };
+            return Ok(ApiResponse::success(LoginResponse {
+                user: response,
+                token,
+            }));
+        }
         
         let user = self.find_user_by_email(&request.email).await?;
         
