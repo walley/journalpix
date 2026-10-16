@@ -28,15 +28,15 @@ fun HomeScreen(navController: NavController) {
     val tripViewModel: TripViewModel = remember { TripViewModel() }
     var showCreateTripDialog by remember { mutableStateOf(false) }
     var newTripTitle by remember { mutableStateOf("") }
-    
+
     val token = authViewModel.currentUser.value?.token ?: ""
-    
+
     LaunchedEffect(token) {
         if (token.isNotEmpty()) {
             tripViewModel.getTrips(token)
         }
     }
-    
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -101,7 +101,7 @@ fun HomeScreen(navController: NavController) {
             }
         }
     }
-    
+
     if (showCreateTripDialog) {
         AlertDialog(
             onDismissRequest = { showCreateTripDialog = false },
@@ -143,7 +143,7 @@ fun HomeScreen(navController: NavController) {
             }
         )
     }
-    
+
     tripViewModel.errorMessage.value?.let { error ->
         AlertDialog(
             onDismissRequest = { tripViewModel.errorMessage.value = null },
@@ -163,7 +163,7 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
     val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
     val startDate = trip.startDate?.let { LocalDate.parse(it) }
     val endDate = trip.endDate?.let { LocalDate.parse(it) }
-    
+
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -176,16 +176,16 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
                 text = trip.title,
                 style = MaterialTheme.typography.titleLarge
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = trip.description ?: "No description",
                 style = MaterialTheme.typography.bodyMedium
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row {
                 startDate?.let { start ->
                     Text(
@@ -201,9 +201,9 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row {
                 Text(
                     text = "${trip.placesCount ?: 0} places",
@@ -215,10 +215,11 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
-            Chip(
+
+            AssistChip(
+                onClick = {},
                 label = { Text(trip.status.name) },
                 colors = when (trip.status) {
                     TripStatus.PLANNED -> ChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -229,13 +230,4 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
             )
         }
     }
-}
-
-@Composable
-fun Chip(label: @Composable () -> Unit, colors: AssistChipColors) {
-    AssistChip(
-        onClick = {},
-        label = label,
-        colors = colors
-    )
 }
