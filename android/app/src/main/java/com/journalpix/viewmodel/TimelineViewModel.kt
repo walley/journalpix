@@ -15,7 +15,6 @@ class TimelineViewModel : ViewModel() {
     val timeline = mutableStateOf<TripTimeline?>(null)
 
     fun getTimeline(token: String, tripId: String) {
-        // Offline / demo: never hit the network
         if (AuthViewModel.isDemoToken(token) || token.isBlank() || token == "Bearer token") {
             timeline.value = OfflineStore.timelineFor(tripId.ifBlank { "demo-trip-1" })
             isLoading.value = false
@@ -31,7 +30,6 @@ class TimelineViewModel : ViewModel() {
                 if (response.success) {
                     timeline.value = response.data
                 } else {
-                    // Fall back to offline store so the UI stays usable
                     timeline.value = OfflineStore.timelineFor(tripId)
                     errorMessage.value = null
                 }
@@ -46,6 +44,11 @@ class TimelineViewModel : ViewModel() {
 
     fun refreshOffline(tripId: String) {
         timeline.value = OfflineStore.timelineFor(tripId.ifBlank { "demo-trip-1" })
+    }
+
+    fun updateTripDates(tripId: String, startDate: String?, endDate: String?) {
+        OfflineStore.updateTripDates(tripId, startDate, endDate)
+        refreshOffline(tripId)
     }
 
     fun reorderTimeline(token: String, tripId: String, newOrder: List<String>, onSuccess: () -> Unit) {

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
+import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.UpdatePhotoRequest
 import com.journalpix.util.ExifLocation
 import com.journalpix.util.NominatimClient
@@ -26,11 +27,9 @@ class PhotoViewModel : ViewModel() {
     val errorMessage = mutableStateOf<String?>(null)
     val photos = mutableStateOf<List<PhotoResponse>>(emptyList())
     val currentPhoto = mutableStateOf<PhotoResponse?>(null)
-    /** photoId -> reverse-geocoded address (Nominatim) */
     val resolvedAddresses = mutableStateMapOf<String, String>()
     val geocodeLoadingIds = mutableStateMapOf<String, Boolean>()
     val geocodeErrors = mutableStateMapOf<String, String>()
-    /** Last EXIF diagnostic message (shown once after add). */
     val lastExifNote = mutableStateOf<String?>(null)
 
     fun getPhotosForPlace(token: String, placeId: String) {
@@ -45,11 +44,8 @@ class PhotoViewModel : ViewModel() {
             errorMessage.value = null
             try {
                 val response = ApiService.apiClient.getPhotosForPlace("Bearer $token", placeId)
-                if (response.success) {
-                    photos.value = response.data ?: emptyList()
-                } else {
-                    errorMessage.value = response.error ?: "Failed to load photos"
-                }
+                if (response.success) photos.value = response.data ?: emptyList()
+                else errorMessage.value = response.error ?: "Failed to load photos"
             } catch (e: Exception) {
                 errorMessage.value = "Network error: ${e.message}"
             } finally {
@@ -58,9 +54,6 @@ class PhotoViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Offline-first upload: copy image to app storage, read EXIF GPS from the copy.
-     */
     fun addPhotoOffline(
         context: Context,
         placeId: String,
@@ -75,7 +68,6 @@ class PhotoViewModel : ViewModel() {
                 val result = withContext(Dispatchers.IO) {
                     ExifLocation.readMeta(context, uri)
                 }
-                // Prefer local file path (keeps EXIF offline); fall back to content URI
                 val pathForDisplay = result.localFilePath ?: uri.toString()
                 val photo = OfflineStore.addPhoto(
                     placeId = placeId,
@@ -87,7 +79,7 @@ class PhotoViewModel : ViewModel() {
                 )
                 if (result.gps == null) {
                     lastExifNote.value = result.note
-                        ?: "No GPS found in EXIF. On Android 10+ grant \"Allow location access to photos\" / media location."
+                        ?: "No GPS found in EXIF. Grant media location permission on Android 10+."
                 }
                 photos.value = OfflineStore.photosFor(placeId)
                 onSuccess(photo)
@@ -99,7 +91,14 @@ class PhotoViewModel : ViewModel() {
         }
     }
 
-    fun reverseGeocode(photo: PhotoResponse) {
+    /**
+     * Reverse geocode → create/find place by address → move photo → re-sort.
+     */
+    fun reverseGeocode(
+        tripId: String,
+        photo: PhotoResponse,
+        onPlaceReady: (PlaceWithPhotos) -> Unit = {}
+    ) {
         val lat = photo.latitude
         val lon = photo.longitude
         if (lat == null || lon == null) {
@@ -113,6 +112,15 @@ class PhotoViewModel : ViewModel() {
             result.onSuccess { address ->
                 resolvedAddresses[photo.id] = address
                 OfflineStore.addresses[photo.id] = address
+                val place = OfflineStore.assignPhotoToGeocodedPlace(
+                    tripId = tripId,
+                    photoId = photo.id,
+                    address = address,
+                    latitude = lat,
+                    longitude = lon
+                )
+                photos.value = OfflineStore.photosFor(place.id)
+                onPlaceReady(place)
             }.onFailure { e ->
                 geocodeErrors[photo.id] = e.message ?: "Geocode failed"
             }
@@ -127,7 +135,6 @@ class PhotoViewModel : ViewModel() {
         }
         viewModelScope.launch {
             isLoading.value = true
-            errorMessage.value = null
             try {
                 val byteArray = bitmapToByteArray(bitmap)
                 val requestFile = byteArray.toRequestBody("image/jpeg".toMediaType())

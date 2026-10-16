@@ -14,12 +14,13 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-memory offline store for demo mode (no backend).
- * Hierarchy: Trip → Days → Places → Photos. Places ordered by time.
+ * Hierarchy: Trip → Days → Places → Photos. Places & photos ordered by time.
  */
 object OfflineStore {
 
     private val photosByPlace = ConcurrentHashMap<String, MutableList<PhotoResponse>>()
     private val placesByTrip = ConcurrentHashMap<String, MutableList<PlaceWithPhotos>>()
+    private val trips = ConcurrentHashMap<String, TripResponse>()
     /** photoId -> reverse-geocoded address */
     val addresses = ConcurrentHashMap<String, String>()
 
@@ -27,12 +28,13 @@ object OfflineStore {
         DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss")
 
     fun ensureDemoTrip(tripId: String): TripResponse {
+        val id = tripId.ifBlank { "demo-trip-1" }
         placesByTrip.putIfAbsent(
-            tripId,
+            id,
             mutableListOf(
                 PlaceWithPhotos(
                     id = "demo-place-1",
-                    tripId = tripId,
+                    tripId = id,
                     name = "Demo Place",
                     description = "Add photos offline — GPS is read from EXIF",
                     latitude = null,
@@ -46,31 +48,45 @@ object OfflineStore {
             )
         )
         photosByPlace.putIfAbsent("demo-place-1", mutableListOf())
-        return TripResponse(
-            id = tripId.ifBlank { "demo-trip-1" },
-            userId = "00000000-0000-0000-0000-000000000001",
-            title = if (tripId.startsWith("demo")) "Demo Alps Weekend" else "Trip $tripId",
-            description = "Offline timeline — photos stay on device",
-            startDate = LocalDate.now().toString(),
-            endDate = LocalDate.now().plusDays(2).toString(),
-            status = TripStatus.PLANNED,
-            createdAt = "2024-01-01T00:00:00Z",
-            updatedAt = "2024-01-01T00:00:00Z",
-            placesCount = placesByTrip[tripId]?.size,
-            photosCount = photosByPlace.values.sumOf { it.size }
+        return trips.getOrPut(id) {
+            TripResponse(
+                id = id,
+                userId = "00000000-0000-0000-0000-000000000001",
+                title = if (id.startsWith("demo")) "Demo Alps Weekend" else "Trip $id",
+                description = "Offline timeline — photos stay on device",
+                startDate = LocalDate.now().toString(),
+                endDate = LocalDate.now().plusDays(2).toString(),
+                status = TripStatus.PLANNED,
+                createdAt = "2024-01-01T00:00:00Z",
+                updatedAt = "2024-01-01T00:00:00Z",
+                placesCount = placesByTrip[id]?.size,
+                photosCount = photosByPlace.values.sumOf { it.size }
+            )
+        }
+    }
+
+    fun updateTripDates(tripId: String, startDate: String?, endDate: String?): TripResponse {
+        val current = ensureDemoTrip(tripId)
+        val updated = current.copy(
+            startDate = startDate ?: current.startDate,
+            endDate = endDate ?: current.endDate,
+            updatedAt = java.time.Instant.now().toString()
         )
+        trips[current.id] = updated
+        return updated
     }
 
     fun timelineFor(tripId: String): TripTimeline {
         val trip = ensureDemoTrip(tripId)
-        val places = placesByTrip[tripId].orEmpty().map { place ->
-            val photos = photosByPlace[place.id].orEmpty()
-                .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
-                .toList()
-            place.copy(photos = photos)
-        }
+        val places = placesByTrip[trip.id].orEmpty()
+            .filter { photosByPlace[it.id].orEmpty().isNotEmpty() || true } // keep empty places too
+            .map { place ->
+                val photos = photosByPlace[place.id].orEmpty()
+                    .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
+                    .toList()
+                place.copy(photos = photos)
+            }
 
-        // Group by day, sort days ascending; places within day by time
         val grouped = places.groupBy { placeDay(it) }
         val items = grouped.entries
             .sortedBy { it.key }
@@ -84,26 +100,39 @@ object OfflineStore {
                 )
                 TimelineItem(date = date, places = ordered)
             }
-        return TripTimeline(trip = trip, timeline = items)
+        return TripTimeline(
+            trip = trip.copy(
+                placesCount = places.size,
+                photosCount = places.sumOf { it.photos.size }
+            ),
+            timeline = items
+        )
     }
 
-    fun addPlace(tripId: String, name: String, visitDate: String? = null): PlaceWithPhotos {
-        ensureDemoTrip(tripId)
+    fun addPlace(
+        tripId: String,
+        name: String,
+        visitDate: String? = null,
+        address: String? = null,
+        latitude: Double? = null,
+        longitude: Double? = null
+    ): PlaceWithPhotos {
+        val trip = ensureDemoTrip(tripId)
         val day = visitDate ?: LocalDate.now().toString()
         val place = PlaceWithPhotos(
             id = "place-${UUID.randomUUID()}",
-            tripId = tripId,
+            tripId = trip.id,
             name = name,
             description = null,
-            latitude = null,
-            longitude = null,
-            address = null,
+            latitude = latitude,
+            longitude = longitude,
+            address = address,
             visitDate = day,
-            orderIndex = placesByTrip[tripId]?.size ?: 0,
+            orderIndex = placesByTrip[trip.id]?.size ?: 0,
             createdAt = java.time.Instant.now().toString(),
             photos = emptyList()
         )
-        placesByTrip.getOrPut(tripId) { mutableListOf() }.add(place)
+        placesByTrip.getOrPut(trip.id) { mutableListOf() }.add(place)
         photosByPlace.putIfAbsent(place.id, mutableListOf())
         return place
     }
@@ -116,6 +145,8 @@ object OfflineStore {
         takenAt: String?,
         caption: String? = null
     ): PhotoResponse {
+        val dayFromExif = takenAt?.let { parseExifDay(it) }
+
         val photo = PhotoResponse(
             id = "photo-${UUID.randomUUID()}",
             placeId = placeId,
@@ -132,7 +163,7 @@ object OfflineStore {
         )
         photosByPlace.getOrPut(placeId) { mutableListOf() }.add(photo)
 
-        // Adopt photo GPS / visit day from EXIF when place lacks them
+        // Move place onto the photo's EXIF day so timeline shows correct day
         placesByTrip.values.forEach { list ->
             val idx = list.indexOfFirst { it.id == placeId }
             if (idx >= 0) {
@@ -140,25 +171,144 @@ object OfflineStore {
                 if (p.latitude == null && latitude != null && longitude != null) {
                     p = p.copy(latitude = latitude, longitude = longitude)
                 }
-                val dayFromExif = takenAt?.let { parseExifDay(it) }
                 if (dayFromExif != null) {
                     p = p.copy(visitDate = dayFromExif)
                 }
                 list[idx] = p
             }
         }
+
+        // Keep photos of this place sorted by time
+        sortPhotosInPlace(placeId)
         return photo
     }
 
-    fun photosFor(placeId: String): List<PhotoResponse> =
-        photosByPlace[placeId].orEmpty()
-            .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
-            .toList()
+    fun photosFor(placeId: String): List<PhotoResponse> {
+        sortPhotosInPlace(placeId)
+        return photosByPlace[placeId].orEmpty().toList()
+    }
+
+    private fun sortPhotosInPlace(placeId: String) {
+        val list = photosByPlace[placeId] ?: return
+        list.sortWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
+        list.forEachIndexed { i, p -> list[i] = p.copy(orderIndex = i) }
+    }
+
+    /**
+     * After reverse geocode: find existing place with same address (or nearby name),
+     * or create a new place on the photo's day. Move photo there and re-sort.
+     */
+    fun assignPhotoToGeocodedPlace(
+        tripId: String,
+        photoId: String,
+        address: String,
+        latitude: Double?,
+        longitude: Double?
+    ): PlaceWithPhotos {
+        val trip = ensureDemoTrip(tripId)
+        addresses[photoId] = address
+
+        val shortName = shortPlaceName(address)
+        val photo = findPhoto(photoId)
+            ?: return addPlace(trip.id, shortName, address = address, latitude = latitude, longitude = longitude)
+
+        val day = photo.takenAt?.let { parseExifDay(it) }
+            ?: LocalDate.now().toString()
+
+        // Match existing place by address or short name on same trip
+        val existing = placesByTrip[trip.id].orEmpty().firstOrNull { place ->
+            val sameAddress = !place.address.isNullOrBlank() &&
+                place.address.equals(address, ignoreCase = true)
+            val sameName = place.name.equals(shortName, ignoreCase = true)
+            val near = latitude != null && longitude != null &&
+                place.latitude != null && place.longitude != null &&
+                haversineMeters(latitude, longitude, place.latitude!!, place.longitude!!) < 80.0
+            sameAddress || sameName || near
+        }
+
+        val target = if (existing != null) {
+            val list = placesByTrip[trip.id]!!
+            val idx = list.indexOfFirst { it.id == existing.id }
+            val updated = existing.copy(
+                name = if (existing.name == "Demo Place") shortName else existing.name,
+                address = address,
+                latitude = latitude ?: existing.latitude,
+                longitude = longitude ?: existing.longitude,
+                visitDate = day
+            )
+            if (idx >= 0) list[idx] = updated
+            updated
+        } else {
+            addPlace(
+                tripId = trip.id,
+                name = shortName,
+                visitDate = day,
+                address = address,
+                latitude = latitude,
+                longitude = longitude
+            )
+        }
+
+        movePhoto(photoId, fromPlaceId = photo.placeId, toPlaceId = target.id)
+        sortPhotosInPlace(target.id)
+        return target
+    }
+
+    private fun movePhoto(photoId: String, fromPlaceId: String?, toPlaceId: String) {
+        if (fromPlaceId == toPlaceId) {
+            sortPhotosInPlace(toPlaceId)
+            return
+        }
+        var moved: PhotoResponse? = null
+        if (fromPlaceId != null) {
+            val src = photosByPlace[fromPlaceId]
+            val idx = src?.indexOfFirst { it.id == photoId } ?: -1
+            if (idx >= 0) {
+                moved = src!!.removeAt(idx).copy(placeId = toPlaceId)
+            }
+        }
+        if (moved == null) {
+            // search all places
+            for ((pid, list) in photosByPlace) {
+                val idx = list.indexOfFirst { it.id == photoId }
+                if (idx >= 0) {
+                    moved = list.removeAt(idx).copy(placeId = toPlaceId)
+                    break
+                }
+            }
+        }
+        if (moved != null) {
+            photosByPlace.getOrPut(toPlaceId) { mutableListOf() }.add(moved)
+            sortPhotosInPlace(toPlaceId)
+            fromPlaceId?.let { sortPhotosInPlace(it) }
+        }
+    }
+
+    private fun findPhoto(photoId: String): PhotoResponse? {
+        photosByPlace.values.forEach { list ->
+            list.find { it.id == photoId }?.let { return it }
+        }
+        return null
+    }
+
+    private fun shortPlaceName(address: String): String {
+        val first = address.split(",").firstOrNull()?.trim().orEmpty()
+        return first.ifBlank { address.take(48) }.take(64)
+    }
+
+    private fun haversineMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371000.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        return 2 * r * Math.asin(Math.sqrt(a))
+    }
 
     // --- ordering helpers ---
 
     private fun placeDay(place: PlaceWithPhotos): String {
-        // Prefer visitDate; else earliest photo EXIF day; else today
         place.visitDate?.takeIf { it.isNotBlank() }?.let { return it }
         val photos = photosByPlace[place.id].orEmpty()
         photos.mapNotNull { it.takenAt?.let { t -> parseExifDay(t) } }
@@ -167,18 +317,15 @@ object OfflineStore {
         return LocalDate.now().toString()
     }
 
-    /** Sort key: earliest photo time, else createdAt, else orderIndex proxy. */
     private fun placeSortKey(place: PlaceWithPhotos): Long {
         val photos = photosByPlace[place.id].orEmpty()
-        val fromPhotos = photos.mapNotNull { photoSortKey(it).takeIf { k -> k != Long.MAX_VALUE } }
+        val fromPhotos = photos.map { photoSortKey(it) }
         if (fromPhotos.isNotEmpty()) return fromPhotos.minOrNull()!!
         return parseInstantMillis(place.createdAt) ?: place.orderIndex.toLong()
     }
 
     private fun photoSortKey(photo: PhotoResponse): Long {
-        photo.takenAt?.let { t ->
-            parseExifMillis(t)?.let { return it }
-        }
+        photo.takenAt?.let { t -> parseExifMillis(t)?.let { return it } }
         return parseInstantMillis(photo.createdAt) ?: photo.orderIndex.toLong()
     }
 
@@ -187,7 +334,6 @@ object OfflineStore {
             LocalDateTime.parse(takenAt.trim(), exifDateTime).toLocalDate().toString()
         } catch (_: Exception) {
             try {
-                // ISO or yyyy-MM-dd
                 if (takenAt.length >= 10) LocalDate.parse(takenAt.substring(0, 10)).toString() else null
             } catch (_: Exception) {
                 null
