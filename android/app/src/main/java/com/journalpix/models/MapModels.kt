@@ -1,7 +1,6 @@
 package com.journalpix.models
 
 import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asImageBitmap
 
 // Map route point
 data class RoutePoint(
@@ -43,4 +42,14 @@ data class MapViewportState(
     val zoom: Float = 12f,
     val minZoom: Float = 2f,
     val maxZoom: Float = 18f
+)
+
+// Geographic bounds with computed center
+data class MapBounds(
+    val minLatitude: Double,
+    val maxLatitude: Double,
+    val minLongitude: Double,
+    val maxLongitude: Double,
+    val centerLatitude: Double = (minLatitude + maxLatitude) / 2,
+    val centerLongitude: Double = (minLongitude + maxLongitude) / 2
 )
