@@ -32,7 +32,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+          packages: 'platform-tools platforms;android-37 build-tools;36.0.0'
           accept-android-sdk-licenses: true
       
       - name: Cache Gradle dependencies
@@ -109,7 +109,7 @@ jobs:
       - name: Get version name
         id: version
         run: |
-          VERSION=$(grep 'versionName' android/app/build.gradle | sed -E "s/.*versionName \"([^\"]+)\".*/\1/")
+          VERSION=$(grep 'versionName' android/app/build.gradle | sed -E "s/.*versionName ['\"]([^'\"]+)['\"].*/\1/")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Create GitHub Release

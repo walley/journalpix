@@ -1,7 +1,5 @@
 package com.journalpix.ui.map
 
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,16 +23,20 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.MapPlace
-import com.journalpix.models.MapRoute
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TripResponse
 import com.journalpix.viewmodel.MapViewModel
-import de.afarber.openmapview.compose.MapComposable
-import de.afarber.openmapview.compose.MapMarker
-import de.afarber.openmapview.compose.MapPolyline
-import de.afarber.openmapview.compose.MapViewport
-import de.afarber.openmapview.compose.rememberMapState
+import de.afarber.openmapview.compose.Marker
+import de.afarber.openmapview.compose.MarkerComposable
+import de.afarber.openmapview.compose.OpenMap
+import de.afarber.openmapview.compose.Polyline
+import de.afarber.openmapview.compose.rememberCameraPositionState
+import de.afarber.openmapview.compose.rememberMarkerState
+import de.afarber.openmapview.model.CameraPosition
 import de.afarber.openmapview.model.LatLng
+import de.afarber.openmapview.model.MapProperties
+import de.afarber.openmapview.model.MapType
+import de.afarber.openmapview.model.MapUiSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,35 +47,34 @@ fun MapScreen(
 ) {
     val mapViewModel: MapViewModel = remember { MapViewModel() }
     val context = LocalContext.current
-    
-    // Load trip data
+
     LaunchedEffect(trip?.id) {
         trip?.id?.let { tripId ->
             mapViewModel.loadTripRoute(tripId, places)
         }
     }
-    
-    // Map state
-    val mapState = rememberMapState(
-        center = LatLng(
-            mapViewModel.viewportState.value.centerLatitude,
-            mapViewModel.viewportState.value.centerLongitude
-        ),
-        zoom = mapViewModel.viewportState.value.zoom
-    )
-    
-    // Update viewport when state changes
-    LaunchedEffect(mapViewModel.viewportState.value) {
-        val viewport = mapViewModel.viewportState.value
-        mapState.center = LatLng(viewport.centerLatitude, viewport.centerLongitude)
-        mapState.zoom = viewport.zoom
+
+    val viewport = mapViewModel.viewportState.value
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition(
+            LatLng(viewport.centerLatitude, viewport.centerLongitude),
+            viewport.zoom
+        )
     }
-    
+
+    // Keep camera in sync when ViewModel viewport changes (e.g. fit-to-route)
+    LaunchedEffect(viewport.centerLatitude, viewport.centerLongitude, viewport.zoom) {
+        cameraPositionState.position = CameraPosition(
+            LatLng(viewport.centerLatitude, viewport.centerLongitude),
+            viewport.zoom
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
-                    Text(trip?.title ?: "Map View") 
+                title = {
+                    Text(trip?.title ?: "Map View")
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -93,12 +94,14 @@ fun MapScreen(
                 horizontalAlignment = Alignment.End
             ) {
                 FloatingActionButton(
-                    onClick = { 
-                        mapState.zoom += 1f
+                    onClick = {
+                        val current = cameraPositionState.position
+                        val newZoom = current.zoom + 1f
+                        cameraPositionState.position = CameraPosition(current.target, newZoom)
                         mapViewModel.updateViewport(
-                            mapState.center.latitude,
-                            mapState.center.longitude,
-                            mapState.zoom
+                            current.target.latitude,
+                            current.target.longitude,
+                            newZoom
                         )
                     },
                     modifier = Modifier.size(48.dp)
@@ -106,12 +109,14 @@ fun MapScreen(
                     Icon(Icons.Default.ZoomIn, contentDescription = "Zoom in")
                 }
                 FloatingActionButton(
-                    onClick = { 
-                        mapState.zoom -= 1f
+                    onClick = {
+                        val current = cameraPositionState.position
+                        val newZoom = current.zoom - 1f
+                        cameraPositionState.position = CameraPosition(current.target, newZoom)
                         mapViewModel.updateViewport(
-                            mapState.center.latitude,
-                            mapState.center.longitude,
-                            mapState.zoom
+                            current.target.latitude,
+                            current.target.longitude,
+                            newZoom
                         )
                     },
                     modifier = Modifier.size(48.dp)
@@ -121,34 +126,44 @@ fun MapScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Map View
-            MapComposable(
-                state = mapState,
-                modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            OpenMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(
+                    mapType = MapType.STANDARD,
+                    minZoomPreference = 3f,
+                    maxZoomPreference = 20f
+                ),
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false
+                )
             ) {
-                // Draw route line
+                // Route polyline
                 mapViewModel.mapRoute.value?.let { route ->
                     if (route.routePoints.size >= 2) {
                         val latLngs = route.routePoints.map {
                             LatLng(it.latitude, it.longitude)
                         }
-                        MapPolyline(
+                        Polyline(
                             points = latLngs,
-                            color = Color.Blue,
-                            width = 4f
+                            strokeColor = Color.Blue,
+                            width = 8f
                         )
                     }
-                }
-                
-                // Draw place markers
-                mapViewModel.mapRoute.value?.let { route ->
+
+                    // Place markers
                     route.places.forEach { place ->
                         val isExpanded = mapViewModel.bubbleStates.value[place.id] ?: false
-                        
-                        MapMarker(
-                            position = LatLng(place.latitude, place.longitude),
-                            anchor = 0.5f to 1.0f,
+                        val markerState = rememberMarkerState(
+                            LatLng(place.latitude, place.longitude)
+                        )
+                        MarkerComposable(
+                            state = markerState,
                             onClick = {
                                 mapViewModel.toggleBubble(place.id)
                                 mapViewModel.selectPlace(place)
@@ -164,8 +179,7 @@ fun MapScreen(
                     }
                 }
             }
-            
-            // Loading indicator
+
             if (mapViewModel.isLoading.value) {
                 Box(
                     modifier = Modifier
@@ -176,8 +190,7 @@ fun MapScreen(
                     CircularProgressIndicator()
                 }
             }
-            
-            // Error message
+
             mapViewModel.errorMessage.value?.let { error ->
                 Snackbar(
                     modifier = Modifier
@@ -193,8 +206,7 @@ fun MapScreen(
                     Text(error)
                 }
             }
-            
-            // Selected place details
+
             mapViewModel.selectedPlace.value?.let { place ->
                 PlaceDetailDialog(
                     place = place,
@@ -215,7 +227,6 @@ fun PlaceMarkerBubble(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onToggle)
     ) {
-        // Marker icon
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -229,8 +240,7 @@ fun PlaceMarkerBubble(
                 style = MaterialTheme.typography.titleMedium
             )
         }
-        
-        // Bubble with info
+
         if (isExpanded) {
             Spacer(modifier = Modifier.height(8.dp))
             Card(
@@ -245,9 +255,9 @@ fun PlaceMarkerBubble(
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     place.description?.let { description ->
                         Text(
                             text = description,
@@ -256,8 +266,7 @@ fun PlaceMarkerBubble(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    
-                    // Thumbnail image
+
                     place.thumbnailUrl?.let { url ->
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
@@ -272,9 +281,9 @@ fun PlaceMarkerBubble(
                                 .clip(RoundedCornerShape(4.dp))
                         )
                     }
-                    
+
                     place.thumbnailBitmap?.let { bitmap ->
-                        Image(
+                        androidx.compose.foundation.Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Place thumbnail",
                             contentScale = ContentScale.Crop,
@@ -305,8 +314,7 @@ fun PlaceDetailDialog(
                     Text(description)
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                
-                // Thumbnail image
+
                 place.thumbnailUrl?.let { url ->
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -320,10 +328,10 @@ fun PlaceDetailDialog(
                             .height(200.dp)
                     )
                 }
-                
+
                 place.thumbnailBitmap?.let { bitmap ->
                     Spacer(modifier = Modifier.height(16.dp))
-                    Image(
+                    androidx.compose.foundation.Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = "Place image",
                         contentScale = ContentScale.Fit,
@@ -332,7 +340,7 @@ fun PlaceDetailDialog(
                             .height(200.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Lat: ${place.latitude}, Lon: ${place.longitude}")
             }
