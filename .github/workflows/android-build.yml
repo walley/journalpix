@@ -47,19 +47,36 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./android/gradlew
-        working-directory: .
-      
-      - name: Build debug APK
-        run: ./android/gradlew assembleDebug
-        working-directory: .
-      
-      - name: Build release APK
-        run: ./android/gradlew assembleRelease
-        working-directory: .
-      
+
+      - name: Debug: list repository & android dir
+        run: |
+          echo "Repository root:"
+          ls -la
+          echo
+          echo "android/ (if present):"
+          ls -la android || echo "android directory missing"
+
+      - name: Run Gradle builds (handle gradlew location)
+        run: |
+          set -e
+          if [ -f "android/gradlew" ]; then
+            echo "Found android/gradlew — running from android/"
+            chmod +x android/gradlew
+            cd android
+            ./gradlew assembleDebug
+            ./gradlew assembleRelease
+          elif [ -f "./gradlew" ]; then
+            echo "Found repository root gradlew — using it with -p android"
+            chmod +x ./gradlew
+            ./gradlew -p android assembleDebug
+            ./gradlew -p android assembleRelease
+          else
+            echo "ERROR: Gradle wrapper not found in android/ or repository root."
+            echo "To fix, commit the Gradle wrapper files (gradlew, gradlew.bat, gradle/wrapper/*)."
+            ls -la
+            exit 1
+          fi
+
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
