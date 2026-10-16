@@ -1,9 +1,9 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
+    // Built-in Kotlin (AGP 9+) — do not apply org.jetbrains.kotlin.android
     id 'org.jetbrains.kotlin.plugin.compose'
-    id 'org.jetbrains.kotlin.kapt'
     id 'org.jetbrains.kotlin.plugin.parcelize'
+    id 'com.android.legacy-kapt'
 }
 
 android {
@@ -29,9 +29,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }
-    kotlin {
-        jvmToolchain(17)
     }
     buildFeatures {
         compose true
