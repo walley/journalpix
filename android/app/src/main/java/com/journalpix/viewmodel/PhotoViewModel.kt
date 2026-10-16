@@ -13,7 +13,9 @@ import com.journalpix.models.PhotoResponse
 import com.journalpix.models.UpdatePhotoRequest
 import com.journalpix.util.ExifLocation
 import com.journalpix.util.NominatimClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -28,6 +30,8 @@ class PhotoViewModel : ViewModel() {
     val resolvedAddresses = mutableStateMapOf<String, String>()
     val geocodeLoadingIds = mutableStateMapOf<String, Boolean>()
     val geocodeErrors = mutableStateMapOf<String, String>()
+    /** Last EXIF diagnostic message (shown once after add). */
+    val lastExifNote = mutableStateOf<String?>(null)
 
     fun getPhotosForPlace(token: String, placeId: String) {
         if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
@@ -55,8 +59,7 @@ class PhotoViewModel : ViewModel() {
     }
 
     /**
-     * Offline-first upload: copy URI into OfflineStore, read EXIF GPS locally.
-     * No backend required.
+     * Offline-first upload: copy image to app storage, read EXIF GPS from the copy.
      */
     fun addPhotoOffline(
         context: Context,
@@ -64,24 +67,35 @@ class PhotoViewModel : ViewModel() {
         uri: Uri,
         onSuccess: (PhotoResponse) -> Unit = {}
     ) {
-        isLoading.value = true
-        errorMessage.value = null
-        try {
-            val (gps, takenAtFallback) = ExifLocation.readMeta(context, uri)
-            val photo = OfflineStore.addPhoto(
-                placeId = placeId,
-                uriString = uri.toString(),
-                latitude = gps?.latitude,
-                longitude = gps?.longitude,
-                takenAt = gps?.takenAt ?: takenAtFallback,
-                caption = null
-            )
-            photos.value = OfflineStore.photosFor(placeId)
-            onSuccess(photo)
-        } catch (e: Exception) {
-            errorMessage.value = "Failed to add photo: ${e.message}"
-        } finally {
-            isLoading.value = false
+        viewModelScope.launch {
+            isLoading.value = true
+            errorMessage.value = null
+            lastExifNote.value = null
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    ExifLocation.readMeta(context, uri)
+                }
+                // Prefer local file path (keeps EXIF offline); fall back to content URI
+                val pathForDisplay = result.localFilePath ?: uri.toString()
+                val photo = OfflineStore.addPhoto(
+                    placeId = placeId,
+                    uriString = pathForDisplay,
+                    latitude = result.gps?.latitude,
+                    longitude = result.gps?.longitude,
+                    takenAt = result.gps?.takenAt ?: result.takenAt,
+                    caption = null
+                )
+                if (result.gps == null) {
+                    lastExifNote.value = result.note
+                        ?: "No GPS found in EXIF. On Android 10+ grant \"Allow location access to photos\" / media location."
+                }
+                photos.value = OfflineStore.photosFor(placeId)
+                onSuccess(photo)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to add photo: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
         }
     }
 
@@ -108,7 +122,6 @@ class PhotoViewModel : ViewModel() {
 
     fun uploadPhoto(token: String, placeId: String, bitmap: Bitmap, onSuccess: () -> Unit) {
         if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
-            // Bitmap path without URI — not used in offline picker flow
             errorMessage.value = "Use gallery picker for offline photos"
             return
         }
