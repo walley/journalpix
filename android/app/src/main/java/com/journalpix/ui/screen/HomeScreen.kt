@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.journalpix.models.TripResponse
 import com.journalpix.models.TripStatus
+import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 import com.journalpix.viewmodel.TripViewModel
 import java.time.LocalDate
@@ -32,12 +33,12 @@ fun HomeScreen(navController: NavController) {
     var showCreateTripDialog by remember { mutableStateOf(false) }
     var newTripTitle by remember { mutableStateOf("") }
 
-    val token = authViewModel.currentUser.value?.token ?: ""
+    // Always read from shared session (not a per-screen ViewModel instance)
+    val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
 
     LaunchedEffect(token) {
-        if (token.isNotEmpty()) {
-            tripViewModel.getTrips(token)
-        }
+        // Demo token → offline sample trips; never shows network errors for demo
+        tripViewModel.getTrips(token)
     }
 
     Scaffold(
@@ -48,7 +49,12 @@ fun HomeScreen(navController: NavController) {
                     IconButton(onClick = { navController.navigate("about") }) {
                         Icon(Icons.Default.Info, contentDescription = "About")
                     }
-                    IconButton(onClick = { authViewModel.logout() }) {
+                    IconButton(onClick = {
+                        authViewModel.logout()
+                        navController.navigate("auth") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }) {
                         Icon(Icons.Default.Logout, contentDescription = "Logout")
                     }
                 }
@@ -147,17 +153,20 @@ fun HomeScreen(navController: NavController) {
         )
     }
 
+    // Only show non-demo network errors
     tripViewModel.errorMessage.value?.let { error ->
-        AlertDialog(
-            onDismissRequest = { tripViewModel.errorMessage.value = null },
-            title = { Text("Error") },
-            text = { Text(error) },
-            confirmButton = {
-                Button(onClick = { tripViewModel.errorMessage.value = null }) {
-                    Text("OK")
+        if (!AuthViewModel.isDemoToken(token)) {
+            AlertDialog(
+                onDismissRequest = { tripViewModel.errorMessage.value = null },
+                title = { Text("Error") },
+                text = { Text(error) },
+                confirmButton = {
+                    Button(onClick = { tripViewModel.errorMessage.value = null }) {
+                        Text("OK")
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -234,7 +243,6 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Simple status badge — no ChipDefaults / AssistChip dependency
             Text(
                 text = trip.status.name,
                 style = MaterialTheme.typography.labelMedium,

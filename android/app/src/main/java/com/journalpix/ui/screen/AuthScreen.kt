@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,14 +22,20 @@ import com.journalpix.viewmodel.AuthViewModel
 fun AuthScreen(navController: NavController) {
     val authViewModel: AuthViewModel = remember { AuthViewModel() }
     var isLogin by remember { mutableStateOf(true) }
-    // Pre-fill demo credentials for quick local testing
     var email by remember { mutableStateOf(AuthViewModel.DEMO_EMAIL) }
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf(AuthViewModel.DEMO_PASSWORD) }
 
-    if (authViewModel.isLoggedIn.value) {
+    fun goHome() {
         navController.navigate("home") {
             popUpTo("auth") { inclusive = true }
+        }
+    }
+
+    // Already logged in (e.g. demo session)
+    LaunchedEffect(AppSession.isLoggedIn.value) {
+        if (AppSession.isLoggedIn.value) {
+            goHome()
         }
     }
 
@@ -44,7 +51,15 @@ fun AuthScreen(navController: NavController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Dev build: demo / demo works offline",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         if (!isLogin) {
             OutlinedTextField(
@@ -82,42 +97,37 @@ fun AuthScreen(navController: NavController) {
 
         if (authViewModel.isLoading.value) {
             CircularProgressIndicator()
-        } else {
+        } else if (isLogin) {
+            // Primary action: always offline demo — never touches the network
             Button(
                 onClick = {
-                    if (isLogin) {
-                        authViewModel.login(email, password) {
-                            navController.navigate("home") {
-                                popUpTo("auth") { inclusive = true }
-                            }
-                        }
-                    } else {
-                        authViewModel.register(email, name, password) {
-                            navController.navigate("home") {
-                                popUpTo("auth") { inclusive = true }
-                            }
-                        }
-                    }
+                    authViewModel.errorMessage.value = null
+                    authViewModel.loginAsDemo { goHome() }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isLogin) "Login" else "Register")
+                Text("Login (demo / offline)")
             }
 
-            if (isLogin) {
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = {
-                        authViewModel.loginAsDemo {
-                            navController.navigate("home") {
-                                popUpTo("auth") { inclusive = true }
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Continue as Demo (demo / demo)")
-                }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Optional: real backend login (will fail without server)
+            OutlinedButton(
+                onClick = {
+                    authViewModel.login(email, password) { goHome() }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Login via backend")
+            }
+        } else {
+            Button(
+                onClick = {
+                    authViewModel.register(email, name, password) { goHome() }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Register")
             }
         }
 
