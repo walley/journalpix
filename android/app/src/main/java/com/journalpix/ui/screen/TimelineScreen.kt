@@ -1,10 +1,12 @@
 package com.journalpix.ui.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -57,7 +60,6 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     ) { uri: Uri? ->
         val placeId = uploadTargetPlaceId
         if (uri != null && placeId != null) {
-            // Persist read permission for the picked URI
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -67,7 +69,6 @@ fun TimelineScreen(navController: NavController, tripId: String) {
 
             photoViewModel.addPhotoOffline(context, placeId, uri) {
                 timelineViewModel.refreshOffline(effectiveTripId)
-                // Keep detail sheet in sync
                 selectedPlace = timelineViewModel.timeline.value
                     ?.timeline
                     ?.flatMap { it.places }
@@ -75,6 +76,44 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             }
         }
         uploadTargetPlaceId = null
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ ->
+        // After permission result, open picker regardless (EXIF may still work via file copy)
+        pickImageLauncher.launch("image/*")
+    }
+
+    fun startAddPhoto(placeId: String) {
+        uploadTargetPlaceId = placeId
+        val needed = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // ACCESS_MEDIA_LOCATION is required to read GPS EXIF from MediaStore
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                needed.add(Manifest.permission.ACCESS_MEDIA_LOCATION)
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                needed.add(Manifest.permission.READ_MEDIA_IMAGES)
+            }
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+        if (needed.isNotEmpty()) {
+            permissionLauncher.launch(needed.toTypedArray())
+        } else {
+            pickImageLauncher.launch("image/*")
+        }
     }
 
     LaunchedEffect(effectiveTripId) {
@@ -134,7 +173,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 )
                             }
                             Text(
-                                text = "Photos are stored offline. Use 📍 to look up addresses (needs internet).",
+                                text = "Photos offline. GPS from EXIF needs media-location permission. 📍 = address lookup (internet).",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -150,10 +189,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 PlaceCard(
                                     place = place,
                                     onClick = { selectedPlace = place },
-                                    onAddPhoto = {
-                                        uploadTargetPlaceId = place.id
-                                        pickImageLauncher.launch("image/*")
-                                    }
+                                    onAddPhoto = { startAddPhoto(place.id) }
                                 )
                             }
                         }
@@ -163,7 +199,25 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         }
     }
 
-    // Place detail + photos
+    // EXIF diagnostic after add
+    photoViewModel.lastExifNote.value?.let { note ->
+        AlertDialog(
+            onDismissRequest = { photoViewModel.lastExifNote.value = null },
+            title = { Text("No GPS in photo") },
+            text = {
+                Text(
+                    note + "\n\nTips:\n" +
+                        "• Use a photo taken with location ON in the camera app\n" +
+                        "• On Android 10+, allow \"Location\" access for photos when prompted\n" +
+                        "• Some gallery apps strip GPS for privacy — try Files app / original file"
+                )
+            },
+            confirmButton = {
+                Button(onClick = { photoViewModel.lastExifNote.value = null }) { Text("OK") }
+            }
+        )
+    }
+
     selectedPlace?.let { place ->
         AlertDialog(
             onDismissRequest = { selectedPlace = null },
@@ -192,10 +246,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Photos", style = MaterialTheme.typography.titleMedium)
-                        TextButton(onClick = {
-                            uploadTargetPlaceId = place.id
-                            pickImageLauncher.launch("image/*")
-                        }) {
+                        TextButton(onClick = { startAddPhoto(place.id) }) {
                             Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
                             Spacer(Modifier.width(4.dp))
                             Text("Add photo")
@@ -387,7 +438,6 @@ fun PhotoItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // GPS from EXIF (offline)
             if (photo.latitude != null && photo.longitude != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -414,7 +464,6 @@ fun PhotoItem(
                             )
                         }
                     }
-                    // Reverse geocode — uses Nominatim (internet)
                     if (isGeocoding) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                     } else {
