@@ -36,7 +36,7 @@ class PlaceViewModel : ViewModel() {
 
     fun createPlace(token: String, tripId: String, request: CreatePlaceRequest, onSuccess: () -> Unit) {
         if (AuthViewModel.isDemoToken(token) || token.isBlank() || token == "Bearer token") {
-            OfflineStore.addPlace(tripId, request.name)
+            OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
             isLoading.value = false
             errorMessage.value = null
             onSuccess()
