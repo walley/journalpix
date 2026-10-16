@@ -1,5 +1,6 @@
 package com.journalpix
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +21,9 @@ import com.journalpix.ui.theme.JournalPixTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Handle incoming share intent
+        handleShareIntent(intent)
         
         setContent {
             JournalPixTheme {
@@ -44,6 +48,34 @@ class MainActivity : ComponentActivity() {
                             MapScreen(navController, tripId)
                         }
                         composable("about") { AboutScreen(navController) }
+                    }
+                }
+            }
+        }
+    }
+    
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        intent?.let { handleShareIntent(it) }
+    }
+    
+    private fun handleShareIntent(intent: Intent) {
+        if (Intent.ACTION_SEND == intent.action || Intent.ACTION_SEND_MULTIPLE == intent.action) {
+            when (intent.action) {
+                Intent.ACTION_SEND -> {
+                    val uri = intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+                    uri?.let {
+                        // Handle single image share
+                        // You can pass this to your ViewModel or navigate to upload screen
+                    }
+                }
+                Intent.ACTION_SEND_MULTIPLE -> {
+                    val uris = intent.getParcelableArrayListExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+                    uris?.let { list ->
+                        // Handle multiple images share
+                        list.forEach { uri ->
+                            // Process each image URI
+                        }
                     }
                 }
             }
