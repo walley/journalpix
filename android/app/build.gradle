@@ -94,12 +94,12 @@ dependencies {
     // Location services
     implementation 'com.google.android.gms:play-services-location:21.0.1'
 
-    // OpenMapView - Map library
-    implementation 'com.github.afarber:openmapview:1.0.0'
-    implementation 'com.github.afarber:openmapview-compose:1.0.0'
+    // OpenMapView - Map library (Maven Central)
+    implementation 'de.afarber:openmapview:0.21.0'
+    implementation 'de.afarber:openmapview-compose:0.21.0'
 
     // File picker
-    implementation "com.github.nguyenhoanglam:ImagePicker:2.1"
+    implementation 'com.github.nguyenhoanglam:ImagePicker:1.6.4'
 
     // Permissions
     implementation 'com.karumi:dexter:6.2.3'
