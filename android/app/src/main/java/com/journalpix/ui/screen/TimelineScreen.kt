@@ -6,10 +6,8 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -23,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Map
@@ -32,7 +31,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +41,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
-import com.journalpix.models.TimelineItem
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 import com.journalpix.viewmodel.PhotoViewModel
@@ -64,6 +61,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
 
     var selectedPlace by remember { mutableStateOf<PlaceWithPhotos?>(null) }
     var showCreatePlaceDialog by remember { mutableStateOf(false) }
+    var showEditDatesDialog by remember { mutableStateOf(false) }
     var createPlaceDay by remember { mutableStateOf<String?>(null) }
     var newPlaceName by remember { mutableStateOf("") }
     var uploadTargetPlaceId by remember { mutableStateOf<String?>(null) }
@@ -71,6 +69,10 @@ fun TimelineScreen(navController: NavController, tripId: String) {
 
     val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
     val effectiveTripId = tripId.ifBlank { "demo-trip-1" }
+
+    fun refresh() {
+        timelineViewModel.refreshOffline(effectiveTripId)
+    }
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -85,11 +87,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             } catch (_: Exception) { }
 
             photoViewModel.addPhotoOffline(context, placeId, uri) {
-                timelineViewModel.refreshOffline(effectiveTripId)
+                // Photo EXIF day moves the place into the correct day bucket
+                refresh()
                 selectedPlace = timelineViewModel.timeline.value
                     ?.timeline
                     ?.flatMap { it.places }
-                    ?.find { it.id == placeId }
+                    ?.find { p -> p.photos.any { ph -> ph.id == it.id } || p.id == placeId }
             }
         }
         uploadTargetPlaceId = null
@@ -118,6 +121,16 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         }
         if (needed.isNotEmpty()) permissionLauncher.launch(needed.toTypedArray())
         else pickImageLauncher.launch("image/*")
+    }
+
+    fun onReverseGeocode(photo: PhotoResponse) {
+        photoViewModel.reverseGeocode(effectiveTripId, photo) {
+            refresh()
+            selectedPlace = timelineViewModel.timeline.value
+                ?.timeline
+                ?.flatMap { it.places }
+                ?.find { p -> p.id == it.id }
+        }
     }
 
     LaunchedEffect(effectiveTripId) {
@@ -154,6 +167,9 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showEditDatesDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit trip dates")
+                    }
                     IconButton(onClick = { navController.navigate("map/$effectiveTripId") }) {
                         Icon(Icons.Default.Map, contentDescription = "View on map")
                     }
@@ -179,12 +195,35 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 item {
-                    Text(
-                        text = "Trip itinerary",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
+                    // Trip date range (tappable to edit)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showEditDatesDialog = true }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Trip itinerary",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            val from = timeline.trip.startDate ?: "—"
+                            val to = timeline.trip.endDate ?: "—"
+                            Text(
+                                text = "From $from  →  $to",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit dates",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
 
                 timeline.timeline.forEachIndexed { dayIndex, dayItem ->
@@ -213,7 +252,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 onAddPhoto = { startAddPhoto(place.id) },
                                 resolvedAddresses = photoViewModel.resolvedAddresses,
                                 geocodeLoading = photoViewModel.geocodeLoadingIds,
-                                onReverseGeocode = { photoViewModel.reverseGeocode(it) }
+                                onReverseGeocode = { onReverseGeocode(it) }
                             )
                         }
                         item(key = "add-place-$dayKey") {
@@ -251,18 +290,69 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         }
     }
 
+    // Edit from / to dates
+    if (showEditDatesDialog && timeline != null) {
+        var startText by remember(timeline.trip.startDate) {
+            mutableStateOf(timeline.trip.startDate ?: LocalDate.now().toString())
+        }
+        var endText by remember(timeline.trip.endDate) {
+            mutableStateOf(timeline.trip.endDate ?: LocalDate.now().toString())
+        }
+        var dateError by remember { mutableStateOf<String?>(null) }
+
+        AlertDialog(
+            onDismissRequest = { showEditDatesDialog = false },
+            title = { Text("Trip dates") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = startText,
+                        onValueChange = { startText = it; dateError = null },
+                        label = { Text("From (yyyy-MM-dd)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = endText,
+                        onValueChange = { endText = it; dateError = null },
+                        label = { Text("To (yyyy-MM-dd)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    dateError?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    try {
+                        val s = LocalDate.parse(startText.trim())
+                        val e = LocalDate.parse(endText.trim())
+                        if (e.isBefore(s)) {
+                            dateError = "End date must be on or after start date"
+                            return@Button
+                        }
+                        timelineViewModel.updateTripDates(effectiveTripId, s.toString(), e.toString())
+                        showEditDatesDialog = false
+                    } catch (_: Exception) {
+                        dateError = "Use format yyyy-MM-dd"
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDatesDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     photoViewModel.lastExifNote.value?.let { note ->
         AlertDialog(
             onDismissRequest = { photoViewModel.lastExifNote.value = null },
             title = { Text("No GPS in photo") },
-            text = {
-                Text(
-                    note + "\n\nTips:\n" +
-                        "• Use a photo taken with location ON\n" +
-                        "• Allow media location when prompted\n" +
-                        "• Some galleries strip GPS — try the original file"
-                )
-            },
+            text = { Text(note) },
             confirmButton = {
                 Button(onClick = { photoViewModel.lastExifNote.value = null }) { Text("OK") }
             }
@@ -270,11 +360,18 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     }
 
     selectedPlace?.let { place ->
+        // Re-resolve place from latest timeline so photos stay sorted after geocode
+        val live = timelineViewModel.timeline.value
+            ?.timeline
+            ?.flatMap { it.places }
+            ?.find { it.id == place.id }
+            ?: place
         PlaceDetailSheet(
-            place = place,
+            place = live,
             photoViewModel = photoViewModel,
             onDismiss = { selectedPlace = null },
-            onAddPhoto = { startAddPhoto(place.id) }
+            onAddPhoto = { startAddPhoto(place.id) },
+            onReverseGeocode = { onReverseGeocode(it) }
         )
     }
 
@@ -293,11 +390,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     )
                     createPlaceDay?.let { day ->
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Day: $day",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("Day: $day", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             },
@@ -318,7 +411,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             showCreatePlaceDialog = false
                             newPlaceName = ""
                             createPlaceDay = null
-                            timelineViewModel.refreshOffline(effectiveTripId)
+                            refresh()
                         }
                     }
                 }) { Text("Add") }
@@ -366,19 +459,11 @@ private fun DayHeader(
             )
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Day $dayNumber",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = display,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("Day $dayNumber", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(display, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                text = "$placeCount places · $photoCount photos",
+                "$placeCount places · $photoCount photos",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -404,7 +489,6 @@ private fun PlaceTimelineRow(
             .fillMaxWidth()
             .padding(start = 12.dp, end = 12.dp)
     ) {
-        // Number + vertical connector
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.width(36.dp)
@@ -417,7 +501,7 @@ private fun PlaceTimelineRow(
                     .background(MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Text(
-                    text = "$number",
+                    "$number",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -444,11 +528,7 @@ private fun PlaceTimelineRow(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = place.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(place.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     val subtitle = buildList {
                         place.address?.let { add(it) }
                         if (place.latitude != null && place.longitude != null) {
@@ -457,7 +537,7 @@ private fun PlaceTimelineRow(
                     }.joinToString(" · ")
                     if (subtitle.isNotBlank()) {
                         Text(
-                            text = subtitle,
+                            subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2
@@ -469,17 +549,17 @@ private fun PlaceTimelineRow(
                 }
             }
 
-            // Photo strip under the place
             if (place.photos.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Already sorted by time from OfflineStore
                     place.photos.forEach { photo ->
                         PhotoThumb(
                             photo = photo,
-                            address = resolvedAddresses[photo.id],
+                            address = resolvedAddresses[photo.id] ?: place.address,
                             isGeocoding = geocodeLoading[photo.id] == true,
                             onReverseGeocode = { onReverseGeocode(photo) },
                             onClick = onPlaceClick
@@ -528,7 +608,7 @@ private fun PhotoThumb(
                 modifier = Modifier.padding(top = 2.dp)
             ) {
                 Text(
-                    text = "${"%.2f".format(photo.latitude)}, ${"%.2f".format(photo.longitude)}",
+                    "${"%.2f".format(photo.latitude)}, ${"%.2f".format(photo.longitude)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -549,7 +629,7 @@ private fun PhotoThumb(
             }
             address?.let {
                 Text(
-                    text = it,
+                    it,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 2
@@ -557,12 +637,7 @@ private fun PhotoThumb(
             }
         }
         photo.takenAt?.let { t ->
-            Text(
-                text = t,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
+            Text(t, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 }
@@ -572,7 +647,8 @@ private fun PlaceDetailSheet(
     place: PlaceWithPhotos,
     photoViewModel: PhotoViewModel,
     onDismiss: () -> Unit,
-    onAddPhoto: () -> Unit
+    onAddPhoto: () -> Unit,
+    onReverseGeocode: (PhotoResponse) -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -584,6 +660,10 @@ private fun PlaceDetailSheet(
                     .heightIn(max = 480.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                place.address?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(4.dp))
+                }
                 place.description?.let { Text(it) }
                 if (place.latitude != null && place.longitude != null) {
                     Text(
@@ -592,37 +672,32 @@ private fun PlaceDetailSheet(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Photos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Photos (by time)", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     TextButton(onClick = onAddPhoto) {
                         Icon(Icons.Default.AddPhotoAlternate, null)
                         Spacer(Modifier.width(4.dp))
                         Text("Add")
                     }
                 }
-                val photos = place.photos
+                val photos = place.photos // already time-sorted
                 if (photos.isEmpty()) {
                     Text("No photos yet", style = MaterialTheme.typography.bodySmall)
                 } else {
                     photos.forEach { photo ->
                         PhotoItem(
                             photo = photo,
-                            resolvedAddress = photoViewModel.resolvedAddresses[photo.id],
+                            resolvedAddress = photoViewModel.resolvedAddresses[photo.id] ?: place.address,
                             isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
                             geocodeError = photoViewModel.geocodeErrors[photo.id],
-                            onReverseGeocode = { photoViewModel.reverseGeocode(photo) }
+                            onReverseGeocode = { onReverseGeocode(photo) }
                         )
                         Spacer(Modifier.height(8.dp))
                     }
                 }
             }
         },
-        confirmButton = {
-            Button(onClick = onDismiss) { Text("Close") }
-        }
+        confirmButton = { Button(onClick = onDismiss) { Text("Close") } }
     )
 }
 
