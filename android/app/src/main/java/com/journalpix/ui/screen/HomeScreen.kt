@@ -1,9 +1,11 @@
 package com.journalpix.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.journalpix.models.TripResponse
@@ -164,6 +167,19 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
     val startDate = trip.startDate?.let { LocalDate.parse(it) }
     val endDate = trip.endDate?.let { LocalDate.parse(it) }
 
+    val statusContainerColor = when (trip.status) {
+        TripStatus.PLANNED -> MaterialTheme.colorScheme.primaryContainer
+        TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.secondaryContainer
+        TripStatus.COMPLETED -> MaterialTheme.colorScheme.tertiaryContainer
+        TripStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
+    }
+    val statusContentColor = when (trip.status) {
+        TripStatus.PLANNED -> MaterialTheme.colorScheme.onPrimaryContainer
+        TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.onSecondaryContainer
+        TripStatus.COMPLETED -> MaterialTheme.colorScheme.onTertiaryContainer
+        TripStatus.CANCELLED -> MaterialTheme.colorScheme.onErrorContainer
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -218,15 +234,15 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            AssistChip(
-                onClick = {},
-                label = { Text(trip.status.name) },
-                colors = when (trip.status) {
-                    TripStatus.PLANNED -> ChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    TripStatus.IN_PROGRESS -> ChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    TripStatus.COMPLETED -> ChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-                    TripStatus.CANCELLED -> ChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                }
+            // Simple status badge — no ChipDefaults / AssistChip dependency
+            Text(
+                text = trip.status.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = statusContentColor,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(statusContainerColor)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
     }
