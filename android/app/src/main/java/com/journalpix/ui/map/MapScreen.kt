@@ -26,17 +26,16 @@ import com.journalpix.models.MapPlace
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TripResponse
 import com.journalpix.viewmodel.MapViewModel
-import de.afarber.openmapview.compose.Marker
+import de.afarber.openmapview.CameraPosition
+import de.afarber.openmapview.LatLng
+import de.afarber.openmapview.MapType
+import de.afarber.openmapview.compose.MapProperties
+import de.afarber.openmapview.compose.MapUiSettings
 import de.afarber.openmapview.compose.MarkerComposable
 import de.afarber.openmapview.compose.OpenMap
 import de.afarber.openmapview.compose.Polyline
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
-import de.afarber.openmapview.model.CameraPosition
-import de.afarber.openmapview.model.LatLng
-import de.afarber.openmapview.model.MapProperties
-import de.afarber.openmapview.model.MapType
-import de.afarber.openmapview.model.MapUiSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import com.journalpix.models.MapBounds
-import de.afarber.openmapview.model.LatLng
+import de.afarber.openmapview.LatLng
 
 object MapUtils {
 
