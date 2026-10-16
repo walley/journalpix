@@ -13,7 +13,7 @@ class TripViewModel : ViewModel() {
     val trips = mutableStateOf<List<TripResponse>>(emptyList())
     val currentTrip = mutableStateOf<TripResponse?>(null)
     
-    fun getTrips(token: String) {
+    fun getTrips(token: String, onSuccess: (List<TripResponse>) -> Unit = {}) {
         viewModelScope.launch {
             isLoading.value = true
             errorMessage.value = null
@@ -23,6 +23,7 @@ class TripViewModel : ViewModel() {
                 
                 if (response.success) {
                     trips.value = response.data ?: emptyList()
+                    onSuccess(trips.value)
                 } else {
                     errorMessage.value = response.error ?: "Failed to load trips"
                 }
