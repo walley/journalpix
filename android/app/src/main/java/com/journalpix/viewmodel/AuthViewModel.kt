@@ -20,7 +20,32 @@ class AuthViewModel : ViewModel() {
         // Temporary dev/demo credentials — remove before production
         const val DEMO_EMAIL = "demo"
         const val DEMO_PASSWORD = "demo"
-        private const val DEMO_TOKEN = "demo-dev-token"
+        const val DEMO_TOKEN = "demo-dev-token"
+
+        fun isDemoCredentials(email: String, password: String): Boolean {
+            val e = email.trim().lowercase()
+            val p = password.trim()
+            return (e == DEMO_EMAIL || e == "demo@demo.local" || e == "demo@journalpix.app") &&
+                p == DEMO_PASSWORD
+        }
+
+        fun isDemoToken(token: String?): Boolean {
+            if (token.isNullOrBlank()) return false
+            val t = token.removePrefix("Bearer ").trim()
+            return t == DEMO_TOKEN
+        }
+
+        fun demoLoginResponse(): LoginResponse {
+            return LoginResponse(
+                user = UserResponse(
+                    id = "00000000-0000-0000-0000-000000000001",
+                    email = "demo@journalpix.app",
+                    name = "Demo User",
+                    createdAt = "2024-01-01T00:00:00Z"
+                ),
+                token = DEMO_TOKEN
+            )
+        }
     }
 
     fun register(email: String, name: String, password: String, onSuccess: () -> Unit) {
@@ -50,19 +75,19 @@ class AuthViewModel : ViewModel() {
     }
 
     fun login(email: String, password: String, onSuccess: () -> Unit) {
+        errorMessage.value = null
+
+        // Fully offline: resolve demo:demo BEFORE any coroutine or network call
+        if (isDemoCredentials(email, password)) {
+            currentUser.value = demoLoginResponse()
+            isLoggedIn.value = true
+            isLoading.value = false
+            onSuccess()
+            return
+        }
+
         viewModelScope.launch {
             isLoading.value = true
-            errorMessage.value = null
-
-            // Offline/dev shortcut: demo:demo always works without a backend
-            if (isDemoCredentials(email, password)) {
-                currentUser.value = demoLoginResponse()
-                isLoggedIn.value = true
-                isLoading.value = false
-                onSuccess()
-                return@launch
-            }
-
             try {
                 val request = LoginRequest(email, password)
                 val response = ApiService.apiClient.login(request)
@@ -85,30 +110,16 @@ class AuthViewModel : ViewModel() {
     }
 
     fun loginAsDemo(onSuccess: () -> Unit) {
-        login(DEMO_EMAIL, DEMO_PASSWORD, onSuccess)
+        // No network, no coroutine
+        errorMessage.value = null
+        isLoading.value = false
+        currentUser.value = demoLoginResponse()
+        isLoggedIn.value = true
+        onSuccess()
     }
 
     fun logout() {
         currentUser.value = null
         isLoggedIn.value = false
-    }
-
-    private fun isDemoCredentials(email: String, password: String): Boolean {
-        val e = email.trim().lowercase()
-        val p = password.trim()
-        return (e == DEMO_EMAIL || e == "demo@demo.local" || e == "demo@journalpix.app") &&
-            p == DEMO_PASSWORD
-    }
-
-    private fun demoLoginResponse(): LoginResponse {
-        return LoginResponse(
-            user = UserResponse(
-                id = "00000000-0000-0000-0000-000000000001",
-                email = "demo@journalpix.app",
-                name = "Demo User",
-                createdAt = "2024-01-01T00:00:00Z"
-            ),
-            token = DEMO_TOKEN
-        )
     }
 }
