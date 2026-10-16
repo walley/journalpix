@@ -121,7 +121,9 @@ class MapViewModel : ViewModel() {
     }
     
     private fun calculateBounds(points: List<RoutePoint>): MapBounds {
-        if (points.isEmpty()) return MapBounds(0.0, 0.0, 0.0, 0.0)
+        if (points.isEmpty()) {
+            return MapBounds(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        }
         
         val minLat = points.minOf { it.latitude }
         val maxLat = points.maxOf { it.latitude }
