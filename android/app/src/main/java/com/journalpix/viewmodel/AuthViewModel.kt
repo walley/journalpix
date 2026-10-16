@@ -10,11 +10,32 @@ import com.journalpix.models.RegisterRequest
 import com.journalpix.models.UserResponse
 import kotlinx.coroutines.launch
 
+/**
+ * Simple process-wide session so every screen sees the same login state.
+ * (Avoids losing the user when each screen creates its own AuthViewModel.)
+ */
+object AppSession {
+    val currentUser = mutableStateOf<LoginResponse?>(null)
+    val isLoggedIn = mutableStateOf(false)
+
+    fun setUser(user: LoginResponse?) {
+        currentUser.value = user
+        isLoggedIn.value = user != null
+    }
+
+    fun clear() {
+        currentUser.value = null
+        isLoggedIn.value = false
+    }
+}
+
 class AuthViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
     val errorMessage = mutableStateOf<String?>(null)
-    val isLoggedIn = mutableStateOf(false)
-    val currentUser = mutableStateOf<LoginResponse?>(null)
+
+    // Bound to shared session
+    val isLoggedIn get() = AppSession.isLoggedIn
+    val currentUser get() = AppSession.currentUser
 
     companion object {
         // Temporary dev/demo credentials — remove before production
@@ -59,8 +80,7 @@ class AuthViewModel : ViewModel() {
 
                 if (response.success) {
                     response.data?.let { loginResponse ->
-                        currentUser.value = loginResponse
-                        isLoggedIn.value = true
+                        AppSession.setUser(loginResponse)
                         onSuccess()
                     }
                 } else {
@@ -79,9 +99,8 @@ class AuthViewModel : ViewModel() {
 
         // Fully offline: resolve demo:demo BEFORE any coroutine or network call
         if (isDemoCredentials(email, password)) {
-            currentUser.value = demoLoginResponse()
-            isLoggedIn.value = true
             isLoading.value = false
+            AppSession.setUser(demoLoginResponse())
             onSuccess()
             return
         }
@@ -94,8 +113,7 @@ class AuthViewModel : ViewModel() {
 
                 if (response.success) {
                     response.data?.let { loginResponse ->
-                        currentUser.value = loginResponse
-                        isLoggedIn.value = true
+                        AppSession.setUser(loginResponse)
                         onSuccess()
                     }
                 } else {
@@ -113,13 +131,11 @@ class AuthViewModel : ViewModel() {
         // No network, no coroutine
         errorMessage.value = null
         isLoading.value = false
-        currentUser.value = demoLoginResponse()
-        isLoggedIn.value = true
+        AppSession.setUser(demoLoginResponse())
         onSuccess()
     }
 
     fun logout() {
-        currentUser.value = null
-        isLoggedIn.value = false
+        AppSession.clear()
     }
 }
