@@ -3,7 +3,6 @@ plugins {
     // Built-in Kotlin (AGP 9+) — do not apply org.jetbrains.kotlin.android
     id 'org.jetbrains.kotlin.plugin.compose'
     id 'org.jetbrains.kotlin.plugin.parcelize'
-    id 'com.android.legacy-kapt'
 }
 
 android {
@@ -74,10 +73,9 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:' + okhttp_version
     implementation 'com.squareup.okhttp3:logging-interceptor:' + okhttp_version
 
-    // Room Database
+    // Room Database (runtime only — annotation processor removed)
     implementation 'androidx.room:room-runtime:' + room_version
     implementation 'androidx.room:room-ktx:' + room_version
-    kapt 'androidx.room:room-compiler:' + room_version
 
     // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:' + lifecycle_version
@@ -107,8 +105,4 @@ dependencies {
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
-}
-
-kapt {
-    correctErrorTypes true
 }
