@@ -24,7 +24,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.MapPlace
 import com.journalpix.models.PlaceWithPhotos
-import com.journalpix.models.TripResponse
 import com.journalpix.viewmodel.MapViewModel
 import de.afarber.openmapview.CameraPosition
 import de.afarber.openmapview.LatLng
@@ -41,14 +40,13 @@ import de.afarber.openmapview.compose.rememberMarkerState
 @Composable
 fun MapScreen(
     navController: NavController,
-    trip: TripResponse? = null,
+    tripId: String = "",
     places: List<PlaceWithPhotos> = emptyList()
 ) {
     val mapViewModel: MapViewModel = remember { MapViewModel() }
-    val context = LocalContext.current
 
-    LaunchedEffect(trip?.id) {
-        trip?.id?.let { tripId ->
+    LaunchedEffect(tripId) {
+        if (tripId.isNotEmpty()) {
             mapViewModel.loadTripRoute(tripId, places)
         }
     }
@@ -73,7 +71,9 @@ fun MapScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(trip?.title ?: "Map View")
+                    Text(
+                        mapViewModel.mapRoute.value?.tripTitle ?: "Map View"
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -151,7 +151,7 @@ fun MapScreen(
                         Polyline(
                             points = latLngs,
                             strokeColor = Color.Blue,
-                            width = 8f
+                            strokeWidth = 8f
                         )
                     }
 
