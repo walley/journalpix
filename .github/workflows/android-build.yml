@@ -48,7 +48,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Debug: list repository & android dir
+      - name: Debug list repository android dir
         run: |
           echo "Repository root:"
           ls -la
