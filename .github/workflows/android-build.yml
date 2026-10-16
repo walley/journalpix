@@ -59,11 +59,6 @@ jobs:
       - name: Build release APK
         run: ./android/gradlew assembleRelease
         working-directory: .
-        env:
-          # Add your signing config if needed
-          # ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
-          # ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
-          # ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
       
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
