@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Gradle wrapper script (simplified) to run the installed Gradle distribution in ./android/gradle
+# If you want to use the official gradle wrapper, run `gradle wrapper --gradle-version 8.4.1` locally and commit the generated files.
+# Minimal wrapper to call the distribution in gradle/wrapper if present, otherwise fall back to ci-bootstrap.
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}"
+WRAPPER_DIR="${PROJECT_ROOT}/gradle/wrapper"
+GRADLE_CLI="${WRAPPER_DIR}/gradle-wrapper.jar"
+
+if [ -x "${PROJECT_ROOT}/gradlew" ] && [ "${PROJECT_ROOT}/gradlew" -ef "${BASH_SOURCE[0]}" ]; then
+  exec "${PROJECT_ROOT}/gradlew" "$@"
+fi
+
+# If wrapper jar is present, use system java to run it
+if [ -f "${GRADLE_CLI}" ]; then
+  exec java -jar "${GRADLE_CLI}" "$@"
+fi
+
+# Fall back to the CI bootstrapper
+exec "${PROJECT_ROOT}/../ci-gradle-bootstrap.sh" "$@"
