@@ -71,10 +71,11 @@ jobs:
             ./gradlew -p android assembleDebug
             ./gradlew -p android assembleRelease
           else
-            echo "ERROR: Gradle wrapper not found in android/ or repository root."
-            echo "To fix, commit the Gradle wrapper files (gradlew, gradlew.bat, gradle/wrapper/*)."
-            ls -la
-            exit 1
+            echo "Gradle wrapper not found in android/ or repository root. Falling back to CI bootstrapper."
+            chmod +x ./ci-gradle-bootstrap.sh || true
+            echo "Running Gradle via ci-gradle-bootstrap.sh with -p android"
+            ./ci-gradle-bootstrap.sh -p android assembleDebug
+            ./ci-gradle-bootstrap.sh -p android assembleRelease
           fi
 
       - name: Upload debug APK artifact
