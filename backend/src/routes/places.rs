@@ -6,18 +6,13 @@ use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/trips/{trip_id}/places")
-            .route("", web::get().to(get_places))
-            .route("", web::post().to(create_place))
-    );
-
-    cfg.service(
-        web::scope("/places")
-            .route("/{place_id}", web::get().to(get_place))
-            .route("/{place_id}", web::put().to(update_place))
-            .route("/{place_id}", web::delete().to(delete_place))
-    );
+    // NOTE: actix-web scope prefixes are matched literally (no {param}
+    // support), so these must be plain routes with full paths.
+    cfg.route("/trips/{trip_id}/places", web::get().to(get_places))
+        .route("/trips/{trip_id}/places", web::post().to(create_place))
+        .route("/places/{place_id}", web::get().to(get_place))
+        .route("/places/{place_id}", web::put().to(update_place))
+        .route("/places/{place_id}", web::delete().to(delete_place));
 }
 
 pub async fn get_places(

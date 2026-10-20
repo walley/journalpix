@@ -1,9 +1,12 @@
-use crate::database::connection::{get_timestamp, get_uuid, DatabaseConnection, PHOTO_COLS};
+use crate::database::connection::{
+    get_opt_f64, get_opt_naive_datetime, get_opt_string, get_timestamp, get_uuid, DatabaseConnection,
+    PHOTO_COLS,
+};
 use crate::models::photo::PhotoResponse;
 use crate::models::place::PlaceWithPhotos;
 use crate::models::response::ApiResponse;
 use crate::models::trip::{TimelineItem, TripTimeline};
-use crate::services::place::{map_photo_response, PlaceService};
+use crate::services::place::map_photo_response;
 use crate::services::trip::TripService;
 use crate::utils::error::ApiError;
 use uuid::Uuid;
@@ -13,7 +16,6 @@ use std::sync::Arc;
 pub struct TimelineService {
     db_pool: Arc<DatabaseConnection>,
     trip_service: TripService,
-    place_service: PlaceService,
 }
 
 fn db_err(e: rusqlite::Error) -> ApiError {
@@ -24,7 +26,6 @@ impl TimelineService {
     pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
         TimelineService {
             trip_service: TripService::new(db_pool.clone()),
-            place_service: PlaceService::new(db_pool.clone()),
             db_pool,
         }
     }
@@ -41,24 +42,22 @@ impl TimelineService {
                 )?;
                 let rows = stmt
                     .query_map([trip_id.to_string()], |r| {
-                        Ok((
-                            crate::models::place::Place {
-                                id: get_uuid(r, 0)?,
-                                trip_id: get_uuid(r, 1)?,
-                                name: r.get(2)?,
-                                description: r.get(3)?,
-                                latitude: r.get(4)?,
-                                longitude: r.get(5)?,
-                                address: r.get(6)?,
-                                visit_date: r.get(7)?,
-                                order_index: r.get(8)?,
-                                created_at: get_timestamp(r, 9)?,
-                                updated_at: get_timestamp(r, 10)?,
-                            },
-                        ))
+                        Ok(crate::models::place::Place {
+                            id: get_uuid(r, 0)?,
+                            trip_id: get_uuid(r, 1)?,
+                            name: r.get(2)?,
+                            description: get_opt_string(r, 3)?,
+                            latitude: get_opt_f64(r, 4)?,
+                            longitude: get_opt_f64(r, 5)?,
+                            address: get_opt_string(r, 6)?,
+                            visit_date: get_opt_naive_datetime(r, 7)?,
+                            order_index: r.get(8)?,
+                            created_at: get_timestamp(r, 9)?,
+                            updated_at: get_timestamp(r, 10)?,
+                        })
                     })?
                     .collect::<rusqlite::Result<Vec<_>>>()?;
-                Ok(rows.into_iter().map(|(p,)| p))
+                Ok(rows)
             })
             .map_err(db_err)?;
 

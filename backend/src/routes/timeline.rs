@@ -5,11 +5,9 @@ use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/trips/{trip_id}/timeline")
-            .route("", web::get().to(get_timeline))
-            .route("/reorder", web::put().to(reorder_timeline))
-    );
+    // NOTE: scope prefixes are literal (no {param}); use full-path routes.
+    cfg.route("/trips/{trip_id}/timeline", web::get().to(get_timeline))
+        .route("/trips/{trip_id}/timeline/reorder", web::put().to(reorder_timeline));
 }
 
 pub async fn get_timeline(

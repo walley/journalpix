@@ -15,19 +15,13 @@ use super::auth_user_id;
 const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10 MB
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/places/{place_id}/photos")
-            .route("", web::get().to(get_photos_for_place))
-            .route("", web::post().to(upload_photo_to_place))
-    );
-
-    cfg.service(
-        web::scope("/photos")
-            .route("", web::get().to(get_all_photos))
-            .route("/{photo_id}", web::get().to(get_photo))
-            .route("/{photo_id}", web::put().to(update_photo))
-            .route("/{photo_id}", web::delete().to(delete_photo))
-    );
+    // NOTE: scope prefixes are literal (no {param}); use full-path routes.
+    cfg.route("/places/{place_id}/photos", web::get().to(get_photos_for_place))
+        .route("/places/{place_id}/photos", web::post().to(upload_photo_to_place))
+        .route("/photos", web::get().to(get_all_photos))
+        .route("/photos/{photo_id}", web::get().to(get_photo))
+        .route("/photos/{photo_id}", web::put().to(update_photo))
+        .route("/photos/{photo_id}", web::delete().to(delete_photo));
 }
 
 pub async fn get_photos_for_place(
@@ -77,16 +71,16 @@ pub async fn upload_photo_to_place(
         // Collect bytes up to MAX_FILE_SIZE.
         let mut content: Vec<u8> = Vec::new();
         loop {
-            match field.chunk().await {
-                Ok(Some(chunk)) => {
+            match field.next().await {
+                Some(Ok(chunk)) => {
                     content.extend_from_slice(&chunk);
                     if content.len() > MAX_FILE_SIZE {
                         return ApiError::BadRequest("File size exceeded limit (10MB)".to_string())
                             .error_response();
                     }
                 }
-                Ok(None) => break,
-                Err(e) => {
+                None => break,
+                Some(Err(e)) => {
                     return ApiError::BadRequest(format!("Failed to read file content: {}", e))
                         .error_response()
                 }

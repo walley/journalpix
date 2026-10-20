@@ -11,7 +11,16 @@ pub struct DatabaseConnection {
     conn: Arc<Mutex<Connection>>,
 }
 
+impl std::fmt::Debug for DatabaseConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseConnection").finish()
+    }
+}
+
 pub type DbPool = DatabaseConnection;
+
+pub const PHOTO_COLS: &str =
+    "id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, caption, order_index, created_at";
 
 impl DatabaseConnection {
     /// Open the database described by `config` and run migrations.

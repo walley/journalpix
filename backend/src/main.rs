@@ -87,15 +87,20 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(db_pool))
             .app_data(web::Data::new(file_service))
             .app_data(auth_service.clone())
+            .service(actix_files::Files::new("/uploads", &config.upload_dir))
+            .service(actix_files::Files::new("/thumbnails", &config.thumbnail_dir))
             .app_data(web::Data::new(config))
             .service(routes::health::health_check)
             .service(
                 web::scope("/api")
+                    // NOTE: order matters — more specific scopes must be
+                    // registered before the broad "/trips" scope, otherwise
+                    // actix matches the prefix and 404s without falling through.
                     .configure(routes::auth::configure)
-                    .configure(routes::trips::configure)
                     .configure(routes::places::configure)
                     .configure(routes::photos::configure)
-                    .configure(routes::timeline::configure),
+                    .configure(routes::timeline::configure)
+                    .configure(routes::trips::configure),
             )
     })
     .bind(format!("0.0.0.0:{}", config.server_port))?

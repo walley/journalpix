@@ -1,6 +1,6 @@
 use crate::database::connection::{
     get_i64_count, get_opt_f64, get_opt_naive_datetime, get_opt_string, get_opt_uuid, get_timestamp,
-    get_uuid, DatabaseConnection,
+    get_uuid, DatabaseConnection, PHOTO_COLS,
 };
 use crate::models::photo::PhotoResponse;
 use crate::models::place::{CreatePlaceRequest, Place, PlaceResponse, PlaceWithPhotos, UpdatePlaceRequest};
@@ -55,9 +55,6 @@ pub fn map_photo_response(r: &rusqlite::Row) -> rusqlite::Result<PhotoResponse> 
         place: None,
     })
 }
-
-pub const PHOTO_COLS: &str =
-    "id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, caption, order_index, created_at";
 
 impl PlaceService {
     pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {

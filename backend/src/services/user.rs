@@ -88,18 +88,19 @@ impl UserService {
             .find_user_by_email(request.email.trim())
             .await?;
 
-        let ok = verify_password(&request.password, &user.password_hash).map_err(db_err)?;
+        let ok = verify_password(&request.password, &user.password_hash)?;
         if !ok {
             return Err(ApiError::Unauthorized("Invalid email or password".into()));
         }
 
+        let email = user.email.clone();
         let response = UserResponse {
             id: user.id,
             email: user.email,
             name: user.name,
             created_at: user.created_at,
         };
-        let token = auth_service.create_token(user.id, user.email.clone())?;
+        let token = auth_service.create_token(user.id, email)?;
         Ok(ApiResponse::success(LoginResponse {
             user: response,
             token,
@@ -173,6 +174,10 @@ impl UserService {
 
         let now = Utc::now().to_rfc3339();
         let id = user_id.to_string();
+        let password_hash = match &request.password {
+            Some(p) => Some(hash_password(p)?),
+            None => None,
+        };
 
         self.db_pool
             .with_conn(|c| {
@@ -183,7 +188,7 @@ impl UserService {
                     c.execute("UPDATE users SET email = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![email.trim().to_lowercase(), now, id])?;
                 }
                 if let Some(password) = &request.password {
-                    let hash = hash_password(password)?;
+                    let hash = password_hash.clone().unwrap_or_default();
                     c.execute("UPDATE users SET password_hash = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![hash, now, id])?;
                 }
                 Ok(())

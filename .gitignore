@@ -1,52 +1,21 @@
-# Dependencies
-/target
-Cargo.lock
+# Rust
+backend/target/
+**/*.rs.bk
 
-# IDE
-.idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Backend
-backend/target
-backend/uploads
-backend/thumbnails
-
-# Android
-android/.gradle
-android/app/build
-android/app/.intermediates
-android/app/.cxx
-android/build
-android/captures
-android/externalNativeBuild
-android/.idea
-android/*.iml
-android/local.properties
-android/**/build
-android/**/.gradle
-android/**/bin
-android/**/obj
+# Runtime data
+backend/journalpix.db*
+backend/uploads/
+backend/thumbnails/
+backend/server.log
 
 # Logs
 *.log
-logs/
+*.log.*
+rustama-lsp.log
+rustama.log
 
-# Database
-*.db
-*.sqlite
+# Env
+.env
 
-# Test
-/test
+# Editors/OS
+.DS_Store
