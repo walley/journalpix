@@ -109,9 +109,30 @@ Env vars: see `.env.example` (`DATABASE_URL`, `DATABASE_TYPE`,
 - `timeline reorder` ignores auth; places/photos routes don't verify the
   resource owner.
 
-## Test frontend
+## Frontend scripts
 
-`scripts/test_api.sh` — curl-based smoke test of the full API:
+Both use only `curl` + core `perl` (`JSON::PP`) — no python, no jq required.
+
+`scripts/jpx.sh` — full frontend for the API:
+
+```bash
+scripts/jpx.sh                  # interactive menu (all 22 operations)
+scripts/jpx.sh register <email> <name> <password>
+scripts/jpx.sh login <email> <password>
+scripts/jpx.sh trips | new-trip | trip <id> | update-trip <id> | del-trip <id>
+scripts/jpx.sh places <trip_id> | new-place <trip_id> | place <id> | ...
+scripts/jpx.sh upload <place_id> <file>          # multipart photo upload
+scripts/jpx.sh download <photo_id> [dest_dir]    # fetch image to disk
+scripts/jpx.sh photos [place_id] | photo <id> | timeline <trip_id>
+scripts/jpx.sh raw /trips                        # dump raw JSON of any endpoint
+BASE_URL=http://host:8080 scripts/jpx.sh ...
+```
+
+Token is cached in `/tmp/jpx_token` after login/register. Output is
+pretty-printed (tables for trips/places/photos, simplified timeline).
+
+`scripts/test_api.sh` — automated smoke test (29 checks, full CRUD +
+upload/download + auth failure paths):
 
 ```bash
 scripts/test_api.sh                  # runs all endpoints against localhost:8080
@@ -119,8 +140,6 @@ scripts/test_api.sh health          # run one section
 scripts/test_api.sh auth|trips|places|photos|timeline|crud
 BASE_URL=http://host:8080 scripts/test_api.sh
 ```
-
-Requires `curl`, `python3` (JSON parsing) and `file`/`printf` for a dummy PNG.
 
 ## Terminal / TUI navigation
 

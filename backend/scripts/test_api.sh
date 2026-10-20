@@ -6,7 +6,7 @@
 #   scripts/test_api.sh <section>       # health | auth | trips | places | photos | timeline | crud
 #   BASE_URL=http://host:8080 scripts/test_api.sh
 #
-# Requires: curl, python3
+# Requires: curl, perl (core JSON::PP — no python/jq needed)
 set -u
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
@@ -24,8 +24,24 @@ check() {
     if [ "$want" = "$got" ]; then ok "$name (HTTP $got)"; else bad "$name (want $want, got $got) ${body:0:200}"; fi
 }
 
-# json_get <body> <python-expr over d>
-json_get() { printf '%s' "$1" | python3 -c "import sys,json; d=json.load(sys.stdin); print($2)" 2>/dev/null; }
+# json_get <body> <dotted-path>  e.g. json_get "$BODY" data.token
+json_get() {
+    printf '%s' "$1" | perl -MJSON::PP -0777 -e '
+        my $path = shift @ARGV;
+        my $d;
+        eval { $d = decode_json(<STDIN>); 1 } or exit 1;
+        for my $k (split /\./, defined $path ? $path : "") {
+            if (ref($d) eq "ARRAY") { $d = $d->[$k+0]; }
+            elsif (ref($d) eq "HASH") { $d = $d->{$k}; }
+            else { $d = undef; }
+            exit 1 unless defined $d;
+        }
+        if (!defined $d) { exit 1 }
+        elsif (ref($d) eq "ARRAY") { print join("\n", map { defined($_) ? $_ : "" } @$d), "\n" }
+        elsif (ref($d) eq "HASH")  { print encode_json($d) }
+        else { print $d }
+    ' "$2" 2>/dev/null
+}
 
 post() { curl -s -w '\n%{http_code}' -X POST "$@"; }
 get()  { curl -s -w '\n%{http_code}' "$@"; }
@@ -48,12 +64,12 @@ run_auth() {
     split "$(post "$BASE_URL/api/auth/register" -H 'Content-Type: application/json' \
         -d "{\"email\":\"$EMAIL\",\"name\":\"Test User\",\"password\":\"password123\"}")"
     check "POST /api/auth/register" 200 "$CODE" "$BODY"
-    TOKEN="$(json_get "$BODY" 'd["data"]["token"]')"
+    TOKEN="$(json_get "$BODY" data.token)"
 
     split "$(post "$BASE_URL/api/auth/login" -H 'Content-Type: application/json' \
         -d "{\"email\":\"$EMAIL\",\"password\":\"password123\"}")"
     check "POST /api/auth/login" 200 "$CODE" "$BODY"
-    [ -z "$TOKEN" ] && TOKEN="$(json_get "$BODY" 'd["data"]["token"]')"
+    [ -z "$TOKEN" ] && TOKEN="$(json_get "$BODY" data.token)"
 
     split "$(post "$BASE_URL/api/auth/login" -H 'Content-Type: application/json' \
         -d "{\"email\":\"$EMAIL\",\"password\":\"wrongpass1\"}")"
@@ -77,7 +93,7 @@ run_trips() {
         -H 'Content-Type: application/json' \
         -d '{"title":"Test Trip","description":"from test script","start_date":"2025-06-01","end_date":"2025-06-10","status":"planned"}')"
     check "POST /api/trips" 201 "$CODE" "$BODY"
-    TRIP_ID="$(json_get "$BODY" 'd["data"]["id"]')"
+    TRIP_ID="$(json_get "$BODY" data.id)"
 
     split "$(get "$BASE_URL/api/trips" -H "Authorization: Bearer $TOKEN")"
     check "GET /api/trips" 200 "$CODE" "$BODY"
@@ -100,7 +116,7 @@ run_places() {
         -H 'Content-Type: application/json' \
         -d "{\"trip_id\":\"$TRIP_ID\",\"name\":\"Eiffel Tower\",\"latitude\":48.8584,\"longitude\":2.2945,\"visit_date\":\"2025-06-01T14:30:00\"}")"
     check "POST /api/trips/{id}/places" 201 "$CODE" "$BODY"
-    PLACE_ID="$(json_get "$BODY" 'd["data"]["id"]')"
+    PLACE_ID="$(json_get "$BODY" data.id)"
 
     split "$(get "$BASE_URL/api/trips/$TRIP_ID/places")"
     check "GET /api/trips/{id}/places" 200 "$CODE" "$BODY"
@@ -127,8 +143,8 @@ run_photos() {
     split "$(post "$BASE_URL/api/places/$PLACE_ID/photos" -H "Authorization: Bearer $TOKEN" \
         -F "photo=@$PNG;type=image/png")"
     check "POST /api/places/{id}/photos (upload)" 201 "$CODE" "$BODY"
-    PHOTO_ID="$(json_get "$BODY" 'd["data"]["id"]')"
-    FILE_PATH="$(json_get "$BODY" 'd["data"]["file_path"]')"
+    PHOTO_ID="$(json_get "$BODY" data.id)"
+    FILE_PATH="$(json_get "$BODY" data.file_path)"
     FILE_NAME="${FILE_PATH##*/}"
 
     split "$(get "$BASE_URL/api/places/$PLACE_ID/photos")"
