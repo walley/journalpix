@@ -1,3 +1,4 @@
+use crate::database::connection::{get_timestamp, get_uuid, DatabaseConnection};
 use crate::models::user::{CreateUserRequest, LoginRequest, LoginResponse, UpdateUserRequest, User, UserResponse};
 use crate::models::response::ApiResponse;
 use crate::utils::auth::{hash_password, verify_password, AuthService};
@@ -6,11 +7,14 @@ use crate::utils::validation::{validate_email, validate_name, validate_password}
 use chrono::Utc;
 use uuid::Uuid;
 use std::sync::Arc;
-use crate::database::connection::DatabaseConnection;
 
 #[derive(Debug, Clone)]
 pub struct UserService {
     db_pool: Arc<DatabaseConnection>,
+}
+
+fn db_err(e: rusqlite::Error) -> ApiError {
+    ApiError::DatabaseError(e.to_string())
 }
 
 impl UserService {
@@ -26,34 +30,49 @@ impl UserService {
         validate_name(&request.name)?;
         validate_email(&request.email)?;
         validate_password(&request.password)?;
-        
+
+        let email = request.email.trim().to_lowercase();
         let user_id = Uuid::new_v4();
         let password_hash = hash_password(&request.password)?;
-        
-        let user = User {
-            id: user_id,
-            email: request.email.clone(),
-            name: request.name.clone(),
-            password_hash,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-        
-        let token = auth_service.create_token(user.id, user.email.clone())?;
-        
+        let now = Utc::now().to_rfc3339();
+
+        // Unique email check
+        let exists = self
+            .db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT COUNT(*) FROM users WHERE email = ?1",
+                    [&email],
+                    |r| r.get::<_, i64>(0),
+                )
+            })
+            .map_err(db_err)?;
+        if exists > 0 {
+            return Err(ApiError::ValidationError("Email already registered".into()));
+        }
+
+        self.db_pool
+            .with_conn(|c| {
+                c.execute(
+                    "INSERT INTO users (id, email, name, password_hash, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
+                    rusqlite::params![user_id.to_string(), email, request.name, password_hash, now],
+                )
+            })
+            .map_err(db_err)?;
+
         let response = UserResponse {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            created_at: user.created_at,
+            id: user_id,
+            email,
+            name: request.name,
+            created_at: Utc::now(),
         };
-        
-        let login_response = LoginResponse {
-            user: response.clone(),
+
+        let token = auth_service.create_token(user_id, response.email.clone())?;
+        Ok(ApiResponse::success(LoginResponse {
+            user: response,
             token,
-        };
-        
-        Ok(ApiResponse::success(login_response))
+        }))
     }
 
     pub async fn login(
@@ -62,83 +81,79 @@ impl UserService {
         auth_service: &AuthService,
     ) -> Result<ApiResponse<LoginResponse>, ApiError> {
         if request.email.is_empty() || request.password.is_empty() {
-            return Err(ApiError::ValidationError("Email and password are required".to_string()));
+            return Err(ApiError::ValidationError("Email and password are required".into()));
         }
 
-        // Temporary demo account for local/dev testing
-        let email_lower = request.email.trim().to_lowercase();
-        if (email_lower == "demo"
-            || email_lower == "demo@demo.local"
-            || email_lower == "demo@journalpix.app")
-            && request.password == "demo"
-        {
-            let demo_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001")
-                .unwrap_or_else(|_| Uuid::new_v4());
-            let token = auth_service.create_token(demo_id, "demo@journalpix.app".to_string())?;
-            let response = UserResponse {
-                id: demo_id,
-                email: "demo@journalpix.app".to_string(),
-                name: "Demo User".to_string(),
-                created_at: Utc::now(),
-            };
-            return Ok(ApiResponse::success(LoginResponse {
-                user: response,
-                token,
-            }));
+        let user = self
+            .find_user_by_email(request.email.trim())
+            .await?;
+
+        let ok = verify_password(&request.password, &user.password_hash).map_err(db_err)?;
+        if !ok {
+            return Err(ApiError::Unauthorized("Invalid email or password".into()));
         }
-        
-        let user = self.find_user_by_email(&request.email).await?;
-        
-        verify_password(&request.password, &user.password_hash)?;
-        
-        let token = auth_service.create_token(user.id, user.email.clone())?;
-        
+
         let response = UserResponse {
             id: user.id,
             email: user.email,
             name: user.name,
             created_at: user.created_at,
         };
-        
-        let login_response = LoginResponse {
+        let token = auth_service.create_token(user.id, user.email.clone())?;
+        Ok(ApiResponse::success(LoginResponse {
             user: response,
             token,
-        };
-        
-        Ok(ApiResponse::success(login_response))
+        }))
     }
 
     pub async fn find_user_by_email(&self, email: &str) -> Result<User, ApiError> {
-        // For now, return a mock user
-        // In production, query the database
-        Ok(User {
-            id: Uuid::new_v4(),
-            email: email.to_string(),
-            name: "Test User".to_string(),
-            password_hash: hash_password("password123")?,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        })
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT id, email, name, password_hash, created_at, updated_at
+                     FROM users WHERE email = ?1",
+                    [email.trim().to_lowercase()],
+                    |r| {
+                        Ok(User {
+                            id: get_uuid(r, 0)?,
+                            email: r.get(1)?,
+                            name: r.get(2)?,
+                            password_hash: r.get(3)?,
+                            created_at: get_timestamp(r, 4)?,
+                            updated_at: get_timestamp(r, 5)?,
+                        })
+                    },
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    ApiError::Unauthorized("Invalid email or password".into())
+                }
+                other => db_err(other),
+            })
     }
 
     pub async fn get_user(&self, user_id: Uuid) -> Result<ApiResponse<UserResponse>, ApiError> {
-        let user = User {
-            id: user_id,
-            email: "test@example.com".to_string(),
-            name: "Test User".to_string(),
-            password_hash: "hashed_password".to_string(),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-        
-        let response = UserResponse {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            created_at: user.created_at,
-        };
-        
-        Ok(ApiResponse::success(response))
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT id, email, name, created_at FROM users WHERE id = ?1",
+                    [user_id.to_string()],
+                    |r| {
+                        Ok(UserResponse {
+                            id: get_uuid(r, 0)?,
+                            email: r.get(1)?,
+                            name: r.get(2)?,
+                            created_at: get_timestamp(r, 3)?,
+                        })
+                    },
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound("User not found".into()),
+                other => db_err(other),
+            })
+            .map(ApiResponse::success)
     }
 
     pub async fn update_user(
@@ -149,35 +164,43 @@ impl UserService {
         if let Some(name) = &request.name {
             validate_name(name)?;
         }
-        
         if let Some(email) = &request.email {
             validate_email(email)?;
         }
-        
         if let Some(password) = &request.password {
             validate_password(password)?;
         }
-        
-        let user = User {
-            id: user_id,
-            email: request.email.unwrap_or_else(|| "updated@example.com".to_string()),
-            name: request.name.unwrap_or_else(|| "Updated User".to_string()),
-            password_hash: request.password.map(|p| hash_password(&p).unwrap()).unwrap_or_else(|| "hashed_password".to_string()),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-        
-        let response = UserResponse {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            created_at: user.created_at,
-        };
-        
-        Ok(ApiResponse::success(response))
+
+        let now = Utc::now().to_rfc3339();
+        let id = user_id.to_string();
+
+        self.db_pool
+            .with_conn(|c| {
+                if let Some(name) = &request.name {
+                    c.execute("UPDATE users SET name = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![name, now, id])?;
+                }
+                if let Some(email) = &request.email {
+                    c.execute("UPDATE users SET email = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![email.trim().to_lowercase(), now, id])?;
+                }
+                if let Some(password) = &request.password {
+                    let hash = hash_password(password)?;
+                    c.execute("UPDATE users SET password_hash = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![hash, now, id])?;
+                }
+                Ok(())
+            })
+            .map_err(db_err)?;
+
+        self.get_user(user_id).await
     }
 
-    pub async fn delete_user(&self, _user_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
-        Ok(ApiResponse::message("User deleted successfully".to_string()))
+    pub async fn delete_user(&self, user_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+        let n = self
+            .db_pool
+            .with_conn(|c| c.execute("DELETE FROM users WHERE id = ?1", [user_id.to_string()]))
+            .map_err(db_err)?;
+        if n == 0 {
+            return Err(ApiError::NotFound("User not found".into()));
+        }
+        Ok(ApiResponse::message("User deleted successfully".into()))
     }
 }

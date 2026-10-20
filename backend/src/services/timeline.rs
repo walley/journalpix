@@ -1,135 +1,147 @@
+use crate::database::connection::{get_timestamp, get_uuid, DatabaseConnection, PHOTO_COLS};
+use crate::models::photo::PhotoResponse;
 use crate::models::place::PlaceWithPhotos;
-use crate::models::trip::{TimelineItem, TripTimeline};
 use crate::models::response::ApiResponse;
-use crate::models::trip::TripResponse;
+use crate::models::trip::{TimelineItem, TripTimeline};
+use crate::services::place::{map_photo_response, PlaceService};
+use crate::services::trip::TripService;
 use crate::utils::error::ApiError;
-use chrono::{NaiveDate, Utc};
 use uuid::Uuid;
 use std::sync::Arc;
-use crate::database::connection::DatabaseConnection;
 
 #[derive(Debug, Clone)]
 pub struct TimelineService {
     db_pool: Arc<DatabaseConnection>,
+    trip_service: TripService,
+    place_service: PlaceService,
+}
+
+fn db_err(e: rusqlite::Error) -> ApiError {
+    ApiError::DatabaseError(e.to_string())
 }
 
 impl TimelineService {
     pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
-        TimelineService { db_pool }
+        TimelineService {
+            trip_service: TripService::new(db_pool.clone()),
+            place_service: PlaceService::new(db_pool.clone()),
+            db_pool,
+        }
     }
 
     pub async fn get_timeline(&self, trip_id: Uuid) -> Result<ApiResponse<TripTimeline>, ApiError> {
-        let trip = TripResponse {
-            id: trip_id,
-            user_id: Uuid::new_v4(),
-            title: "Summer Vacation".to_string(),
-            description: Some("A wonderful summer trip".to_string()),
-            start_date: Some(NaiveDate::from_ymd_opt(2024, 6, 1).unwrap()),
-            end_date: Some(NaiveDate::from_ymd_opt(2024, 6, 15).unwrap()),
-            status: crate::models::trip::TripStatus::Completed,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            places_count: Some(3),
-            photos_count: Some(10),
-        };
+        let trip = self.trip_service.find_trip(trip_id).await?;
 
-        let timeline = vec![
-            TimelineItem {
-                date: NaiveDate::from_ymd_opt(2024, 6, 1).unwrap(),
-                places: vec![
-                    PlaceWithPhotos {
-                        id: Uuid::new_v4(),
-                        trip_id,
-                        name: "Eiffel Tower".to_string(),
-                        description: Some("Iconic landmark in Paris".to_string()),
-                        latitude: Some(48.8584),
-                        longitude: Some(2.2945),
-                        address: Some("Champ de Mars, 5 Av. Anatole France, 75007 Paris, France".to_string()),
-                        visit_date: Some(NaiveDate::from_ymd_opt(2024, 6, 1).unwrap().and_hms_opt(14, 30, 0).unwrap()),
-                        order_index: 1,
-                        created_at: Utc::now(),
-                        photos: vec![
-                            crate::models::photo::PhotoResponse {
-                                id: Uuid::new_v4(),
-                                place_id: Some(Uuid::new_v4()),
-                                user_id: Uuid::new_v4(),
-                                file_path: "/uploads/eiffel1.jpg".to_string(),
-                                thumbnail_path: "/thumbnails/eiffel1.jpg".to_string(),
-                                latitude: Some(48.8584),
-                                longitude: Some(2.2945),
-                                taken_at: Some(NaiveDate::from_ymd_opt(2024, 6, 1).unwrap().and_hms_opt(14, 30, 0).unwrap()),
-                                caption: Some("Eiffel Tower from below".to_string()),
-                                order_index: 1,
-                                created_at: Utc::now(),
-                                place: None,
+        let places = self
+            .db_pool
+            .with_conn(|c| {
+                let mut stmt = c.prepare(
+                    "SELECT id, trip_id, name, description, latitude, longitude, address, visit_date, order_index, created_at, updated_at
+                     FROM places WHERE trip_id = ?1 ORDER BY order_index, visit_date",
+                )?;
+                let rows = stmt
+                    .query_map([trip_id.to_string()], |r| {
+                        Ok((
+                            crate::models::place::Place {
+                                id: get_uuid(r, 0)?,
+                                trip_id: get_uuid(r, 1)?,
+                                name: r.get(2)?,
+                                description: r.get(3)?,
+                                latitude: r.get(4)?,
+                                longitude: r.get(5)?,
+                                address: r.get(6)?,
+                                visit_date: r.get(7)?,
+                                order_index: r.get(8)?,
+                                created_at: get_timestamp(r, 9)?,
+                                updated_at: get_timestamp(r, 10)?,
                             },
-                            crate::models::photo::PhotoResponse {
-                                id: Uuid::new_v4(),
-                                place_id: Some(Uuid::new_v4()),
-                                user_id: Uuid::new_v4(),
-                                file_path: "/uploads/eiffel2.jpg".to_string(),
-                                thumbnail_path: "/thumbnails/eiffel2.jpg".to_string(),
-                                latitude: Some(48.8584),
-                                longitude: Some(2.2945),
-                                taken_at: Some(NaiveDate::from_ymd_opt(2024, 6, 1).unwrap().and_hms_opt(15, 0, 0).unwrap()),
-                                caption: Some("Eiffel Tower at sunset".to_string()),
-                                order_index: 2,
-                                created_at: Utc::now(),
-                                place: None,
-                            },
-                        ],
-                    },
-                ],
-            },
-            TimelineItem {
-                date: NaiveDate::from_ymd_opt(2024, 6, 5).unwrap(),
-                places: vec![
-                    PlaceWithPhotos {
-                        id: Uuid::new_v4(),
-                        trip_id,
-                        name: "Louvre Museum".to_string(),
-                        description: Some("World's largest art museum".to_string()),
-                        latitude: Some(48.8606),
-                        longitude: Some(2.3376),
-                        address: Some("Rue de Rivoli, 75001 Paris, France".to_string()),
-                        visit_date: Some(NaiveDate::from_ymd_opt(2024, 6, 5).unwrap().and_hms_opt(10, 0, 0).unwrap()),
-                        order_index: 2,
-                        created_at: Utc::now(),
-                        photos: vec![
-                            crate::models::photo::PhotoResponse {
-                                id: Uuid::new_v4(),
-                                place_id: Some(Uuid::new_v4()),
-                                user_id: Uuid::new_v4(),
-                                file_path: "/uploads/louvre1.jpg".to_string(),
-                                thumbnail_path: "/thumbnails/louvre1.jpg".to_string(),
-                                latitude: Some(48.8606),
-                                longitude: Some(2.3376),
-                                taken_at: Some(NaiveDate::from_ymd_opt(2024, 6, 5).unwrap().and_hms_opt(10, 30, 0).unwrap()),
-                                caption: Some("Mona Lisa".to_string()),
-                                order_index: 1,
-                                created_at: Utc::now(),
-                                place: None,
-                            },
-                        ],
-                    },
-                ],
-            },
-        ];
+                        ))
+                    })?
+                    .collect::<rusqlite::Result<Vec<_>>>()?;
+                Ok(rows.into_iter().map(|(p,)| p))
+            })
+            .map_err(db_err)?;
 
-        let result = TripTimeline {
-            trip,
+        let mut timeline: Vec<TimelineItem> = Vec::new();
+
+        for place in places {
+            let photos: Vec<PhotoResponse> = self
+                .db_pool
+                .with_conn(|c| {
+                    let mut stmt = c.prepare(&format!(
+                        "SELECT {PHOTO_COLS} FROM photos WHERE place_id = ?1 ORDER BY order_index"
+                    ))?;
+                    let rows = stmt
+                        .query_map([place.id.to_string()], map_photo_response)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    Ok(rows)
+                })
+                .map_err(db_err)?;
+
+            let date = place
+                .visit_date
+                .map(|v| v.date())
+                .unwrap_or(place.created_at.date_naive());
+
+            let item = PlaceWithPhotos {
+                id: place.id,
+                trip_id: place.trip_id,
+                name: place.name,
+                description: place.description,
+                latitude: place.latitude,
+                longitude: place.longitude,
+                address: place.address,
+                visit_date: place.visit_date,
+                order_index: place.order_index,
+                created_at: place.created_at,
+                photos,
+            };
+
+            if let Some(existing) = timeline.iter_mut().find(|i| i.date == date) {
+                existing.places.push(item);
+            } else {
+                timeline.push(TimelineItem {
+                    date,
+                    places: vec![item],
+                });
+            }
+        }
+
+        let trip_response = self
+            .trip_service
+            .get_trip(trip_id)
+            .await?
+            .data
+            .ok_or_else(|| ApiError::InternalServerError("missing trip".into()))?;
+
+        Ok(ApiResponse::success(TripTimeline {
+            trip: trip_response,
             timeline,
-        };
-
-        Ok(ApiResponse::success(result))
+        }))
     }
 
     pub async fn reorder_timeline(
         &self,
         trip_id: Uuid,
-        _new_order: Vec<Uuid>,
+        new_order: Vec<Uuid>,
     ) -> Result<ApiResponse<TripTimeline>, ApiError> {
-        let timeline = self.get_timeline(trip_id).await?;
-        Ok(timeline)
+        // Verify the trip exists
+        self.trip_service.find_trip(trip_id).await?;
+
+        let now = chrono::Utc::now().to_rfc3339();
+        self.db_pool
+            .with_conn(|c| {
+                for (idx, place_id) in new_order.iter().enumerate() {
+                    c.execute(
+                        "UPDATE places SET order_index = ?1, updated_at = ?2
+                         WHERE id = ?3 AND trip_id = ?4",
+                        rusqlite::params![idx as i32, now, place_id.to_string(), trip_id.to_string()],
+                    )?;
+                }
+                Ok(())
+            })
+            .map_err(db_err)?;
+
+        self.get_timeline(trip_id).await
     }
 }

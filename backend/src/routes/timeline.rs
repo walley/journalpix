@@ -1,4 +1,4 @@
-use actix_web::{get, web, HttpResponse, Responder, ResponseError};
+use actix_web::{web, HttpResponse, Responder, ResponseError};
 use crate::services::timeline::TimelineService;
 use uuid::Uuid;
 use std::sync::Arc;
@@ -8,6 +8,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/trips/{trip_id}/timeline")
             .route("", web::get().to(get_timeline))
+            .route("/reorder", web::put().to(reorder_timeline))
     );
 }
 
@@ -16,8 +17,21 @@ pub async fn get_timeline(
     db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
     let timeline_service = TimelineService::new(db_pool.get_ref().clone());
-    
+
     match timeline_service.get_timeline(*trip_id).await {
+        Ok(response) => HttpResponse::Ok().json(response),
+        Err(e) => e.error_response(),
+    }
+}
+
+pub async fn reorder_timeline(
+    trip_id: web::Path<Uuid>,
+    request: web::Json<Vec<Uuid>>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
+) -> impl Responder {
+    let timeline_service = TimelineService::new(db_pool.get_ref().clone());
+
+    match timeline_service.reorder_timeline(*trip_id, request.into_inner()).await {
         Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => e.error_response(),
     }

@@ -13,23 +13,26 @@ mod utils;
 
 use config::Config;
 use database::connection::create_db_pool;
+use utils::auth::AuthService;
+use utils::file::FileService;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-    
     env_logger::init();
-    
+
     let config = Config::from_env();
-    
+
     // Create database connection pool
     let db_pool = match create_db_pool(&config).await {
         Ok(pool) => {
-            log::info!("Connected to {} database", 
+            log::info!(
+                "Connected to {} database",
                 match config.database_type {
                     config::DatabaseType::Postgres => "PostgreSQL",
                     config::DatabaseType::Sqlite => "SQLite",
-                });
+                }
+            );
             Arc::new(pool)
         }
         Err(e) => {
@@ -37,27 +40,43 @@ async fn main() -> std::io::Result<()> {
             panic!("Database connection failed: {}", e);
         }
     };
-    
+
+    // File storage (uploads/thumbnails)
+    let file_service = Arc::new(
+        FileService::new(&config.upload_dir, &config.thumbnail_dir)
+            .expect("Failed to create upload/thumbnail directories"),
+    );
+
+    let auth_service = web::Data::new(AuthService::new(
+        config.jwt_secret.clone(),
+        config.jwt_expiration_days,
+    ));
+
     println!("Starting JournalPix server on port {}", config.server_port);
-    println!("Using {} database", 
+    println!(
+        "Using {} database ({})",
         match config.database_type {
             config::DatabaseType::Postgres => "PostgreSQL",
             config::DatabaseType::Sqlite => "SQLite",
-        });
-    
+        },
+        config.database_url
+    );
+
     let config_clone = config.clone();
     let db_pool_clone = db_pool.clone();
-    
+    let file_service_clone = file_service.clone();
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_method()
             .allow_any_header()
             .max_age(3600);
-        
+
         let config = config_clone.clone();
         let db_pool = db_pool_clone.clone();
-        
+        let file_service = file_service_clone.clone();
+
         App::new()
             .wrap(cors)
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
@@ -66,6 +85,8 @@ async fn main() -> std::io::Result<()> {
             }))
             .app_data(web::PayloadConfig::new(1024 * 1024 * 50)) // 50MB max upload
             .app_data(web::Data::new(db_pool))
+            .app_data(web::Data::new(file_service))
+            .app_data(auth_service.clone())
             .app_data(web::Data::new(config))
             .service(routes::health::health_check)
             .service(
@@ -74,7 +95,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::trips::configure)
                     .configure(routes::places::configure)
                     .configure(routes::photos::configure)
-                    .configure(routes::timeline::configure)
+                    .configure(routes::timeline::configure),
             )
     })
     .bind(format!("0.0.0.0:{}", config.server_port))?
