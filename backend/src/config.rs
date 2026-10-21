@@ -17,7 +17,7 @@
 //   type = sqlite          # sqlite | postgres (postgres not implemented yet)
 //   url  = sqlite:journalpix.db
 //   [auth]
-//   jwt_secret = change-me
+//   jwt_secret = change-me          # signing key for login tokens — see below
 //   jwt_expiration_days = 30
 //   [storage]
 //   upload_dir = ./uploads
@@ -55,6 +55,12 @@ impl DatabaseType {
 pub struct Config {
     pub database_url: String,
     pub database_type: DatabaseType,
+    /// jwt_secret: secret key used to SIGN login tokens (JWTs). It lets the
+    /// server verify "Authorization: Bearer <token>" without storing
+    /// sessions. Anyone who knows it can forge a token for ANY user, so the
+    /// built-in default must be replaced in production (see
+    /// journalpix.conf.example). Changing it just invalidates existing
+    /// tokens (users log in again); passwords use bcrypt and are unaffected.
     pub jwt_secret: String,
     pub jwt_expiration_days: i64,
     pub upload_dir: String,
@@ -202,6 +208,9 @@ impl Config {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
+    }
+    pub fn uses_default_jwt_secret(&self) -> bool {
+        self.jwt_secret == Self::default_config().jwt_secret
     }
 }
 

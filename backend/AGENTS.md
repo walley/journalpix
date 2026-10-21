@@ -23,6 +23,14 @@ SQLite db in the cwd. Sections: `[server] port`, `[database] type|url`,
 `[auth] jwt_secret|jwt_expiration_days`, `[storage] upload_dir|thumbnail_dir`,
 `[cors] origins`. Parser has unit tests in `src/config.rs`.
 
+**`[auth] jwt_secret`** is the signing key for login tokens (JWTs): it lets
+the server verify `Authorization: Bearer <token>` without storing sessions.
+Anyone who knows the secret can forge a token for ANY user, so the built-in
+default triggers a startup warning until it's replaced (generate with
+`head -c 32 /dev/urandom | base64`). Changing the secret only invalidates
+existing tokens (users log in again); passwords are bcrypt-hashed and
+unaffected. Full explanation lives in `journalpix.conf.example`.
+
 ### Install (systemd-style layout)
 
 ```bash

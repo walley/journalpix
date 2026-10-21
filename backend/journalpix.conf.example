@@ -16,9 +16,27 @@ type = sqlite
 url = sqlite:journalpix.db
 
 [auth]
-# CHANGE THIS in production — secret used to sign JWTs
+# JWT_SECRET — the secret key used to SIGN login tokens (JWTs).
+#
+# How it works: when a user logs in, the server creates a token containing
+# {user_id, email, expiry} and signs it with this secret. Every later request
+# that sends "Authorization: Bearer <token>" is verified by re-signing the
+# token with the SAME secret and comparing — if it matches, the user is
+# authenticated without a password.
+#
+# Why you must change it: anyone who knows the secret can FORGE a valid token
+# for ANY user (full account takeover) without knowing any password. The
+# built-in default is public knowledge (it's in the source code), so leaving
+# it unchanged means anyone can impersonate any user.
+#
+# How to generate a good one, e.g.:
+#   head -c 32 /dev/urandom | base64
+#
+# Consequences of changing it later: all existing login tokens immediately
+# stop working (users simply have to log in again); nothing else is affected.
+# Passwords are NOT affected — they are hashed with bcrypt, not with this.
 jwt_secret = default_secret_change_in_production
-# JWT lifetime in days
+# JWT lifetime in days (how long a login token stays valid)
 jwt_expiration_days = 30
 
 [storage]

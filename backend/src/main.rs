@@ -62,6 +62,19 @@ async fn main() -> std::io::Result<()> {
         config.jwt_expiration_days,
     ));
 
+    // The JWT secret signs login tokens; with the built-in default anyone
+    // can forge tokens for any user. Make sure the operator notices.
+    if config.uses_default_jwt_secret() {
+        log::warn!(
+            "WARNING: using the built-in default JWT secret — anyone can forge \
+             login tokens for any user! Set a real one with, e.g.: \
+             `head -c 32 /dev/urandom | base64` and configure [auth] jwt_secret \
+             in the config file, then restart. Existing tokens are invalidated \
+             when the secret changes (users just log in again)."
+        );
+        println!("WARNING: default JWT secret in use — set [auth] jwt_secret in the config file!");
+    }
+
     println!("Starting JournalPix server on port {}", config.server_port);
     println!(
         "Using {} database ({})",
