@@ -60,8 +60,14 @@ impl DatabaseConnection {
     }
 
     fn run_migrations(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let schema = std::fs::read_to_string("migrations/0002_sqlite_schema.sql")
-            .map_err(|e| format!("Failed to read SQLite schema: {}", e))?;
+        // The schema is embedded in the binary so the installed executable
+        // is self-contained; the file is preferred in dev if it exists.
+        const EMBEDDED_SCHEMA: &str =
+            include_str!("../../migrations/0002_sqlite_schema.sql");
+        let schema = match std::fs::read_to_string("migrations/0002_sqlite_schema.sql") {
+            Ok(s) => s,
+            Err(_) => EMBEDDED_SCHEMA.to_string(),
+        };
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(&schema)?;
         Ok(())

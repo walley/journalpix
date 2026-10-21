@@ -21,17 +21,27 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
 
-    let config = Config::from_env();
+    // --config <path> (optional). Config: defaults <- INI file <- env vars.
+    let args: Vec<String> = std::env::args().collect();
+    let cli_config = args
+        .iter()
+        .position(|a| a == "--config")
+        .and_then(|i| args.get(i + 1))
+        .map(|s| s.as_str());
+
+    let config = Config::load(cli_config);
+    if let Some(p) = &config.config_path {
+        println!("Using config file: {}", p.display());
+    } else {
+        println!("No config file found, using built-in defaults");
+    }
 
     // Create database connection pool
     let db_pool = match create_db_pool(&config).await {
         Ok(pool) => {
             log::info!(
                 "Connected to {} database",
-                match config.database_type {
-                    config::DatabaseType::Postgres => "PostgreSQL",
-                    config::DatabaseType::Sqlite => "SQLite",
-                }
+                config.database_type.name()
             );
             Arc::new(pool)
         }
@@ -55,10 +65,7 @@ async fn main() -> std::io::Result<()> {
     println!("Starting JournalPix server on port {}", config.server_port);
     println!(
         "Using {} database ({})",
-        match config.database_type {
-            config::DatabaseType::Postgres => "PostgreSQL",
-            config::DatabaseType::Sqlite => "SQLite",
-        },
+        config.database_type.name(),
         config.database_url
     );
 

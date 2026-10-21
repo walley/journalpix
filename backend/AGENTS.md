@@ -3,6 +3,51 @@
 Travelers' logbook & journal backend. Rust / actix-web 4, JWT auth, photo
 uploads with EXIF (stub), **SQLite** as the primary database.
 
+## Running
+
+```bash
+make run                        # dev: cargo run (port 8080)
+cargo build
+./target/debug/journalpix-backend          # built-in defaults
+./target/debug/journalpix-backend --config my.conf
+```
+
+### Configuration
+
+INI style (see `journalpix.conf.example`), priority:
+**built-in defaults < config file < environment variables** (env kept for
+backward compat). Config lookup order: `--config <path>` arg, `$CONFIG_PATH`,
+`./journalpix.conf`, `/usr/local/etc/journalpix.conf`, `/etc/journalpix.conf`.
+All keys optional; with no file at all the server runs on port 8080 with a
+SQLite db in the cwd. Sections: `[server] port`, `[database] type|url`,
+`[auth] jwt_secret|jwt_expiration_days`, `[storage] upload_dir|thumbnail_dir`,
+`[cors] origins`. Parser has unit tests in `src/config.rs`.
+
+### Install (systemd-style layout)
+
+```bash
+make install                    # PREFIX=/usr/local default, run as root
+make install PREFIX=/opt/jpx    # custom prefix
+make uninstall                  # keeps a modified config
+```
+
+Installs `PREFIX/bin/journalpix-backend` (release build) and
+`PREFIX/etc/journalpix.conf` (from the example, never clobbering an existing
+one) + `.conf.example`. The installed binary is self-contained (SQLite schema
+is embedded via `include_str!`) and must run as a **non-root user** from a
+writable working directory (db/uploads/thumbnails default to relative paths
+there).<arg_key>old_string</arg_key><arg_value>## Running
+
+```bash
+cargo build
+DATABASE_TYPE=sqlite ./target/debug/journalpix-backend   # port 8080
+# or: cargo run  (reads .env via dotenv)
+```
+
+DB defaults to `sqlite:journalpix.db`. Uploads in `./uploads`,
+thumbnails in `./thumbnails` (both auto-created; served at
+`GET /uploads/<file>` and `GET /thumbnails/<file>`).
+
 ## Repo layout
 
 - `/home/walley/git/journalpix/backend/` — this backend (the only part covered here).
@@ -37,13 +82,9 @@ DATABASE_TYPE=sqlite ./target/debug/journalpix-backend   # port 8080
 # or: cargo run  (reads .env via dotenv)
 ```
 
-DB defaults to `sqlite:journalpix.db`. Uploads in `./uploads`,
-thumbnails in `./thumbnails` (both auto-created; served at
-`GET /uploads/<file>` and `GET /thumbnails/<file>`).
-
-Env vars: see `.env.example` (`DATABASE_URL`, `DATABASE_TYPE`,
-`JWT_SECRET`, `JWT_EXPIRATION_DAYS`, `UPLOAD_DIR`, `THUMBNAIL_DIR`,
-`SERVER_PORT`, `CORS_ORIGINS`).
+DB defaults to `sqlite:journalpix.db` (relative to the process working
+directory). Uploads in `./uploads`, thumbnails in `./thumbnails` (both
+auto-created; served at `GET /uploads/<file>` and `GET /thumbnails/<file>`).
 
 ## API (all under `/api`, JSON)
 

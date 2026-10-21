@@ -1,0 +1,32 @@
+# JournalPix backend configuration (INI style)
+#
+# Install location: /usr/local/etc/journalpix.conf (or $PREFIX/etc).
+# Every key is optional — built-in defaults are used for anything missing.
+# Environment variables (DATABASE_URL, SERVER_PORT, ...) still override this
+# file, for backward compatibility.
+
+[server]
+# HTTP port to listen on
+port = 8080
+
+[database]
+# sqlite (fully implemented) | postgres (schema exists, backend not implemented)
+type = sqlite
+# sqlite accepts "sqlite:path", a bare path, or empty for in-memory
+url = sqlite:journalpix.db
+
+[auth]
+# CHANGE THIS in production — secret used to sign JWTs
+jwt_secret = default_secret_change_in_production
+# JWT lifetime in days
+jwt_expiration_days = 30
+
+[storage]
+# Where uploaded photos and thumbnails are stored (created if missing).
+# Relative paths are resolved against the working directory of the process.
+upload_dir = ./uploads
+thumbnail_dir = ./thumbnails
+
+[cors]
+# Comma-separated list of allowed origins
+origins = http://localhost:3000,http://localhost:8080
