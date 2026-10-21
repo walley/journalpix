@@ -24,18 +24,22 @@ url = sqlite:journalpix.db
 # token with the SAME secret and comparing — if it matches, the user is
 # authenticated without a password.
 #
-# Why you must change it: anyone who knows the secret can FORGE a valid token
-# for ANY user (full account takeover) without knowing any password. The
-# built-in default is public knowledge (it's in the source code), so leaving
-# it unchanged means anyone can impersonate any user.
+# Why it must be secret: anyone who knows the secret can FORGE a valid token
+# for ANY user (full account takeover) without knowing any password.
 #
-# How to generate a good one, e.g.:
+# Leave it EMPTY (or omit it) and the server generates a random secret at
+# every startup. That is the SAFE default — but it means logins do not
+# survive a restart: users simply log in again. NOTHING is lost — accounts,
+# trips, places and photos live in the database; passwords are bcrypt-hashed
+# and are NOT affected by this key in any way.
+#
+# Set a FIXED value here if you want logins to survive restarts. How to
+# generate a good one, e.g.:
 #   head -c 32 /dev/urandom | base64
 #
-# Consequences of changing it later: all existing login tokens immediately
-# stop working (users simply have to log in again); nothing else is affected.
-# Passwords are NOT affected — they are hashed with bcrypt, not with this.
-jwt_secret = default_secret_change_in_production
+# Changing the secret later just invalidates existing tokens (users log in
+# again on next use); nothing else is affected.
+jwt_secret =
 # JWT lifetime in days (how long a login token stays valid)
 jwt_expiration_days = 30
 

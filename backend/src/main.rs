@@ -16,6 +16,17 @@ use database::connection::create_db_pool;
 use utils::auth::AuthService;
 use utils::file::FileService;
 
+/// Random secret (2× UUIDv4 = 64 hex chars, from the OS RNG) used when
+/// none is configured. It is never written anywhere — tokens signed with
+/// it simply stop validating on the next restart.
+fn generate_ephemeral_jwt_secret() -> String {
+    format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    )
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -57,23 +68,24 @@ async fn main() -> std::io::Result<()> {
             .expect("Failed to create upload/thumbnail directories"),
     );
 
+    // JWT secret: signs login tokens. If none is configured we generate a
+    // random ephemeral one at startup — safe (never a known default), but
+    // logins reset on every restart. Configure [auth] jwt_secret for
+    // persistent sessions. Rotating the secret never loses accounts or
+    // data; users just log in again.
+    let mut config = config;
+    if config.jwt_secret_is_ephemeral() {
+        config.jwt_secret = generate_ephemeral_jwt_secret();
+        log::info!("No [auth] jwt_secret configured: generated a random ephemeral JWT secret.");
+        println!("NOTE: jwt_secret not configured — using a random secret for this run.");
+        println!("      Logins will NOT survive a restart; users just log in again.");
+        println!("      Set a fixed [auth] jwt_secret in the config file for persistent sessions.");
+    }
+
     let auth_service = web::Data::new(AuthService::new(
         config.jwt_secret.clone(),
         config.jwt_expiration_days,
     ));
-
-    // The JWT secret signs login tokens; with the built-in default anyone
-    // can forge tokens for any user. Make sure the operator notices.
-    if config.uses_default_jwt_secret() {
-        log::warn!(
-            "WARNING: using the built-in default JWT secret — anyone can forge \
-             login tokens for any user! Set a real one with, e.g.: \
-             `head -c 32 /dev/urandom | base64` and configure [auth] jwt_secret \
-             in the config file, then restart. Existing tokens are invalidated \
-             when the secret changes (users just log in again)."
-        );
-        println!("WARNING: default JWT secret in use — set [auth] jwt_secret in the config file!");
-    }
 
     println!("Starting JournalPix server on port {}", config.server_port);
     println!(

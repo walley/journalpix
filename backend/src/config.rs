@@ -57,10 +57,13 @@ pub struct Config {
     pub database_type: DatabaseType,
     /// jwt_secret: secret key used to SIGN login tokens (JWTs). It lets the
     /// server verify "Authorization: Bearer <token>" without storing
-    /// sessions. Anyone who knows it can forge a token for ANY user, so the
-    /// built-in default must be replaced in production (see
-    /// journalpix.conf.example). Changing it just invalidates existing
-    /// tokens (users log in again); passwords use bcrypt and are unaffected.
+    /// sessions. Anyone who knows it can forge a token for ANY user, so
+    /// never ship a known default: when this field is EMPTY (unset in the
+    /// config), main.rs generates a random ephemeral secret at startup.
+    /// Consequence: logins don't survive restarts (users re-login) — set a
+    /// fixed value in the config for persistent sessions. Rotating the
+    /// secret only invalidates tokens; passwords use bcrypt and are
+    /// unaffected.
     pub jwt_secret: String,
     pub jwt_expiration_days: i64,
     pub upload_dir: String,
@@ -161,7 +164,7 @@ impl Config {
         Config {
             database_type: DatabaseType::Sqlite,
             database_url: "sqlite:journalpix.db".to_string(),
-            jwt_secret: "default_secret_change_in_production".to_string(),
+            jwt_secret: String::new(), // empty = generate random ephemeral at startup
             jwt_expiration_days: 30,
             upload_dir: "./uploads".to_string(),
             thumbnail_dir: "./thumbnails".to_string(),
@@ -209,8 +212,10 @@ impl Config {
                 .collect();
         }
     }
-    pub fn uses_default_jwt_secret(&self) -> bool {
-        self.jwt_secret == Self::default_config().jwt_secret
+    /// True when no secret is configured — main.rs must generate a random
+    /// ephemeral one (logins won't survive a restart).
+    pub fn jwt_secret_is_ephemeral(&self) -> bool {
+        self.jwt_secret.trim().is_empty()
     }
 }
 

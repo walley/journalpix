@@ -25,11 +25,13 @@ SQLite db in the cwd. Sections: `[server] port`, `[database] type|url`,
 
 **`[auth] jwt_secret`** is the signing key for login tokens (JWTs): it lets
 the server verify `Authorization: Bearer <token>` without storing sessions.
-Anyone who knows the secret can forge a token for ANY user, so the built-in
-default triggers a startup warning until it's replaced (generate with
-`head -c 32 /dev/urandom | base64`). Changing the secret only invalidates
-existing tokens (users log in again); passwords are bcrypt-hashed and
-unaffected. Full explanation lives in `journalpix.conf.example`.
+Anyone who knows the secret can forge a token for ANY user, so there is NO
+built-in default: when unset, main.rs generates a **random ephemeral secret
+at every startup** (safe, but logins don't survive restarts — users just
+log in again). Set a fixed value for persistent sessions (generate with
+`head -c 32 /dev/urandom | base64`). Rotating the secret never loses
+accounts or data (passwords are bcrypt-hashed; tokens just become invalid).
+Full explanation lives in `journalpix.conf.example`.
 
 ### Install (systemd-style layout)
 
