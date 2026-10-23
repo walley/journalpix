@@ -1,2 +1,2 @@
 # journalpix
-trawel diary with pictures and places
+travel diary with pictures and places
