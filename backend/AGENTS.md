@@ -16,6 +16,10 @@ The HTTP listener is hard-coded to `127.0.0.1` (loopback) in `src/main.rs`.
 There is no host/bind address setting: the backend cannot be exposed on other
 interfaces. Use a reverse proxy on the same host if external access is needed.
 
+Logging goes to syslog facility **local3**: request/access logs at info
+(`local3.info`), errors and 5xx requests at err (`local3.err`). If syslog is
+unavailable the logger falls back to stderr.
+
 ### Configuration
 
 INI style (see `journalpix.conf.example`), priority:

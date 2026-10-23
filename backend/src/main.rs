@@ -1,7 +1,10 @@
 use actix_cors::Cors;
+use actix_web::dev::Service as _;
+use actix_web::http::header;
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use std::sync::Arc;
+use std::time::Instant;
 
 mod config;
 mod database;
@@ -32,10 +35,23 @@ fn generate_ephemeral_jwt_secret() -> String {
     )
 }
 
+/// Send logs to syslog facility local3. `log` levels map to syslog
+/// severities, so info/access logs go to local3.info and errors to
+/// local3.err. Fall back to stderr if syslog is unavailable (e.g. in dev).
+fn init_logging() {
+    if let Err(e) = syslog::init_unix(syslog::Facility::LOG_LOCAL3, log::LevelFilter::Info) {
+        eprintln!("Could not initialize syslog logging: {e}; falling back to stderr");
+        let _ = env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("info"),
+        )
+        .try_init();
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-    env_logger::init();
+    init_logging();
 
     // --config <path> (optional). Config: defaults <- INI file <- env vars.
     let args: Vec<String> = std::env::args().collect();
@@ -119,6 +135,75 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
+            .wrap_fn(|req, srv| {
+                let start = Instant::now();
+                let method = req.method().clone();
+                let path = req.path().to_owned();
+                let query = req.query_string().to_owned();
+                let remote = req
+                    .peer_addr()
+                    .map(|addr| addr.ip().to_string())
+                    .unwrap_or_else(|| "-".to_owned());
+                let user_agent = req
+                    .headers()
+                    .get(header::USER_AGENT)
+                    .and_then(|value| value.to_str().ok())
+                    .unwrap_or("-")
+                    .to_owned();
+
+                let fut = srv.call(req);
+                async move {
+                    let request_target = if query.is_empty() {
+                        path
+                    } else {
+                        format!("{}?{}", path, query)
+                    };
+                    let duration_ms = start.elapsed().as_millis();
+
+                    match fut.await {
+                        Ok(res) => {
+                            let status = res.status();
+                            if status.is_server_error() {
+                                log::error!(
+                                    target: "journalpix::access",
+                                    "{} {} {} {} {}ms \"{}\"",
+                                    remote,
+                                    method,
+                                    request_target,
+                                    status.as_u16(),
+                                    duration_ms,
+                                    user_agent
+                                );
+                            } else {
+                                log::info!(
+                                    target: "journalpix::access",
+                                    "{} {} {} {} {}ms \"{}\"",
+                                    remote,
+                                    method,
+                                    request_target,
+                                    status.as_u16(),
+                                    duration_ms,
+                                    user_agent
+                                );
+                            }
+                            Ok(res)
+                        }
+                        Err(err) => {
+                            log::error!(
+                                target: "journalpix::access",
+                                "{} {} {} 500 {}ms \"{}\" error={}",
+                                remote,
+                                method,
+                                request_target,
+                                duration_ms,
+                                user_agent,
+                                err
+                            );
+                            Err(err)
+                        }
+                    }
+                }
+            })
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
                 log::error!("JSON error: {:?}", err);
                 actix_web::error::ErrorBadRequest("Invalid JSON")
