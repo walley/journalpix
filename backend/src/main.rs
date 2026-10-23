@@ -16,6 +16,11 @@ use database::connection::create_db_pool;
 use utils::auth::AuthService;
 use utils::file::FileService;
 
+/// The HTTP listener is intentionally hard-coded to loopback. The service
+/// must never be reachable from other interfaces; use a reverse proxy on the
+/// same host if external access is ever needed.
+const BIND_ADDR: &str = "127.0.0.1";
+
 /// Random secret (2× UUIDv4 = 64 hex chars, from the OS RNG) used when
 /// none is configured. It is never written anywhere — tokens signed with
 /// it simply stop validating on the next restart.
@@ -87,7 +92,10 @@ async fn main() -> std::io::Result<()> {
         config.jwt_expiration_days,
     ));
 
-    println!("Starting JournalPix server on port {}", config.server_port);
+    println!(
+        "Starting JournalPix server on http://{}:{}",
+        BIND_ADDR, config.server_port
+    );
     println!(
         "Using {} database ({})",
         config.database_type.name(),
@@ -135,7 +143,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::trips::configure),
             )
     })
-    .bind(format!("0.0.0.0:{}", config.server_port))?
+    .bind(format!("{}:{}", BIND_ADDR, config.server_port))?
     .run()
     .await
 }

@@ -6,7 +6,8 @@
 # file, for backward compatibility.
 
 [server]
-# HTTP port to listen on
+# HTTP port to listen on. The bind address is intentionally fixed to
+# 127.0.0.1 (loopback) in the code; only the port is configurable.
 port = 8080
 
 [database]

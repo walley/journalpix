@@ -12,6 +12,10 @@ cargo build
 ./target/debug/journalpix-backend --config my.conf
 ```
 
+The HTTP listener is hard-coded to `127.0.0.1` (loopback) in `src/main.rs`.
+There is no host/bind address setting: the backend cannot be exposed on other
+interfaces. Use a reverse proxy on the same host if external access is needed.
+
 ### Configuration
 
 INI style (see `journalpix.conf.example`), priority:

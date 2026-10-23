@@ -12,7 +12,7 @@
 // INI format (sections + `key = value`, `#` or `;` comments):
 //
 //   [server]
-//   port = 8080
+//   port = 8080            # bind address is fixed to 127.0.0.1 (loopback)
 //   [database]
 //   type = sqlite          # sqlite | postgres (postgres not implemented yet)
 //   url  = sqlite:journalpix.db
