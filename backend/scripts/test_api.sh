@@ -4,12 +4,12 @@
 # Usage:
 #   scripts/test_api.sh                 # run everything
 #   scripts/test_api.sh <section>       # health | auth | trips | places | photos | timeline | crud
-#   BASE_URL=http://host:8080 scripts/test_api.sh
+#   BASE_URL=http://host:18888 scripts/test_api.sh
 #
 # Requires: curl, perl (core JSON::PP — no python/jq needed)
 set -u
 
-BASE_URL="${BASE_URL:-http://localhost:8080}"
+BASE_URL="${BASE_URL:-http://localhost:18888}"
 SECTION="${1:-all}"
 
 PASS=0; FAIL=0
