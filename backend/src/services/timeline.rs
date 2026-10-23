@@ -31,7 +31,7 @@ impl TimelineService {
     }
 
     pub async fn get_timeline(&self, trip_id: Uuid) -> Result<ApiResponse<TripTimeline>, ApiError> {
-        let trip = self.trip_service.find_trip(trip_id).await?;
+        let _trip = self.trip_service.find_trip(trip_id).await?;
 
         let places = self
             .db_pool

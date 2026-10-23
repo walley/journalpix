@@ -1,5 +1,4 @@
 use crate::database::connection::{
-    get_opt_f64, get_opt_naive_datetime, get_opt_string, get_opt_uuid, get_timestamp, get_uuid,
     DatabaseConnection, PHOTO_COLS,
 };
 use crate::models::photo::{Photo, PhotoMetadata, PhotoResponse, UpdatePhotoRequest};

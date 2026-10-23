@@ -187,7 +187,7 @@ impl UserService {
                 if let Some(email) = &request.email {
                     c.execute("UPDATE users SET email = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![email.trim().to_lowercase(), now, id])?;
                 }
-                if let Some(password) = &request.password {
+                if let Some(_password) = &request.password {
                     let hash = password_hash.clone().unwrap_or_default();
                     c.execute("UPDATE users SET password_hash = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![hash, now, id])?;
                 }
