@@ -192,24 +192,3 @@ scripts/test_api.sh auth|trips|places|photos|timeline|crud
 BASE_URL=http://host:8080 scripts/test_api.sh
 ```
 
-## Terminal / TUI navigation
-
-When driving interactive full-screen TUI apps (midnight commander, vim,
-htop, etc.) through the terminal tool, always send arrow keys using the
-**application cursor key sequences**, not the ANSI sequences.
-
-- Up:    `ESC O A`
-- Down:  `ESC O B`
-- Right: `ESC O C`
-- Left:  `ESC O D`
-
-Use `ESC [ A` / `ESC [ B` / `ESC [ C` / `ESC [ D` only if the application
-is known NOT to use application cursor key mode.
-
-TUI programs enable application cursor key mode (`\x1b[?1h`), which causes
-the terminal to emit `ESC O <letter>` for arrow keys. Sending the wrong
-sequence (`ESC [ <letter>`) is silently ignored, so the cursor appears not
-to move.
-
-To type these via the terminal tool, send the literal bytes, e.g. Down is
-`\u001bOB`, Enter is `\r`, Tab is `\t`, Escape is `\u001b`.
