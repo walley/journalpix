@@ -26,13 +26,13 @@
 #   scripts/jpx.sh download <photo_id> [dest_dir]
 #   scripts/jpx.sh timeline <trip_id>
 #
-# Env: BASE_URL (default http://localhost:8080)
+# Env: BASE_URL (default http://localhost:18888)
 # Token is cached in $TOKEN_FILE (default /tmp/jpx_token) after login/register.
 #
 # JSON parsing uses only core perl (JSON::PP) — no python, no jq needed.
 set -u
 
-BASE_URL="${BASE_URL:-http://localhost:8080}"
+BASE_URL="${BASE_URL:-http://localhost:18888}"
 TOKEN_FILE="${TOKEN_FILE:-/tmp/jpx_token}"
 TOKEN="${JPX_TOKEN:-$(cat "$TOKEN_FILE" 2>/dev/null || true)}"
 
