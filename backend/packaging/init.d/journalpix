@@ -1,0 +1,139 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          journalpix
+# Required-Start:    $local_fs $network $remote_fs $syslog
+# Required-Stop:     $local_fs $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: JournalPix backend
+# Description:       JournalPix travel journal backend (actix-web + SQLite)
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+NAME=journalpix
+DESC="JournalPix backend"
+DAEMON=/usr/local/bin/journalpix-backend
+DAEMON_ARGS="--config /usr/local/etc/journalpix.conf"
+USER=journalpix
+GROUP=journalpix
+WORKDIR=/var/journalpix
+RUNDIR=/run/journalpix
+PIDFILE="$RUNDIR/journalpix.pid"
+LOGFILE=/var/log/journalpix.log
+
+# Allow overrides without editing this script.
+[ -r "/etc/default/$NAME" ] && . "/etc/default/$NAME"
+
+[ -x "$DAEMON" ] || {
+    echo "$DAEMON is not installed or not executable" >&2
+    exit 5
+}
+
+. /lib/lsb/init-functions
+
+prepare() {
+    id "$USER" >/dev/null 2>&1 || {
+        echo "User '$USER' does not exist" >&2
+        return 2
+    }
+    getent group "$GROUP" >/dev/null 2>&1 || {
+        echo "Group '$GROUP' does not exist" >&2
+        return 2
+    }
+
+    mkdir -p "$WORKDIR" "$RUNDIR" || return 2
+    chown "$USER:$GROUP" "$WORKDIR" "$RUNDIR" || return 2
+    chmod 0755 "$WORKDIR" "$RUNDIR" || return 2
+
+    touch "$LOGFILE" || return 2
+    chown "$USER:$GROUP" "$LOGFILE" 2>/dev/null || true
+    chmod 0640 "$LOGFILE" 2>/dev/null || true
+    return 0
+}
+
+do_start() {
+    # Already running?
+    start-stop-daemon --start --quiet --pidfile "$PIDFILE" \
+        --exec "$DAEMON" --test >/dev/null || return 1
+
+    prepare || return 2
+
+    start-stop-daemon --start --quiet --background --make-pidfile \
+        --pidfile "$PIDFILE" \
+        --chuid "$USER:$GROUP" \
+        --chdir "$WORKDIR" \
+        --umask 0027 \
+        --output "$LOGFILE" \
+        --exec "$DAEMON" -- $DAEMON_ARGS || return 2
+
+    # Give the process a moment to fail early (bad config, port in use, ...).
+    sleep 1
+    start-stop-daemon --status --quiet --pidfile "$PIDFILE" \
+        --exec "$DAEMON" || {
+        rm -f "$PIDFILE"
+        return 2
+    }
+    return 0
+}
+
+do_stop() {
+    start-stop-daemon --stop --quiet --oknodo --remove-pidfile \
+        --retry=TERM/10/KILL/5 \
+        --pidfile "$PIDFILE" \
+        --exec "$DAEMON"
+    RETVAL=$?
+    rm -f "$PIDFILE"
+    return "$RETVAL"
+}
+
+case "$1" in
+    start)
+        log_daemon_msg "Starting $DESC" "$NAME"
+        do_start
+        case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 0 ; log_daemon_msg "$DESC is already running" "$NAME"; log_end_msg 0 ;;
+            *) log_end_msg 1; echo "See $LOGFILE for details." >&2 ;;
+        esac
+        ;;
+    stop)
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        do_stop
+        case "$?" in
+            0|1) log_end_msg 0 ;;
+            *)   log_end_msg 1 ;;
+        esac
+        ;;
+    restart|force-reload)
+        log_daemon_msg "Restarting $DESC" "$NAME"
+        do_stop
+        case "$?" in
+            0|1)
+                do_start
+                case "$?" in
+                    0) log_end_msg 0 ;;
+                    1) log_end_msg 1 ;;
+                    *) log_end_msg 1; echo "See $LOGFILE for details." >&2 ;;
+                esac
+                ;;
+            *)
+                log_end_msg 1
+                ;;
+        esac
+        ;;
+    status)
+        if start-stop-daemon --status --quiet --pidfile "$PIDFILE" --exec "$DAEMON"; then
+            echo "$DESC is running (pid $(cat "$PIDFILE" 2>/dev/null))."
+            exit 0
+        fi
+        echo "$DESC is not running."
+        exit 3
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|force-reload|status}" >&2
+        exit 3
+        ;;
+esac
+
+exit 0
