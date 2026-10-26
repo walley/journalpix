@@ -1,11 +1,16 @@
 package com.journalpix.data
 
+import android.content.Context
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TimelineItem
+import com.journalpix.models.TransportMode
 import com.journalpix.models.TripResponse
 import com.journalpix.models.TripStatus
 import com.journalpix.models.TripTimeline
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -13,19 +18,136 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * In-memory offline store for demo mode (no backend).
+ * Offline-first store for trip → places → photos.
+ *
+ * - Photos are copied under filesDir/photos/ (durable, not cache).
+ * - Metadata is persisted as JSON under filesDir/offline/store.json.
+ * - When a backend becomes available, entries with syncPending=true are uploaded;
+ *   sync remains a permanent feature (offline edits always queue).
+ *
  * Hierarchy: Trip → Days → Places → Photos. Places & photos ordered by time.
+ * Days outside the trip [startDate, endDate] land in the special bucket BEFORE_AFTER_KEY.
  */
 object OfflineStore {
+
+    const val BEFORE_AFTER_KEY = "before-after"
 
     private val photosByPlace = ConcurrentHashMap<String, MutableList<PhotoResponse>>()
     private val placesByTrip = ConcurrentHashMap<String, MutableList<PlaceWithPhotos>>()
     private val trips = ConcurrentHashMap<String, TripResponse>()
     /** photoId -> reverse-geocoded address */
     val addresses = ConcurrentHashMap<String, String>()
+    /** IDs that still need to be pushed when online (permanent sync queue). */
+    private val syncPending = ConcurrentHashMap.newKeySet<String>()
+
+    @Volatile
+    private var appContext: Context? = null
+    @Volatile
+    private var loaded = false
 
     private val exifDateTime: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss")
+
+    /** Call once from Application / first screen so local files are used. */
+    fun init(context: Context) {
+        if (loaded) return
+        synchronized(this) {
+            if (loaded) return
+            appContext = context.applicationContext
+            loadFromDisk()
+            loaded = true
+        }
+    }
+
+    fun photosDir(context: Context = requireContext()): File =
+        File(context.filesDir, "photos").apply { mkdirs() }
+
+    fun offlineDir(context: Context = requireContext()): File =
+        File(context.filesDir, "offline").apply { mkdirs() }
+
+    private fun storeFile(context: Context = requireContext()): File =
+        File(offlineDir(context), "store.json")
+
+    private fun requireContext(): Context =
+        appContext ?: error("OfflineStore.init(context) must be called before use")
+
+    private fun loadFromDisk() {
+        val ctx = appContext ?: return
+        val file = storeFile(ctx)
+        if (!file.exists()) return
+        try {
+            val root = JSONObject(file.readText())
+            val tripsArr = root.optJSONArray("trips") ?: JSONArray()
+            for (i in 0 until tripsArr.length()) {
+                val o = tripsArr.getJSONObject(i)
+                val t = tripFromJson(o)
+                trips[t.id] = t
+            }
+            val placesArr = root.optJSONArray("places") ?: JSONArray()
+            for (i in 0 until placesArr.length()) {
+                val o = placesArr.getJSONObject(i)
+                val p = placeFromJson(o)
+                placesByTrip.getOrPut(p.tripId) { mutableListOf() }.add(p)
+            }
+            val photosArr = root.optJSONArray("photos") ?: JSONArray()
+            for (i in 0 until photosArr.length()) {
+                val o = photosArr.getJSONObject(i)
+                val ph = photoFromJson(o)
+                val pid = ph.placeId ?: continue
+                photosByPlace.getOrPut(pid) { mutableListOf() }.add(ph)
+            }
+            val addr = root.optJSONObject("addresses")
+            if (addr != null) {
+                addr.keys().forEach { k -> addresses[k] = addr.getString(k) }
+            }
+            val pending = root.optJSONArray("syncPending")
+            if (pending != null) {
+                for (i in 0 until pending.length()) syncPending.add(pending.getString(i))
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    fun persist() {
+        val ctx = appContext ?: return
+        try {
+            val root = JSONObject()
+            val tripsArr = JSONArray()
+            trips.values.forEach { tripsArr.put(tripToJson(it)) }
+            root.put("trips", tripsArr)
+
+            val placesArr = JSONArray()
+            placesByTrip.values.flatten().forEach { placesArr.put(placeToJson(it)) }
+            root.put("places", placesArr)
+
+            val photosArr = JSONArray()
+            photosByPlace.values.flatten().forEach { photosArr.put(photoToJson(it)) }
+            root.put("photos", photosArr)
+
+            val addr = JSONObject()
+            addresses.forEach { (k, v) -> addr.put(k, v) }
+            root.put("addresses", addr)
+
+            val pending = JSONArray()
+            syncPending.forEach { pending.put(it) }
+            root.put("syncPending", pending)
+
+            storeFile(ctx).writeText(root.toString(2))
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun markPending(id: String) {
+        syncPending.add(id)
+        persist()
+    }
+
+    fun pendingSyncIds(): Set<String> = syncPending.toSet()
+
+    fun clearPending(id: String) {
+        syncPending.remove(id)
+        persist()
+    }
 
     fun ensureDemoTrip(tripId: String): TripResponse {
         val id = tripId.ifBlank { "demo-trip-1" }
@@ -42,6 +164,7 @@ object OfflineStore {
                     address = null,
                     visitDate = LocalDate.now().toString(),
                     orderIndex = 0,
+                    transportFromPrevious = null,
                     createdAt = "2024-01-01T00:00:00Z",
                     photos = emptyList()
                 )
@@ -73,13 +196,24 @@ object OfflineStore {
             updatedAt = java.time.Instant.now().toString()
         )
         trips[current.id] = updated
+        markPending(current.id)
+        return updated
+    }
+
+    fun updateTripTitle(tripId: String, title: String): TripResponse {
+        val current = ensureDemoTrip(tripId)
+        val updated = current.copy(
+            title = title.trim().ifBlank { current.title },
+            updatedAt = java.time.Instant.now().toString()
+        )
+        trips[current.id] = updated
+        markPending(current.id)
         return updated
     }
 
     fun timelineFor(tripId: String): TripTimeline {
         val trip = ensureDemoTrip(tripId)
         val places = placesByTrip[trip.id].orEmpty()
-            .filter { photosByPlace[it.id].orEmpty().isNotEmpty() || true } // keep empty places too
             .map { place ->
                 val photos = photosByPlace[place.id].orEmpty()
                     .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
@@ -87,19 +221,40 @@ object OfflineStore {
                 place.copy(photos = photos)
             }
 
-        val grouped = places.groupBy { placeDay(it) }
-        val items = grouped.entries
-            .sortedBy { it.key }
-            .map { (date, list) ->
-                val ordered = list.sortedWith(
-                    compareBy(
-                        { placeSortKey(it) },
-                        { it.orderIndex },
-                        { it.name }
-                    )
-                )
-                TimelineItem(date = date, places = ordered)
+        val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
+        val inRange = mutableListOf<PlaceWithPhotos>()
+        val outOfRange = mutableListOf<PlaceWithPhotos>()
+        for (p in places) {
+            val day = placeDay(p)
+            val d = runCatching { LocalDate.parse(day) }.getOrNull()
+            if (d != null && start != null && end != null && (d.isBefore(start) || d.isAfter(end))) {
+                outOfRange.add(p)
+            } else {
+                inRange.add(p)
             }
+        }
+
+        val items = mutableListOf<TimelineItem>()
+
+        val grouped = inRange.groupBy { placeDay(it) }
+        grouped.entries
+            .sortedBy { it.key }
+            .forEach { (date, list) ->
+                val ordered = list.sortedWith(
+                    compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                )
+                items.add(TimelineItem(date = date, places = ordered))
+            }
+
+        if (outOfRange.isNotEmpty()) {
+            val ordered = outOfRange.sortedWith(
+                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+            )
+            items.add(TimelineItem(date = BEFORE_AFTER_KEY, places = ordered))
+        }
+
         return TripTimeline(
             trip = trip.copy(
                 placesCount = places.size,
@@ -115,7 +270,8 @@ object OfflineStore {
         visitDate: String? = null,
         address: String? = null,
         latitude: Double? = null,
-        longitude: Double? = null
+        longitude: Double? = null,
+        transportFromPrevious: String? = null
     ): PlaceWithPhotos {
         val trip = ensureDemoTrip(tripId)
         val day = visitDate ?: LocalDate.now().toString()
@@ -129,12 +285,24 @@ object OfflineStore {
             address = address,
             visitDate = day,
             orderIndex = placesByTrip[trip.id]?.size ?: 0,
+            transportFromPrevious = transportFromPrevious,
             createdAt = java.time.Instant.now().toString(),
             photos = emptyList()
         )
         placesByTrip.getOrPut(trip.id) { mutableListOf() }.add(place)
         photosByPlace.putIfAbsent(place.id, mutableListOf())
+        markPending(place.id)
         return place
+    }
+
+    fun setTransport(placeId: String, mode: TransportMode?) {
+        placesByTrip.values.forEach { list ->
+            val idx = list.indexOfFirst { it.id == placeId }
+            if (idx >= 0) {
+                list[idx] = list[idx].copy(transportFromPrevious = mode?.name)
+                markPending(placeId)
+            }
+        }
     }
 
     fun addPhoto(
@@ -163,7 +331,6 @@ object OfflineStore {
         )
         photosByPlace.getOrPut(placeId) { mutableListOf() }.add(photo)
 
-        // Move place onto the photo's EXIF day so timeline shows correct day
         placesByTrip.values.forEach { list ->
             val idx = list.indexOfFirst { it.id == placeId }
             if (idx >= 0) {
@@ -178,8 +345,8 @@ object OfflineStore {
             }
         }
 
-        // Keep photos of this place sorted by time
         sortPhotosInPlace(placeId)
+        markPending(photo.id)
         return photo
     }
 
@@ -194,10 +361,6 @@ object OfflineStore {
         list.forEachIndexed { i, p -> list[i] = p.copy(orderIndex = i) }
     }
 
-    /**
-     * After reverse geocode: find existing place with same address (or nearby name),
-     * or create a new place on the photo's day. Move photo there and re-sort.
-     */
     fun assignPhotoToGeocodedPlace(
         tripId: String,
         photoId: String,
@@ -215,7 +378,6 @@ object OfflineStore {
         val day = photo.takenAt?.let { parseExifDay(it) }
             ?: LocalDate.now().toString()
 
-        // Match existing place by address or short name on same trip
         val existing = placesByTrip[trip.id].orEmpty().firstOrNull { place ->
             val sameAddress = !place.address.isNullOrBlank() &&
                 place.address.equals(address, ignoreCase = true)
@@ -251,6 +413,8 @@ object OfflineStore {
 
         movePhoto(photoId, fromPlaceId = photo.placeId, toPlaceId = target.id)
         sortPhotosInPlace(target.id)
+        markPending(target.id)
+        persist()
         return target
     }
 
@@ -268,8 +432,7 @@ object OfflineStore {
             }
         }
         if (moved == null) {
-            // search all places
-            for ((pid, list) in photosByPlace) {
+            for ((_, list) in photosByPlace) {
                 val idx = list.indexOfFirst { it.id == photoId }
                 if (idx >= 0) {
                     moved = list.removeAt(idx).copy(placeId = toPlaceId)
@@ -305,8 +468,6 @@ object OfflineStore {
             Math.sin(dLon / 2) * Math.sin(dLon / 2)
         return 2 * r * Math.asin(Math.sqrt(a))
     }
-
-    // --- ordering helpers ---
 
     private fun placeDay(place: PlaceWithPhotos): String {
         place.visitDate?.takeIf { it.isNotBlank() }?.let { return it }
@@ -360,4 +521,88 @@ object OfflineStore {
             null
         }
     }
+
+    private fun tripToJson(t: TripResponse) = JSONObject().apply {
+        put("id", t.id)
+        put("userId", t.userId)
+        put("title", t.title)
+        put("description", t.description)
+        put("startDate", t.startDate)
+        put("endDate", t.endDate)
+        put("status", t.status.name)
+        put("createdAt", t.createdAt)
+        put("updatedAt", t.updatedAt)
+    }
+
+    private fun tripFromJson(o: JSONObject) = TripResponse(
+        id = o.getString("id"),
+        userId = o.getString("userId"),
+        title = o.getString("title"),
+        description = o.optString("description", null).takeIf { it.isNotBlank() },
+        startDate = o.optString("startDate", null).takeIf { it.isNotBlank() },
+        endDate = o.optString("endDate", null).takeIf { it.isNotBlank() },
+        status = runCatching { TripStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(TripStatus.PLANNED),
+        createdAt = o.optString("createdAt", ""),
+        updatedAt = o.optString("updatedAt", ""),
+        placesCount = null,
+        photosCount = null
+    )
+
+    private fun placeToJson(p: PlaceWithPhotos) = JSONObject().apply {
+        put("id", p.id)
+        put("tripId", p.tripId)
+        put("name", p.name)
+        put("description", p.description)
+        put("latitude", p.latitude)
+        put("longitude", p.longitude)
+        put("address", p.address)
+        put("visitDate", p.visitDate)
+        put("orderIndex", p.orderIndex)
+        put("transportFromPrevious", p.transportFromPrevious)
+        put("createdAt", p.createdAt)
+    }
+
+    private fun placeFromJson(o: JSONObject) = PlaceWithPhotos(
+        id = o.getString("id"),
+        tripId = o.getString("tripId"),
+        name = o.getString("name"),
+        description = o.optString("description", null).takeIf { it.isNotBlank() },
+        latitude = if (o.isNull("latitude")) null else o.optDouble("latitude"),
+        longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
+        address = o.optString("address", null).takeIf { it.isNotBlank() },
+        visitDate = o.optString("visitDate", null).takeIf { it.isNotBlank() },
+        orderIndex = o.optInt("orderIndex", 0),
+        transportFromPrevious = o.optString("transportFromPrevious", null).takeIf { it.isNotBlank() },
+        createdAt = o.optString("createdAt", ""),
+        photos = emptyList()
+    )
+
+    private fun photoToJson(p: PhotoResponse) = JSONObject().apply {
+        put("id", p.id)
+        put("placeId", p.placeId)
+        put("userId", p.userId)
+        put("filePath", p.filePath)
+        put("thumbnailPath", p.thumbnailPath)
+        put("latitude", p.latitude)
+        put("longitude", p.longitude)
+        put("takenAt", p.takenAt)
+        put("caption", p.caption)
+        put("orderIndex", p.orderIndex)
+        put("createdAt", p.createdAt)
+    }
+
+    private fun photoFromJson(o: JSONObject) = PhotoResponse(
+        id = o.getString("id"),
+        placeId = o.optString("placeId", null).takeIf { it.isNotBlank() },
+        userId = o.getString("userId"),
+        filePath = o.getString("filePath"),
+        thumbnailPath = o.optString("thumbnailPath", o.getString("filePath")),
+        latitude = if (o.isNull("latitude")) null else o.optDouble("latitude"),
+        longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
+        takenAt = o.optString("takenAt", null).takeIf { it.isNotBlank() },
+        caption = o.optString("caption", null).takeIf { it.isNotBlank() },
+        orderIndex = o.optInt("orderIndex", 0),
+        createdAt = o.optString("createdAt", ""),
+        place = null
+    )
 }

@@ -17,7 +17,7 @@ data class PhotoGps(
 data class ExifReadResult(
     val gps: PhotoGps?,
     val takenAt: String?,
-    /** Local file path under app cache (keeps original bytes when copy succeeds). */
+    /** Local file path under app filesDir/photos (durable offline storage). */
     val localFilePath: String?,
     /** Why GPS might be missing — useful in the UI. */
     val note: String?
@@ -31,14 +31,13 @@ object ExifLocation {
      * Android often strips location from picker streams. Strategy:
      * 1. MediaStore.setRequireOriginal (API 29+) so location EXIF is not redacted
      * 2. Open a seekable FileDescriptor (ExifInterface needs seek)
-     * 3. Copy bytes to a cache file and read from the file path
+     * 3. Copy bytes to filesDir/photos and read from the file path (survives cache clear)
      * 4. Manual GPS tags as last resort
      */
     fun readMeta(context: Context, uri: Uri): ExifReadResult {
         var workingUri = uri
         var note: String? = null
 
-        // Ask MediaStore for the un-redacted original (needs ACCESS_MEDIA_LOCATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 workingUri = MediaStore.setRequireOriginal(uri)
@@ -48,16 +47,13 @@ object ExifLocation {
             }
         }
 
-        // Prefer a durable copy in app storage (picker URIs can lose EXIF / access)
-        val localFile = copyToCache(context, workingUri) ?: copyToCache(context, uri)
+        val localFile = copyToLocalPhotos(context, workingUri) ?: copyToLocalPhotos(context, uri)
 
-        // 1) Read from copied file (best — seekable path)
         if (localFile != null) {
             val fromFile = readFromPath(localFile.absolutePath)
             if (fromFile.gps != null) {
                 return fromFile.copy(localFilePath = localFile.absolutePath, note = null)
             }
-            // Keep takenAt / path even if no GPS
             val fromFd = readFromFileDescriptor(context, workingUri)
             if (fromFd.gps != null) {
                 return fromFd.copy(
@@ -73,7 +69,6 @@ object ExifLocation {
             )
         }
 
-        // 2) FileDescriptor on the content URI
         val fromFd = readFromFileDescriptor(context, workingUri)
         if (fromFd.gps != null) return fromFd.copy(note = note)
 
@@ -122,7 +117,6 @@ object ExifLocation {
             )
         }
 
-        // Manual DMS tags (some writers omit the rational lat/long helpers)
         val lat = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE)
         val latRef = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)
         val lon = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)
@@ -143,7 +137,6 @@ object ExifLocation {
         return ExifReadResult(null, takenAt, localPath, null)
     }
 
-    /** Convert EXIF DMS string like "51/1,27/1,5976/100" to decimal degrees. */
     private fun dmsToDecimal(dms: String, ref: String): Double? {
         return try {
             val parts = dms.split(",")
@@ -162,10 +155,13 @@ object ExifLocation {
         }
     }
 
-    /** Copy full image bytes into app cache so EXIF is preserved offline. */
-    fun copyToCache(context: Context, uri: Uri): File? {
+    /**
+     * Copy full image bytes into app filesDir/photos so storage survives cache clears
+     * and is ready for later backend sync.
+     */
+    fun copyToLocalPhotos(context: Context, uri: Uri): File? {
         return try {
-            val dir = File(context.cacheDir, "photos").apply { mkdirs() }
+            val dir = File(context.filesDir, "photos").apply { mkdirs() }
             val out = File(dir, "img_${System.currentTimeMillis()}.jpg")
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(out).use { output -> input.copyTo(output) }
@@ -178,4 +174,7 @@ object ExifLocation {
             null
         }
     }
+
+    @Deprecated("Use copyToLocalPhotos", ReplaceWith("copyToLocalPhotos(context, uri)"))
+    fun copyToCache(context: Context, uri: Uri): File? = copyToLocalPhotos(context, uri)
 }

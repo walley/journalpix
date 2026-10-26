@@ -26,6 +26,8 @@ data class Place(
     val address: String? = null,
     val visitDate: String? = null,
     val orderIndex: Int = 0,
+    /** How we got here from the previous place (TransportMode name). */
+    val transportFromPrevious: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
@@ -41,6 +43,7 @@ data class PlaceResponse(
     val address: String? = null,
     val visitDate: String? = null,
     val orderIndex: Int,
+    val transportFromPrevious: String? = null,
     val createdAt: String,
     val updatedAt: String,
     val photosCount: Int? = null
@@ -56,6 +59,7 @@ data class PlaceWithPhotos(
     val address: String? = null,
     val visitDate: String? = null,
     val orderIndex: Int,
+    val transportFromPrevious: String? = null,
     val createdAt: String,
     val photos: List<PhotoResponse>
 )
@@ -68,7 +72,8 @@ data class CreatePlaceRequest(
     val longitude: Double? = null,
     val address: String? = null,
     val visitDate: String? = null,
-    val orderIndex: Int? = null
+    val orderIndex: Int? = null,
+    val transportFromPrevious: String? = null
 )
 
 data class UpdatePlaceRequest(
@@ -78,7 +83,8 @@ data class UpdatePlaceRequest(
     val longitude: Double? = null,
     val address: String? = null,
     val visitDate: String? = null,
-    val orderIndex: Int? = null
+    val orderIndex: Int? = null,
+    val transportFromPrevious: String? = null
 )
 
 data class PlaceCoordinates(
