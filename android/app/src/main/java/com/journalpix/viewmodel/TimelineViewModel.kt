@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.TimelineItem
+import com.journalpix.models.TransportMode
 import com.journalpix.models.TripTimeline
 import kotlinx.coroutines.launch
 
@@ -48,6 +49,16 @@ class TimelineViewModel : ViewModel() {
 
     fun updateTripDates(tripId: String, startDate: String?, endDate: String?) {
         OfflineStore.updateTripDates(tripId, startDate, endDate)
+        refreshOffline(tripId)
+    }
+
+    fun updateTripTitle(tripId: String, title: String) {
+        OfflineStore.updateTripTitle(tripId, title)
+        refreshOffline(tripId)
+    }
+
+    fun setTransport(placeId: String, mode: TransportMode?, tripId: String) {
+        OfflineStore.setTransport(placeId, mode)
         refreshOffline(tripId)
     }
 
