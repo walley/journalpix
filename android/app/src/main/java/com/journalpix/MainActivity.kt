@@ -20,6 +20,7 @@ import com.journalpix.ui.screen.AuthScreen
 import com.journalpix.ui.screen.HomeScreen
 import com.journalpix.ui.screen.TimelineScreen
 import com.journalpix.ui.theme.JournalPixTheme
+import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.PhotoViewModel
 import com.journalpix.viewmodel.TripViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -104,7 +105,8 @@ class MainActivity : ComponentActivity() {
                     // Get the current trip - for now use first trip or default
                     // In production, you might want to show a dialog to select which trip/place
                     val sharedPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-                    val token = sharedPrefs.getString("auth_token", null)
+                    val token = AppSession.currentUser.value?.token
+                        ?: sharedPrefs.getString("auth_token", null)
 
                     if (token != null) {
                         tripViewModel.getTrips(token) { trips ->

@@ -111,10 +111,10 @@ fun AuthScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Optional: real backend login (will fail without server)
+            // Real login against https://walley.org/journalpix/api/.
             OutlinedButton(
                 onClick = {
-                    authViewModel.login(email, password) { goHome() }
+                    authViewModel.loginWithBackend(email, password) { goHome() }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

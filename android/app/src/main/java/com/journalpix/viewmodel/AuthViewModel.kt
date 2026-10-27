@@ -9,6 +9,8 @@ import com.journalpix.models.LoginResponse
 import com.journalpix.models.RegisterRequest
 import com.journalpix.models.UserResponse
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import retrofit2.HttpException
 
 /**
  * Simple process-wide session so every screen sees the same login state.
@@ -36,6 +38,19 @@ class AuthViewModel : ViewModel() {
     // Bound to shared session
     val isLoggedIn get() = AppSession.isLoggedIn
     val currentUser get() = AppSession.currentUser
+
+    /** Prefer the backend's JSON error message over a raw Retrofit message. */
+    private fun errorText(e: Exception, fallback: String): String {
+        if (e is HttpException) {
+            val raw = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+            val serverError = raw?.let {
+                runCatching { JSONObject(it).optString("error") }.getOrNull()
+            }
+            return if (!serverError.isNullOrBlank()) serverError
+            else "$fallback (HTTP ${e.code()})"
+        }
+        return "Network error: ${e.message ?: e.javaClass.simpleName}"
+    }
 
     companion object {
         // Temporary dev/demo credentials — remove before production
@@ -87,7 +102,7 @@ class AuthViewModel : ViewModel() {
                     errorMessage.value = response.error ?: "Registration failed"
                 }
             } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
+                errorMessage.value = errorText(e, "Registration failed")
             } finally {
                 isLoading.value = false
             }
@@ -105,22 +120,41 @@ class AuthViewModel : ViewModel() {
             return
         }
 
+        loginWithBackend(email, password, onSuccess)
+    }
+
+    /**
+     * Real login against the HTTPS backend. Unlike [login], this never takes
+     * the offline demo shortcut, so the "Login via backend" button exercises
+     * the real API even when demo credentials are still in the fields.
+     */
+    fun loginWithBackend(email: String, password: String, onSuccess: () -> Unit) {
+        errorMessage.value = null
+
+        if (email.isBlank() || password.isBlank()) {
+            errorMessage.value = "Enter your email and password"
+            return
+        }
+
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val request = LoginRequest(email, password)
+                val request = LoginRequest(email.trim(), password)
                 val response = ApiService.apiClient.login(request)
 
                 if (response.success) {
-                    response.data?.let { loginResponse ->
+                    val loginResponse = response.data
+                    if (loginResponse != null) {
                         AppSession.setUser(loginResponse)
                         onSuccess()
+                    } else {
+                        errorMessage.value = "Login failed: empty response"
                     }
                 } else {
                     errorMessage.value = response.error ?: "Login failed"
                 }
             } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
+                errorMessage.value = errorText(e, "Login failed")
             } finally {
                 isLoading.value = false
             }

@@ -20,6 +20,8 @@ Production deployment: **walley.org** is Apache and `/journalpix` is
 reverse-proxied to the loopback listener. Public URLs therefore carry the
 `/journalpix` prefix, e.g. `https://walley.org/journalpix/health` — the root
 about page links to that public health URL rather than the internal `/health`.
+The Android app uses the same public API base:
+`https://walley.org/journalpix/api/` (Retrofit in `android/.../api/ApiClient.kt`).
 
 Logging goes exclusively to syslog facility **local3**: request/access logs at
 info (`local3.info`), errors and 5xx requests at err (`local3.err`). There is

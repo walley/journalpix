@@ -3,10 +3,14 @@ package com.journalpix.models
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 import java.util.UUID
 
 enum class TripStatus {
-    PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+    @SerializedName("planned") PLANNED,
+    @SerializedName("in_progress") IN_PROGRESS,
+    @SerializedName("completed") COMPLETED,
+    @SerializedName("cancelled") CANCELLED
 }
 
 @Entity(

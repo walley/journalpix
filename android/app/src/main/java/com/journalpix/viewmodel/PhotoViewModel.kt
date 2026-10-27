@@ -138,7 +138,7 @@ class PhotoViewModel : ViewModel() {
             try {
                 val byteArray = bitmapToByteArray(bitmap)
                 val requestFile = byteArray.toRequestBody("image/jpeg".toMediaType())
-                val body = MultipartBody.Part.createFormData("file", "photo.jpg", requestFile)
+                val body = MultipartBody.Part.createFormData("photo", "photo.jpg", requestFile)
                 val response = ApiService.apiClient.uploadPhoto("Bearer $token", placeId, body)
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to upload photo"

@@ -6,6 +6,7 @@ const GITHUB_URL: &str = "https://github.com/walley/journalpix";
 /// Public health URL: walley.org is Apache and `/journalpix` is reverse-proxied
 /// to this backend's loopback listener.
 const HEALTH_URL: &str = "https://walley.org/journalpix/health";
+const API_URL: &str = "https://walley.org/journalpix/api";
 
 /// Simple HTML landing page for the service root. The API itself lives under
 /// `/api`; this exists so hitting the base URL returns something useful
@@ -47,7 +48,7 @@ pub async fn index() -> impl Responder {
   </p>
   <footer>
     Version {APP_VERSION} &middot; <a href="{HEALTH_URL}">Health check</a>
-    &middot; API base: <code>/api</code>
+    &middot; API base: <code>{API_URL}</code>
   </footer>
 </body>
 </html>

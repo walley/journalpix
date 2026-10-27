@@ -14,6 +14,19 @@ class PlaceViewModel : ViewModel() {
     val places = mutableStateOf<List<PlaceResponse>>(emptyList())
     val currentPlace = mutableStateOf<PlaceWithPhotos?>(null)
 
+    /**
+     * The backend stores visit dates as NaiveDateTime ("YYYY-MM-DDTHH:MM:SS");
+     * the UI/offline store uses plain dates, so expand them for API requests.
+     */
+    private fun normalizeVisitDate(value: String?): String? {
+        if (value.isNullOrBlank()) return null
+        return if (Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) {
+            "${value}T00:00:00"
+        } else {
+            value
+        }
+    }
+
     fun getPlaces(token: String, tripId: String) {
         if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
             isLoading.value = false
@@ -46,7 +59,8 @@ class PlaceViewModel : ViewModel() {
             isLoading.value = true
             errorMessage.value = null
             try {
-                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, request)
+                val apiRequest = request.copy(visitDate = normalizeVisitDate(request.visitDate))
+                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, apiRequest)
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to create place"
             } catch (e: Exception) {
@@ -76,7 +90,8 @@ class PlaceViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, request)
+                val apiRequest = request.copy(visitDate = normalizeVisitDate(request.visitDate))
+                val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, apiRequest)
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to update place"
             } catch (e: Exception) {

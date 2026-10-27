@@ -1,5 +1,7 @@
 package com.journalpix.api
 
+import com.google.gson.FieldNamingPolicy
+import com.google.gson.GsonBuilder
 import com.journalpix.models.*
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -9,6 +11,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.util.concurrent.TimeUnit
+
+/** Public Apache/reverse-proxy location of the backend. */
+const val PUBLIC_BASE_URL = "https://walley.org/journalpix"
 
 interface ApiClient {
     // Authentication
@@ -139,10 +144,16 @@ class ApiClientBuilder(private val baseUrl: String) {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
         
+        val gson = GsonBuilder()
+            // Backend JSON uses snake_case (trip_id, created_at, ...), the
+            // Kotlin models use camelCase.
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create()
+
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
         
         return retrofit.create(ApiClient::class.java)
@@ -150,9 +161,29 @@ class ApiClientBuilder(private val baseUrl: String) {
 }
 
 object ApiService {
-    private const val BASE_URL = "http://10.0.2.2:8080/api/"
+    // Public backend: Apache on walley.org reverse-proxies /journalpix to the
+    // loopback-only Rust service.
+    private const val BASE_URL = "$PUBLIC_BASE_URL/api/"
     
     val apiClient: ApiClient by lazy {
         ApiClientBuilder(BASE_URL).build()
+    }
+
+    /**
+     * Backend responses contain server-side paths (e.g. "./thumbnails/x.jpg").
+     * Turn those into public HTTPS URLs; leave already-absolute/offline URIs
+     * untouched.
+     */
+    fun thumbnailUrl(path: String): String = publicFileUrl("thumbnails", path)
+
+    fun uploadUrl(path: String): String = publicFileUrl("uploads", path)
+
+    private fun publicFileUrl(kind: String, path: String): String {
+        if (path.startsWith("http://") || path.startsWith("https://") ||
+            path.startsWith("content://") || path.startsWith("file://")
+        ) {
+            return path
+        }
+        return "$PUBLIC_BASE_URL/$kind/${path.substringAfterLast('/')}"
     }
 }

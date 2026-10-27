@@ -3,6 +3,7 @@ package com.journalpix.viewmodel
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.journalpix.api.ApiService
 import com.journalpix.models.*
 import kotlinx.coroutines.launch
 
@@ -41,8 +42,10 @@ class MapViewModel : ViewModel() {
                                 )
                             )
 
-                            // Get first photo as thumbnail
+                            // Get first photo as thumbnail and expose it as a
+                            // public HTTPS URL instead of a server path.
                             val thumbnailUrl = place.photos.firstOrNull()?.thumbnailPath
+                                ?.let { ApiService.thumbnailUrl(it) }
 
                             mapPlaces.add(
                                 MapPlace(
