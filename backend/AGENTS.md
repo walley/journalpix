@@ -29,6 +29,11 @@ deliberately no stderr/file fallback: if no local syslog socket (`/dev/log`,
 `/var/run/syslog` or `/var/run/log`) is reachable, the process reports the
 error on stderr and exits with status 1 instead of starting.
 
+Login attempts are audited too: `Login attempt email="<as entered>":
+success (user_id=...)` at info, and `...: failed (<reason>)` at warning. The
+email is PII and lands in syslog, but the password is never logged. The email
+is formatted with `{:?}`, so embedded quotes/newlines cannot forge log lines.
+
 ### Configuration
 
 INI style (see `journalpix.conf.example`), priority:
