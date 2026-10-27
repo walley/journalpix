@@ -63,7 +63,29 @@ Installs `PREFIX/bin/journalpix-backend` (release build) and
 one) + `.conf.example`. The installed binary is self-contained (SQLite schema
 is embedded via `include_str!`) and must run as a **non-root user** from a
 writable working directory (db/uploads/thumbnails default to relative paths
-there).<arg_key>old_string</arg_key><arg_value>## Running
+there).
+
+### Versioning (bump on every backend change)
+
+`[package] version` in `Cargo.toml` is the single source of truth. The binary
+reports it from `APP_VERSION` (`env!("CARGO_PKG_VERSION")`, never hard-code it
+elsewhere) on `/health`, on the root page and in the startup log line.
+
+**Bump the patch (third) number for every backend change** — e.g. `0.1.1` →
+`0.1.2`. This is how a deployment is verified:
+
+```bash
+make version    # source: 0.1.2 / public: 0.1.1  ← old binary still running
+# after make install + restart:
+make version    # source: 0.1.2 / public: 0.1.2  ← deployed build matches
+```
+
+`make version` queries `HEALTH_URL` (default the public walley.org URL), so it
+also proves the restart took effect. Use
+`HEALTH_URL=http://localhost:18888/health make version` to question the
+loopback listener directly.
+
+## Running
 
 ```bash
 cargo build
@@ -100,18 +122,6 @@ thumbnails in `./thumbnails` (both auto-created; served at
   implemented**; `DATABASE_TYPE=postgres` fails at startup by design).
 - `migrations/0002_sqlite_schema.sql` — the live schema, executed on every
   startup (idempotent, `IF NOT EXISTS`).
-
-## Running
-
-```bash
-cargo build
-DATABASE_TYPE=sqlite ./target/debug/journalpix-backend   # port 8080
-# or: cargo run  (reads .env via dotenv)
-```
-
-DB defaults to `sqlite:journalpix.db` (relative to the process working
-directory). Uploads in `./uploads`, thumbnails in `./thumbnails` (both
-auto-created; served at `GET /uploads/<file>` and `GET /thumbnails/<file>`).
 
 ## API (all under `/api`, JSON)
 

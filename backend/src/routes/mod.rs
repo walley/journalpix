@@ -6,8 +6,11 @@ pub mod places;
 pub mod photos;
 pub mod timeline;
 
-/// Version advertised on the root banner and by `/health`.
-pub const APP_VERSION: &str = "0.1.0";
+/// Version advertised on the root banner, in startup logs and by `/health`.
+/// Single source of truth: `[package] version` in Cargo.toml. Bump its patch
+/// (third) number with every backend change so the deployed binary can be
+/// identified after reinstalling/restarting (`make version`).
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use crate::utils::auth::AuthService;
 use crate::utils::error::ApiError;

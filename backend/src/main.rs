@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
         std::process::exit(1);
     }
 
-    log::info!("JournalPix backend starting");
+    log::info!("JournalPix backend v{} starting", routes::APP_VERSION);
 
     // --config <path> (optional). Config: defaults <- INI file <- env vars.
     let args: Vec<String> = std::env::args().collect();
@@ -125,7 +125,8 @@ async fn main() -> std::io::Result<()> {
     ));
 
     log::info!(
-        "Starting JournalPix server on http://{}:{}",
+        "Starting JournalPix v{} server on http://{}:{}",
+        routes::APP_VERSION,
         BIND_ADDR,
         config.server_port
     );

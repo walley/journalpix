@@ -15,13 +15,23 @@ BINDIR  := $(PREFIX)/bin
 ETCDIR  := $(PREFIX)/etc
 CONF    := journalpix.conf
 BIN     := journalpix-backend
+# Source of truth for the version: [package] version in Cargo.toml
+VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+HEALTH_URL ?= https://walley.org/journalpix/health
 
-.PHONY: all build install uninstall clean
+.PHONY: all build install uninstall clean version
 
 all: build
 
 build:
 	cargo build --release
+
+# Show the version in this tree and the version the public server reports.
+# After `make install` + restart both lines must match; otherwise the old
+# binary is still running.
+version:
+	@echo "source: $(VERSION)"
+	@printf "public: "; curl -fsS -m 5 $(HEALTH_URL) | sed -n 's/.*"version":"\([^"]*\)".*/\1/p' || echo "unreachable"
 
 install:
 	install -d $(BINDIR)
