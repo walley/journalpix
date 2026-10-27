@@ -210,10 +210,12 @@ fun PhotoItem(
             )
             Spacer(Modifier.height(8.dp))
             if (photo.latitude != null && photo.longitude != null) {
+                val lat = "%.5f".format(photo.latitude)
+                val lon = "%.5f".format(photo.longitude)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "GPS: ${\"%.5f\".format(photo.latitude)}, ${\"%.5f\".format(photo.longitude)}",
+                            "GPS: $lat, $lon",
                             style = MaterialTheme.typography.bodySmall
                         )
                         resolvedAddress?.let {
