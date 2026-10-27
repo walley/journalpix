@@ -8,7 +8,9 @@ import com.journalpix.data.OfflineStore
 import com.journalpix.models.TimelineItem
 import com.journalpix.models.TransportMode
 import com.journalpix.models.TripTimeline
+import com.journalpix.models.UpdateTripRequest
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class TimelineViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
@@ -47,9 +49,35 @@ class TimelineViewModel : ViewModel() {
         timeline.value = OfflineStore.timelineFor(tripId.ifBlank { "demo-trip-1" })
     }
 
-    fun updateTripDates(tripId: String, startDate: String?, endDate: String?) {
+    fun updateTripDates(token: String = "", tripId: String, startDate: String?, endDate: String?) {
         OfflineStore.updateTripDates(tripId, startDate, endDate)
+        if (!AuthViewModel.isDemoToken(token) && token.isNotBlank()) {
+            viewModelScope.launch {
+                try {
+                    ApiService.apiClient.updateTrip(
+                        "Bearer $token",
+                        tripId,
+                        UpdateTripRequest(startDate = startDate, endDate = endDate)
+                    )
+                } catch (_: Exception) {
+                }
+            }
+        }
         refreshOffline(tripId)
+    }
+
+    fun addNewDay(token: String = "", tripId: String) {
+        val currentTrip = timeline.value?.trip
+        val lastDateStr = currentTrip?.endDate ?: currentTrip?.startDate ?: LocalDate.now()
+          .toString()
+        val nextDate = try {
+            LocalDate.parse(lastDateStr)
+              .plusDays(1)
+        } catch (_: Exception) {
+            LocalDate.now()
+        }
+        val newStartDate = currentTrip?.startDate ?: nextDate.toString()
+        updateTripDates(token, tripId, newStartDate, nextDate.toString())
     }
 
     fun updateTripTitle(tripId: String, title: String) {

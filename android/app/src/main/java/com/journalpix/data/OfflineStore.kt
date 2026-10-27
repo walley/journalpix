@@ -237,16 +237,40 @@ object OfflineStore {
         }
 
         val items = mutableListOf<TimelineItem>()
-
         val grouped = inRange.groupBy { placeDay(it) }
-        grouped.entries
-            .sortedBy { it.key }
-            .forEach { (date, list) ->
-                val ordered = list.sortedWith(
-                    compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
-                )
-                items.add(TimelineItem(date = date, places = ordered))
+
+        if (start != null && end != null && !end.isBefore(start) && java.time.temporal.ChronoUnit.DAYS.between(
+                start,
+                end
+            ) < 365
+        ) {
+            var curr = start
+            while (!curr!!.isAfter(end)) {
+                val dateStr = curr.toString()
+                val list = grouped[dateStr].orEmpty()
+                  .sortedWith(
+                      compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                  )
+                items.add(TimelineItem(date = dateStr, places = list))
+                curr = curr.plusDays(1)
             }
+            grouped.keys.filter { key -> items.none { it.date == key } }
+              .forEach { dateStr ->
+                  val list = grouped[dateStr].orEmpty()
+                    .sortedWith(
+                        compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                    )
+                  items.add(TimelineItem(date = dateStr, places = list))
+              }
+        } else {
+            grouped.entries.sortedBy { it.key }
+              .forEach { (date, list) ->
+                  val ordered = list.sortedWith(
+                      compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                  )
+                  items.add(TimelineItem(date = date, places = ordered))
+              }
+        }
 
         if (outOfRange.isNotEmpty()) {
             val ordered = outOfRange.sortedWith(

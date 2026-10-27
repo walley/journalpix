@@ -189,27 +189,31 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     ) { paddingValues ->
         if (timelineViewModel.isLoading.value) {
             Box(
-                Modifier.fillMaxSize().padding(paddingValues),
+                Modifier
+                  .fillMaxSize()
+                  .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
         } else if (timeline == null) {
             Box(
-                Modifier.fillMaxSize().padding(paddingValues),
+                Modifier
+                  .fillMaxSize()
+                  .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) { Text("No timeline data") }
         } else {
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                  .fillMaxSize()
+                  .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 item {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showEditDatesDialog = true }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                          .fillMaxWidth()
+                          .clickable { showEditDatesDialog = true }
+                          .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -296,12 +300,11 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                 item {
                     OutlinedButton(
                         onClick = {
-                            createPlaceDay = LocalDate.now().toString()
-                            showCreatePlaceDialog = true
+                            timelineViewModel.addNewDay(token, effectiveTripId)
                         },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                          .fillMaxWidth()
+                          .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -356,12 +359,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         val isSelected = selected == mode
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    timelineViewModel.setTransport(placeId, mode, effectiveTripId)
-                                    editTransportPlaceId = null
-                                }
-                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                              .fillMaxWidth()
+                              .clickable {
+                                  timelineViewModel.setTransport(placeId, mode, effectiveTripId)
+                                  editTransportPlaceId = null
+                              }
+                              .padding(vertical = 10.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(mode.emoji, style = MaterialTheme.typography.titleMedium)
@@ -473,7 +476,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             dateError = "End date must be on or after start date"
                             return@Button
                         }
-                        timelineViewModel.updateTripDates(effectiveTripId, s.toString(), e.toString())
+                        timelineViewModel.updateTripDates(
+                            "",
+                            effectiveTripId,
+                            s.toString(),
+                            e.toString()
+                        )
                         showEditDatesDialog = false
                     } catch (_: Exception) {
                         dateError = "Use format yyyy-MM-dd"
@@ -603,13 +611,13 @@ private fun DayHeader(
     Surface(
         tonalElevation = 1.dp,
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
+          .fillMaxWidth()
+          .clickable(onClick = onToggle)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -638,15 +646,15 @@ private fun TransportBetweenRow(
     val mode = TransportMode.fromStored(place.transportFromPrevious)
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 48.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)
-            .clickable(onClick = onEdit),
+          .fillMaxWidth()
+          .padding(start = 48.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)
+          .clickable(onClick = onEdit),
         verticalAlignment = Alignment.CenterVertically
     ) {
         HorizontalDivider(
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 8.dp),
+              .weight(1f)
+              .padding(end = 8.dp),
             color = MaterialTheme.colorScheme.outlineVariant
         )
         Surface(
@@ -667,8 +675,8 @@ private fun TransportBetweenRow(
         }
         HorizontalDivider(
             modifier = Modifier
-                .weight(1f)
-                .padding(start = 8.dp),
+              .weight(1f)
+              .padding(start = 8.dp),
             color = MaterialTheme.colorScheme.outlineVariant
         )
     }
