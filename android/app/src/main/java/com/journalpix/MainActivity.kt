@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -114,7 +115,7 @@ class MainActivity : ComponentActivity() {
                                 val firstTrip = trips.first()
                                 photoViewModel.uploadPhoto(token, firstTrip.id, bmp) {
                                     runOnUiThread {
-                                        // Show a toast or notification that photo was uploaded
+                                        Toast.makeText(this@MainActivity, "Photo uploaded successfully", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
