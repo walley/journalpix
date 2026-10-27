@@ -13,14 +13,13 @@ pub fn validate_email(email: &str) -> Result<(), ApiError> {
 }
 
 pub fn validate_password(password: &str) -> Result<(), ApiError> {
+    // No password policy yet: no minimum/maximum length and no complexity
+    // rules. Only require the field to be present — login rejects empty
+    // passwords, so an empty one would create an unusable account.
     if password.is_empty() {
         return Err(ApiError::ValidationError("Password is required".to_string()));
     }
-    
-    if password.len() < 8 {
-        return Err(ApiError::ValidationError("Password must be at least 8 characters".to_string()));
-    }
-    
+
     Ok(())
 }
 
@@ -50,4 +49,21 @@ pub fn validate_coordinates(lat: Option<f64>, lon: Option<f64>) -> Result<(), Ap
     }
     
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn short_passwords_are_allowed() {
+        // Deliberate: no password policy (no 8-character minimum) for now.
+        assert!(validate_password("x").is_ok());
+        assert!(validate_password("1234567").is_ok());
+    }
+
+    #[test]
+    fn empty_password_is_rejected() {
+        assert!(validate_password("").is_err());
+    }
 }

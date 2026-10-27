@@ -129,7 +129,7 @@ thumbnails in `./thumbnails` (both auto-created; served at
 |---|---|---|---|
 | GET | / | – | HTML about page (outside /api) |
 | GET | /health | – | outside /api |
-| POST | /api/auth/register | – | `{email,name,password}` (pwd ≥ 8 chars) → token |
+| POST | /api/auth/register | – | `{email,name,password}` (password only has to be non-empty: no length/complexity policy yet) → token |
 | POST | /api/auth/login | – | `{email,password}` → token |
 | GET | /api/auth/me | Bearer | current user |
 | PUT | /api/auth/me | Bearer | update name/email/password |
