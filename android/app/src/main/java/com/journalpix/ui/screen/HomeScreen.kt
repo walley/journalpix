@@ -1,5 +1,6 @@
 package com.journalpix.ui.screen
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
@@ -15,8 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.models.TripResponse
 import com.journalpix.models.TripStatus
 import com.journalpix.viewmodel.AppSession
@@ -24,14 +30,36 @@ import com.journalpix.viewmodel.AuthViewModel
 import com.journalpix.viewmodel.TripViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
+    val context = LocalContext.current
     val authViewModel: AuthViewModel = remember { AuthViewModel() }
     val tripViewModel: TripViewModel = remember { TripViewModel() }
     var showCreateTripDialog by remember { mutableStateOf(false) }
     var newTripTitle by remember { mutableStateOf("") }
+    var startDateText by remember { mutableStateOf(LocalDate.now().toString()) }
+    var endDateText by remember { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
+
+    fun showDatePicker(initialDateStr: String, onDateSelected: (LocalDate) -> Unit) {
+        val cal = Calendar.getInstance()
+        try {
+            val parsed = LocalDate.parse(initialDateStr.trim())
+            cal.set(parsed.year, parsed.monthValue - 1, parsed.dayOfMonth)
+        } catch (_: Exception) { }
+
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
 
     // Always read from shared session (not a per-screen ViewModel instance)
     val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
@@ -121,7 +149,42 @@ fun HomeScreen(navController: NavController) {
                         value = newTripTitle,
                         onValueChange = { newTripTitle = it },
                         label = { Text("Trip Title") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = startDateText,
+                        onValueChange = { startDateText = it },
+                        label = { Text("Start Date (yyyy-MM-dd)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                showDatePicker(startDateText) { selectedDate ->
+                                    startDateText = selectedDate.toString()
+                                }
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select start date")
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = endDateText,
+                        onValueChange = { endDateText = it },
+                        label = { Text("End Date (yyyy-MM-dd)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                showDatePicker(endDateText) { selectedDate ->
+                                    endDateText = selectedDate.toString()
+                                }
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select end date")
+                            }
+                        }
                     )
                 }
             },
@@ -129,10 +192,10 @@ fun HomeScreen(navController: NavController) {
                 Button(onClick = {
                     if (newTripTitle.isNotBlank()) {
                         val request = com.journalpix.models.CreateTripRequest(
-                            title = newTripTitle,
+                            title = newTripTitle.trim(),
                             description = null,
-                            startDate = null,
-                            endDate = null,
+                            startDate = startDateText.ifBlank { null },
+                            endDate = endDateText.ifBlank { null },
                             status = TripStatus.PLANNED
                         )
                         tripViewModel.createTrip(token, request) {
@@ -253,5 +316,36 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    JournalPixTheme {
+        HomeScreen(navController = rememberNavController())
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TripCardPreview() {
+    JournalPixTheme {
+        TripCard(
+            trip = TripResponse(
+                id = "1",
+                userId = "u1",
+                title = "Tokyo & Kyoto Trip",
+                description = "Exploring Japan in spring",
+                startDate = "2025-04-01",
+                endDate = "2025-04-14",
+                status = TripStatus.IN_PROGRESS,
+                placesCount = 8,
+                photosCount = 42,
+                createdAt = "",
+                updatedAt = ""
+            ),
+            onClick = {}
+        )
     }
 }

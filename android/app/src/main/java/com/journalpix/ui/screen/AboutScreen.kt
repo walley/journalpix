@@ -23,8 +23,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.journalpix.ui.theme.JournalPixTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -326,5 +329,13 @@ fun LinkCard(icon: ImageVector, title: String, description: String, url: String)
                 modifier = Modifier.rotate(180f)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AboutScreenPreview() {
+    JournalPixTheme {
+        AboutScreen(navController = rememberNavController())
     }
 }

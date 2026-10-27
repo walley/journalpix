@@ -1,6 +1,7 @@
 package com.journalpix.ui.screen
 
 import android.Manifest
+import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -51,7 +53,12 @@ import com.journalpix.viewmodel.TimelineViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
+import java.util.Calendar
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.journalpix.ui.theme.JournalPixTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -298,7 +305,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Add a place")
+                        Text("Add a new day")
                     }
                 }
             }
@@ -384,6 +391,24 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         )
     }
 
+    fun showDatePicker(initialDateStr: String, onDateSelected: (LocalDate) -> Unit) {
+        val cal = Calendar.getInstance()
+        try {
+            val parsed = LocalDate.parse(initialDateStr.trim())
+            cal.set(parsed.year, parsed.monthValue - 1, parsed.dayOfMonth)
+        } catch (_: Exception) { }
+
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
     if (showEditDatesDialog && timeline != null) {
         var startText by remember(timeline.trip.startDate) {
             mutableStateOf(timeline.trip.startDate ?: LocalDate.now().toString())
@@ -403,7 +428,17 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         onValueChange = { startText = it; dateError = null },
                         label = { Text("From (yyyy-MM-dd)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                showDatePicker(startText) { selectedDate ->
+                                    startText = selectedDate.toString()
+                                    dateError = null
+                                }
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select start date")
+                            }
+                        }
                     )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
@@ -411,7 +446,17 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         onValueChange = { endText = it; dateError = null },
                         label = { Text("To (yyyy-MM-dd)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                showDatePicker(endText) { selectedDate ->
+                                    endText = selectedDate.toString()
+                                    dateError = null
+                                }
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select end date")
+                            }
+                        }
                     )
                     dateError?.let {
                         Spacer(Modifier.height(8.dp))
@@ -468,6 +513,9 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     }
 
     if (showCreatePlaceDialog) {
+        var placeDateText by remember(createPlaceDay) {
+            mutableStateOf(createPlaceDay ?: LocalDate.now().toString())
+        }
         AlertDialog(
             onDismissRequest = { showCreatePlaceDialog = false },
             title = { Text("Add a place") },
@@ -480,10 +528,23 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
-                    createPlaceDay?.let { day ->
-                        Spacer(Modifier.height(8.dp))
-                        Text("Day: $day", style = MaterialTheme.typography.bodySmall)
-                    }
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = placeDateText,
+                        onValueChange = { placeDateText = it },
+                        label = { Text("Date (yyyy-MM-dd)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                showDatePicker(placeDateText) { selectedDate ->
+                                    placeDateText = selectedDate.toString()
+                                }
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                            }
+                        }
+                    )
                 }
             },
             confirmButton = {
@@ -496,7 +557,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             latitude = null,
                             longitude = null,
                             address = null,
-                            visitDate = createPlaceDay ?: LocalDate.now().toString(),
+                            visitDate = placeDateText.trim().ifBlank { LocalDate.now().toString() },
                             orderIndex = null
                         )
                         placeViewModel.createPlace(token, effectiveTripId, request) {
@@ -525,11 +586,12 @@ private fun DayHeader(
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
+    val locale = LocalLocale.current.platformLocale
     val display = if (isBeforeAfter) {
         "Photos outside the trip dates"
     } else try {
         val d = LocalDate.parse(date)
-        val weekday = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        val weekday = d.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
         val md = d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
         "$weekday, $md"
     } catch (_: Exception) {
@@ -608,6 +670,33 @@ private fun TransportBetweenRow(
                 .weight(1f)
                 .padding(start = 8.dp),
             color = MaterialTheme.colorScheme.outlineVariant
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TimelineScreenPreview() {
+    JournalPixTheme {
+        TimelineScreen(
+            navController = rememberNavController(),
+            tripId = "demo-trip-1"
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DayHeaderPreview() {
+    JournalPixTheme {
+        DayHeader(
+            dayNumber = 1,
+            date = "2025-05-15",
+            isBeforeAfter = false,
+            placeCount = 3,
+            photoCount = 12,
+            expanded = true,
+            onToggle = {}
         )
     }
 }
