@@ -37,21 +37,29 @@ fn generate_ephemeral_jwt_secret() -> String {
 
 /// Send logs to syslog facility local3. `log` levels map to syslog
 /// severities, so info/access logs go to local3.info and errors to
-/// local3.err. Fall back to stderr if syslog is unavailable (e.g. in dev).
-fn init_logging() {
-    if let Err(e) = syslog::init_unix(syslog::Facility::LOG_LOCAL3, log::LevelFilter::Info) {
-        eprintln!("Could not initialize syslog logging: {e}; falling back to stderr");
-        let _ = env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("info"),
-        )
-        .try_init();
-    }
+/// local3.err. This is the ONLY logging backend: there is deliberately no
+/// stderr or file fallback. If syslog is unavailable the caller reports the
+/// error and the process exits without starting.
+fn init_logging() -> Result<(), syslog::Error> {
+    syslog::init_unix(syslog::Facility::LOG_LOCAL3, log::LevelFilter::Info)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-    init_logging();
+
+    // Logging must go to syslog and nowhere else. Without a reachable local
+    // syslog there is no way to honour that contract, so report the problem
+    // (stderr is only used for this fatal startup message) and exit cleanly.
+    if let Err(e) = init_logging() {
+        eprintln!("FATAL: cannot start JournalPix: syslog is required but unavailable: {e}");
+        eprintln!(
+            "Ensure a local syslog daemon is running (expected socket: /dev/log, /var/run/syslog or /var/run/log)."
+        );
+        std::process::exit(1);
+    }
+
+    log::info!("JournalPix backend starting");
 
     // --config <path> (optional). Config: defaults <- INI file <- env vars.
     let args: Vec<String> = std::env::args().collect();
@@ -63,9 +71,9 @@ async fn main() -> std::io::Result<()> {
 
     let config = Config::load(cli_config);
     if let Some(p) = &config.config_path {
-        println!("Using config file: {}", p.display());
+        log::info!("Using config file: {}", p.display());
     } else {
-        println!("No config file found, using built-in defaults");
+        log::info!("No config file found, using built-in defaults");
     }
 
     // Create database connection pool
@@ -79,15 +87,23 @@ async fn main() -> std::io::Result<()> {
         }
         Err(e) => {
             log::error!("Failed to connect to database: {}", e);
-            panic!("Database connection failed: {}", e);
+            std::process::exit(1);
         }
     };
 
     // File storage (uploads/thumbnails)
-    let file_service = Arc::new(
-        FileService::new(&config.upload_dir, &config.thumbnail_dir)
-            .expect("Failed to create upload/thumbnail directories"),
-    );
+    let file_service = match FileService::new(&config.upload_dir, &config.thumbnail_dir) {
+        Ok(service) => Arc::new(service),
+        Err(e) => {
+            log::error!(
+                "Failed to create upload/thumbnail directories ({} / {}): {}",
+                config.upload_dir,
+                config.thumbnail_dir,
+                e
+            );
+            std::process::exit(1);
+        }
+    };
 
     // JWT secret: signs login tokens. If none is configured we generate a
     // random ephemeral one at startup — safe (never a known default), but
@@ -97,10 +113,10 @@ async fn main() -> std::io::Result<()> {
     let mut config = config;
     if config.jwt_secret_is_ephemeral() {
         config.jwt_secret = generate_ephemeral_jwt_secret();
-        log::info!("No [auth] jwt_secret configured: generated a random ephemeral JWT secret.");
-        println!("NOTE: jwt_secret not configured — using a random secret for this run.");
-        println!("      Logins will NOT survive a restart; users just log in again.");
-        println!("      Set a fixed [auth] jwt_secret in the config file for persistent sessions.");
+        log::warn!(
+            "No [auth] jwt_secret configured: generated a random ephemeral JWT secret for this run. \
+             Logins will NOT survive a restart; set a fixed [auth] jwt_secret for persistent sessions."
+        );
     }
 
     let auth_service = web::Data::new(AuthService::new(
@@ -108,11 +124,12 @@ async fn main() -> std::io::Result<()> {
         config.jwt_expiration_days,
     ));
 
-    println!(
+    log::info!(
         "Starting JournalPix server on http://{}:{}",
-        BIND_ADDR, config.server_port
+        BIND_ADDR,
+        config.server_port
     );
-    println!(
+    log::info!(
         "Using {} database ({})",
         config.database_type.name(),
         config.database_url
@@ -215,6 +232,7 @@ async fn main() -> std::io::Result<()> {
             .service(actix_files::Files::new("/uploads", &config.upload_dir))
             .service(actix_files::Files::new("/thumbnails", &config.thumbnail_dir))
             .app_data(web::Data::new(config))
+            .service(routes::index::index)
             .service(routes::health::health_check)
             .service(
                 web::scope("/api")

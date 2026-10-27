@@ -44,9 +44,8 @@ dotenv = "0.15"
 # Validation
 validator = { version = "0.16", features = ["derive"] }
 
-# Logging
+# Logging (syslog only — no stderr/file fallback)
 log = "0.4"
-env_logger = "0.10"
 syslog = "7"
 
 [dev-dependencies]

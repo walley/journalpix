@@ -55,6 +55,8 @@ EMAIL="test_$RANDOM_ID@example.com"
 
 run_health() {
     say "health"
+    split "$(get "$BASE_URL/")"
+    check "GET / (about page)" 200 "$CODE" "$BODY"
     split "$(get "$BASE_URL/health")"
     check "GET /health" 200 "$CODE" "$BODY"
 }

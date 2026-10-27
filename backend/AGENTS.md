@@ -16,9 +16,16 @@ The HTTP listener is hard-coded to `127.0.0.1` (loopback) in `src/main.rs`.
 There is no host/bind address setting: the backend cannot be exposed on other
 interfaces. Use a reverse proxy on the same host if external access is needed.
 
-Logging goes to syslog facility **local3**: request/access logs at info
-(`local3.info`), errors and 5xx requests at err (`local3.err`). If syslog is
-unavailable the logger falls back to stderr.
+Production deployment: **walley.org** is Apache and `/journalpix` is
+reverse-proxied to the loopback listener. Public URLs therefore carry the
+`/journalpix` prefix, e.g. `https://walley.org/journalpix/health` — the root
+about page links to that public health URL rather than the internal `/health`.
+
+Logging goes exclusively to syslog facility **local3**: request/access logs at
+info (`local3.info`), errors and 5xx requests at err (`local3.err`). There is
+deliberately no stderr/file fallback: if no local syslog socket (`/dev/log`,
+`/var/run/syslog` or `/var/run/log`) is reachable, the process reports the
+error on stderr and exits with status 1 instead of starting.
 
 ### Configuration
 
@@ -108,6 +115,7 @@ auto-created; served at `GET /uploads/<file>` and `GET /thumbnails/<file>`).
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
+| GET | / | – | HTML about page (outside /api) |
 | GET | /health | – | outside /api |
 | POST | /api/auth/register | – | `{email,name,password}` (pwd ≥ 8 chars) → token |
 | POST | /api/auth/login | – | `{email,password}` → token |

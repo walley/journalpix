@@ -20,6 +20,9 @@ GROUP=journalpix
 WORKDIR=/var/journalpix
 RUNDIR=/run/journalpix
 PIDFILE="$RUNDIR/journalpix.pid"
+# Application logs go exclusively to syslog (journalpix uses facility local3).
+# This file only captures fatal startup diagnostics written to stderr, e.g.
+# when syslog itself is unavailable and the service refuses to start.
 LOGFILE=/var/log/journalpix.log
 
 # Allow overrides without editing this script.

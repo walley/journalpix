@@ -1,10 +1,13 @@
 pub mod health;
+pub mod index;
 pub mod auth;
 pub mod trips;
 pub mod places;
 pub mod photos;
 pub mod timeline;
 
+/// Version advertised on the root banner and by `/health`.
+pub const APP_VERSION: &str = "0.1.0";
 
 use crate::utils::auth::AuthService;
 use crate::utils::error::ApiError;
