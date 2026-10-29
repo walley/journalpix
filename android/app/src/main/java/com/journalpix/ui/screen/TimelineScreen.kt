@@ -259,7 +259,22 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                     placeCount = dayItem.places.size,
                                     photoCount = dayItem.places.sumOf { it.photos.size },
                                     expanded = expanded,
-                                    onToggle = { expandedDays[dayKey] = !expanded }
+                                    onToggle = { expandedDays[dayKey] = !expanded },
+                                    onAddPhoto = {
+                                        val targetPlaceId = if (dayItem.places.isNotEmpty()) {
+                                            dayItem.places.first().id
+                                        } else {
+                                            val newPlace = OfflineStore.addPlace(
+                                                tripId = effectiveTripId,
+                                                name = "Place on $dayKey",
+                                                visitDate = if (isBeforeAfter) LocalDate.now()
+                                                  .toString() else dayKey
+                                            )
+                                            refresh()
+                                            newPlace.id
+                                        }
+                                        startAddPhoto(targetPlaceId)
+                                    }
                                 )
                             }
                             if (expanded) {
@@ -610,7 +625,8 @@ private fun DayHeader(
     placeCount: Int,
     photoCount: Int,
     expanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onAddPhoto: () -> Unit,
 ) {
     val locale = LocalLocale.current.platformLocale
     val display = if (isBeforeAfter) {
@@ -652,6 +668,14 @@ private fun DayHeader(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onAddPhoto) {
+                Icon(
+                    Icons.Default.AddPhotoAlternate,
+                    contentDescription = "Add photo to day",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -721,8 +745,7 @@ fun DayHeaderPreview() {
             isBeforeAfter = false,
             placeCount = 3,
             photoCount = 12,
-            expanded = true,
-            onToggle = {}
+            expanded = true, onToggle = {}, onAddPhoto = {}
         )
     }
 }
