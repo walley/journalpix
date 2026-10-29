@@ -28,9 +28,20 @@ pub async fn reorder_timeline(
     db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
     let timeline_service = TimelineService::new(db_pool.get_ref().clone());
+    let item_count = request.len();
 
     match timeline_service.reorder_timeline(*trip_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!(
+                "Timeline reorder trip_id={}: success (items={})",
+                *trip_id,
+                item_count
+            );
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Timeline reorder trip_id={}: failed ({})", *trip_id, e);
+            e.error_response()
+        }
     }
 }

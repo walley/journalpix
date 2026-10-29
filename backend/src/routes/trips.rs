@@ -51,8 +51,23 @@ pub async fn create_trip(
     let trip_service = TripService::new(db_pool.get_ref().clone());
 
     match trip_service.create_trip(user_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Created().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            let trip_id = response
+                .data
+                .as_ref()
+                .map(|t| t.id.to_string())
+                .unwrap_or_else(|| "-".to_string());
+            log::info!(
+                "Trip create user_id={}: success (trip_id={})",
+                user_id,
+                trip_id
+            );
+            HttpResponse::Created().json(response)
+        }
+        Err(e) => {
+            log::warn!("Trip create user_id={}: failed ({})", user_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -76,8 +91,14 @@ pub async fn update_trip(
     let trip_service = TripService::new(db_pool.get_ref().clone());
 
     match trip_service.update_trip(*trip_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Trip update trip_id={}: success", *trip_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Trip update trip_id={}: failed ({})", *trip_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -88,7 +109,13 @@ pub async fn delete_trip(
     let trip_service = TripService::new(db_pool.get_ref().clone());
 
     match trip_service.delete_trip(*trip_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Trip delete trip_id={}: success", *trip_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Trip delete trip_id={}: failed ({})", *trip_id, e);
+            e.error_response()
+        }
     }
 }

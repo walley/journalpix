@@ -26,8 +26,19 @@ pub async fn register(
     let user_service = UserService::new(db_pool.get_ref().clone());
 
     match user_service.create_user(request.into_inner(), &auth_service).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            let user_id = response
+                .data
+                .as_ref()
+                .map(|d| d.user.id.to_string())
+                .unwrap_or_else(|| "-".to_string());
+            log::info!("User register: success (user_id={})", user_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("User register: failed ({})", e);
+            e.error_response()
+        }
     }
 }
 
@@ -97,8 +108,14 @@ pub async fn update_current_user(
     let user_service = UserService::new(db_pool.get_ref().clone());
 
     match user_service.update_user(user_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("User update user_id={}: success", user_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("User update user_id={}: failed ({})", user_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -115,7 +132,13 @@ pub async fn delete_current_user(
     let user_service = UserService::new(db_pool.get_ref().clone());
 
     match user_service.delete_user(user_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("User delete user_id={}: success", user_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("User delete user_id={}: failed ({})", user_id, e);
+            e.error_response()
+        }
     }
 }

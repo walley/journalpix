@@ -56,7 +56,14 @@ pub async fn upload_photo_to_place(
         let mut field = match result {
             Ok(f) => f,
             Err(e) => {
-                return ApiError::BadRequest(format!("Failed to read field: {}", e)).error_response()
+                let err = ApiError::BadRequest(format!("Failed to read field: {}", e));
+                log::warn!(
+                    "Photo upload user_id={} place_id={}: failed ({})",
+                    user_id,
+                    *place_id,
+                    err
+                );
+                return err.error_response()
             }
         };
 
@@ -75,14 +82,26 @@ pub async fn upload_photo_to_place(
                 Some(Ok(chunk)) => {
                     content.extend_from_slice(&chunk);
                     if content.len() > MAX_FILE_SIZE {
-                        return ApiError::BadRequest("File size exceeded limit (10MB)".to_string())
-                            .error_response();
+                        let err = ApiError::BadRequest("File size exceeded limit (10MB)".to_string());
+                        log::warn!(
+                            "Photo upload user_id={} place_id={}: failed ({})",
+                            user_id,
+                            *place_id,
+                            err
+                        );
+                        return err.error_response();
                     }
                 }
                 None => break,
                 Some(Err(e)) => {
-                    return ApiError::BadRequest(format!("Failed to read file content: {}", e))
-                        .error_response()
+                    let err = ApiError::BadRequest(format!("Failed to read file content: {}", e));
+                    log::warn!(
+                        "Photo upload user_id={} place_id={}: failed ({})",
+                        user_id,
+                        *place_id,
+                        err
+                    );
+                    return err.error_response()
                 }
             }
         }
@@ -91,11 +110,37 @@ pub async fn upload_photo_to_place(
             .upload_photo(user_id, Some(*place_id), file_name, content)
             .await
         {
-            Ok(response) => return HttpResponse::Created().json(response),
-            Err(e) => return e.error_response(),
+            Ok(response) => {
+                let photo_id = response
+                    .data
+                    .as_ref()
+                    .map(|p| p.id.to_string())
+                    .unwrap_or_else(|| "-".to_string());
+                log::info!(
+                    "Photo upload user_id={} place_id={}: success (photo_id={})",
+                    user_id,
+                    *place_id,
+                    photo_id
+                );
+                return HttpResponse::Created().json(response);
+            }
+            Err(e) => {
+                log::warn!(
+                    "Photo upload user_id={} place_id={}: failed ({})",
+                    user_id,
+                    *place_id,
+                    e
+                );
+                return e.error_response();
+            }
         }
     }
 
+    log::warn!(
+        "Photo upload user_id={} place_id={}: failed (no file uploaded)",
+        user_id,
+        *place_id
+    );
     ApiError::BadRequest("No file uploaded".to_string()).error_response()
 }
 
@@ -139,8 +184,14 @@ pub async fn update_photo(
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
 
     match photo_service.update_photo(*photo_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Photo update photo_id={}: success", *photo_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Photo update photo_id={}: failed ({})", *photo_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -152,7 +203,13 @@ pub async fn delete_photo(
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
 
     match photo_service.delete_photo(*photo_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Photo delete photo_id={}: success", *photo_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Photo delete photo_id={}: failed ({})", *photo_id, e);
+            e.error_response()
+        }
     }
 }

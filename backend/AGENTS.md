@@ -34,6 +34,15 @@ success (user_id=...)` at info, and `...: failed (<reason>)` at warning. The
 email is PII and lands in syslog, but the password is never logged. The email
 is formatted with `{:?}`, so embedded quotes/newlines cannot forge log lines.
 
+Mutating endpoints write one audit line each, same style:
+`<Entity> <action> <context>: success (<detail>)` at info and
+`<Entity> <action> <context>: failed (<reason>)` at warning. Covers trips,
+places, photos (upload includes the field-read/size-limit/no-file branches),
+account register/update/delete and timeline reorder (with `items=<count>`);
+version 0.1.4. Reads are not audited — the access log already records them.
+Entity/action wording mirrors the login audit (`Trip create trip_id=...`,
+`Photo upload user_id=... place_id=...`, `Timeline reorder trip_id=...`, ...).
+
 ### Configuration
 
 INI style (see `journalpix.conf.example`), priority:

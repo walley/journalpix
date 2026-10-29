@@ -38,8 +38,23 @@ pub async fn create_place(
     let place_service = PlaceService::new(db_pool.get_ref().clone());
 
     match place_service.create_place(*trip_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Created().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            let place_id = response
+                .data
+                .as_ref()
+                .map(|p| p.id.to_string())
+                .unwrap_or_else(|| "-".to_string());
+            log::info!(
+                "Place create trip_id={}: success (place_id={})",
+                *trip_id,
+                place_id
+            );
+            HttpResponse::Created().json(response)
+        }
+        Err(e) => {
+            log::warn!("Place create trip_id={}: failed ({})", *trip_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -63,8 +78,14 @@ pub async fn update_place(
     let place_service = PlaceService::new(db_pool.get_ref().clone());
 
     match place_service.update_place(*place_id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Place update place_id={}: success", *place_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Place update place_id={}: failed ({})", *place_id, e);
+            e.error_response()
+        }
     }
 }
 
@@ -75,7 +96,13 @@ pub async fn delete_place(
     let place_service = PlaceService::new(db_pool.get_ref().clone());
 
     match place_service.delete_place(*place_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => e.error_response(),
+        Ok(response) => {
+            log::info!("Place delete place_id={}: success", *place_id);
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Place delete place_id={}: failed ({})", *place_id, e);
+            e.error_response()
+        }
     }
 }
