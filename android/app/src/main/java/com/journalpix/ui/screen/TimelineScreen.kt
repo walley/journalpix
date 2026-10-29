@@ -554,11 +554,22 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         var placeDateText by remember(createPlaceDay) {
             mutableStateOf(createPlaceDay ?: LocalDate.now().toString())
         }
+        var isAddingPlace by remember { mutableStateOf(false) }
+
+        LaunchedEffect(placeViewModel.isLoading.value) {
+            if (!placeViewModel.isLoading.value && placeViewModel.errorMessage.value != null) {
+                isAddingPlace = false
+            }
+        }
+
         AlertDialog(
             onDismissRequest = {
-                showCreatePlaceDialog = false
-                newPlaceName = ""
-                createPlaceDay = null
+                if (!isAddingPlace && !placeViewModel.isLoading.value) {
+                    showCreatePlaceDialog = false
+                    newPlaceName = ""
+                    createPlaceDay = null
+                    placeViewModel.errorMessage.value = null
+                }
             },
             title = { Text("Add a place") },
             text = {
@@ -568,7 +579,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         onValueChange = { newPlaceName = it },
                         label = { Text("Place name") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isAddingPlace && !placeViewModel.isLoading.value
                     )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
@@ -577,46 +589,81 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         label = { Text("Date (yyyy-MM-dd)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !isAddingPlace && !placeViewModel.isLoading.value,
                         trailingIcon = {
-                            IconButton(onClick = {
-                                showDatePicker(placeDateText) { selectedDate ->
-                                    placeDateText = selectedDate.toString()
-                                }
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    showDatePicker(placeDateText) { selectedDate ->
+                                        placeDateText = selectedDate.toString()
+                                    }
+                                }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
+                            ) {
                                 Icon(Icons.Default.DateRange, contentDescription = "Select date")
                             }
                         }
                     )
+                    placeViewModel.errorMessage.value?.let { error ->
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (newPlaceName.isNotBlank()) {
-                        val request = com.journalpix.models.CreatePlaceRequest(
-                            tripId = effectiveTripId,
-                            name = newPlaceName.trim(),
-                            description = null,
-                            latitude = null,
-                            longitude = null,
-                            address = null,
-                            visitDate = placeDateText.trim().ifBlank { LocalDate.now().toString() },
-                            orderIndex = null
-                        )
-                        placeViewModel.createPlace(token, effectiveTripId, request) {
-                            showCreatePlaceDialog = false
-                            newPlaceName = ""
-                            createPlaceDay = null
-                            refresh()
+                val isAdding = isAddingPlace || placeViewModel.isLoading.value
+                Button(
+                    onClick = {
+                        if (newPlaceName.isNotBlank() && !isAdding) {
+                            isAddingPlace = true
+                            placeViewModel.errorMessage.value = null
+                            val request = com.journalpix.models.CreatePlaceRequest(
+                                tripId = effectiveTripId,
+                                name = newPlaceName.trim(),
+                                description = null,
+                                latitude = null,
+                                longitude = null,
+                                address = null,
+                                visitDate = placeDateText.trim()
+                                  .ifBlank {
+                                      LocalDate.now()
+                                        .toString()
+                                  },
+                                orderIndex = null
+                            )
+                            placeViewModel.createPlace(token, effectiveTripId, request) {
+                                isAddingPlace = false
+                                showCreatePlaceDialog = false
+                                newPlaceName = ""
+                                createPlaceDay = null
+                                refresh()
+                            }
                         }
+                    }, enabled = !isAdding && newPlaceName.isNotBlank()
+                ) {
+                    if (isAdding) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(Modifier.width(8.dp))
                     }
-                }) { Text("Add") }
+                    Text("Add")
+                }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showCreatePlaceDialog = false
-                    newPlaceName = ""
-                    createPlaceDay = null
-                }) { Text("Cancel") }
+                val isAdding = isAddingPlace || placeViewModel.isLoading.value
+                TextButton(
+                    onClick = {
+                        showCreatePlaceDialog = false
+                        newPlaceName = ""
+                        createPlaceDay = null
+                        placeViewModel.errorMessage.value = null
+                    }, enabled = !isAdding
+                ) { Text("Cancel") }
             }
         )
     }
