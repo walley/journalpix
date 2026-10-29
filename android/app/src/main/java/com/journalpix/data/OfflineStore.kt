@@ -30,7 +30,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object OfflineStore {
 
-    const val BEFORE_AFTER_KEY = "before-after"
+    const val BEFORE_KEY = "before"
+    const val AFTER_KEY = "after"
 
     private val photosByPlace = ConcurrentHashMap<String, MutableList<PhotoResponse>>()
     private val placesByTrip = ConcurrentHashMap<String, MutableList<PlaceWithPhotos>>()
@@ -249,19 +250,35 @@ object OfflineStore {
         val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
+        val beforePlaces = mutableListOf<PlaceWithPhotos>()
+        val afterPlaces = mutableListOf<PlaceWithPhotos>()
         val inRange = mutableListOf<PlaceWithPhotos>()
-        val outOfRange = mutableListOf<PlaceWithPhotos>()
+
         for (p in places) {
             val day = placeDay(p)
             val d = runCatching { LocalDate.parse(day) }.getOrNull()
-            if (d != null && start != null && end != null && (d.isBefore(start) || d.isAfter(end))) {
-                outOfRange.add(p)
+            if (d != null && start != null && end != null) {
+                if (d.isBefore(start)) {
+                    beforePlaces.add(p)
+                } else if (d.isAfter(end)) {
+                    afterPlaces.add(p)
+                } else {
+                    inRange.add(p)
+                }
             } else {
                 inRange.add(p)
             }
         }
 
         val items = mutableListOf<TimelineItem>()
+
+        if (beforePlaces.isNotEmpty()) {
+            val ordered = beforePlaces.sortedWith(
+                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+            )
+            items.add(TimelineItem(date = BEFORE_KEY, places = ordered))
+        }
+
         val grouped = inRange.groupBy { placeDay(it) }
 
         if (start != null && end != null && !end.isBefore(start) && java.time.temporal.ChronoUnit.DAYS.between(
@@ -297,11 +314,11 @@ object OfflineStore {
               }
         }
 
-        if (outOfRange.isNotEmpty()) {
-            val ordered = outOfRange.sortedWith(
+        if (afterPlaces.isNotEmpty()) {
+            val ordered = afterPlaces.sortedWith(
                 compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
             )
-            items.add(TimelineItem(date = BEFORE_AFTER_KEY, places = ordered))
+            items.add(TimelineItem(date = AFTER_KEY, places = ordered))
         }
 
         return TripTimeline(

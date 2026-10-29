@@ -247,10 +247,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
 
                         timeline.timeline.forEachIndexed { dayIndex, dayItem ->
                             val dayKey = dayItem.date
-                            val isBeforeAfter = dayKey == OfflineStore.BEFORE_AFTER_KEY
+                            val isBefore = dayKey == OfflineStore.BEFORE_KEY
+                            val isAfter = dayKey == OfflineStore.AFTER_KEY
+                            val isBeforeAfter = isBefore || isAfter
                             val expanded = expandedDays[dayKey] ?: true
                             val inRangeIndex = timeline.timeline.take(dayIndex)
-                              .count { it.date != OfflineStore.BEFORE_AFTER_KEY }
+                              .count { it.date != OfflineStore.BEFORE_KEY && it.date != OfflineStore.AFTER_KEY }
                             item(key = "day-header-$dayKey") {
                                 DayHeader(
                                     dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
@@ -632,18 +634,27 @@ private fun DayHeader(
     onAddPhoto: () -> Unit,
 ) {
     val locale = LocalLocale.current.platformLocale
-    val display = if (isBeforeAfter) {
-        "Photos outside the trip dates"
-    } else try {
-        val d = LocalDate.parse(date)
-        val weekday = d.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
-        val md = d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
-        "$weekday, $md"
-    } catch (_: Exception) {
-        date
+    val isBefore = date == OfflineStore.BEFORE_KEY
+    val isAfter = date == OfflineStore.AFTER_KEY
+
+    val display = when {
+        isBefore -> "Photos before the trip dates"
+        isAfter  -> "Photos after the trip dates"
+        else     -> try {
+            val d = LocalDate.parse(date)
+            val weekday = d.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+            val md = d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+            "$weekday, $md"
+        } catch (_: Exception) {
+            date
+        }
     }
 
-    val title = if (isBeforeAfter) "Before & After" else "Day $dayNumber"
+    val title = when {
+        isBefore -> "Before Trip"
+        isAfter  -> "After Trip"
+        else     -> "Day $dayNumber"
+    }
 
     Surface(
         tonalElevation = 1.dp,
