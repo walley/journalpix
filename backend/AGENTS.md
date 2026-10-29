@@ -39,9 +39,8 @@ Mutating endpoints write one audit line each, same style:
 `<Entity> <action> <context>: failed (<reason>)` at warning. Covers trips,
 places, photos (upload includes the field-read/size-limit/no-file branches),
 account register/update/delete and timeline reorder (with `items=<count>`);
-version 0.1.4. Reads are not audited — the access log already records them.
-Entity/action wording mirrors the login audit (`Trip create trip_id=...`,
-`Photo upload user_id=... place_id=...`, `Timeline reorder trip_id=...`, ...).
+version 0.1.5 (auth/ownership since then: context always carries `user_id`).
+Reads are not audited — the access log already records them.
 
 ### Configuration
 
@@ -149,15 +148,22 @@ thumbnails in `./thumbnails` (both auto-created; served at
 | PUT | /api/auth/me | Bearer | update name/email/password |
 | DELETE | /api/auth/me | Bearer | delete account |
 | GET/POST | /api/trips | Bearer | list (of auth user) / create `{title,description?,start_date?,end_date?,status?}` |
-| GET/PUT/DELETE | /api/trips/{trip_id} | – | trip detail/update/delete |
-| GET/POST | /api/trips/{trip_id}/places | – | places of a trip / create (body `trip_id` ignored, path wins) |
-| GET/PUT/DELETE | /api/places/{place_id} | – | detail includes `photos` |
-| GET | /api/places/{place_id}/photos | – | list photos of place |
-| POST | /api/places/{place_id}/photos | Bearer | **multipart** upload (`photo` field, ≤10MB) |
+| GET/PUT/DELETE | /api/trips/{trip_id} | Bearer + owner | trip detail/update/delete (404 if missing, 403 if another user's) |
+| GET/POST | /api/trips/{trip_id}/places | Bearer + owner | places of a trip / create (body `trip_id` ignored, path wins) |
+| GET/PUT/DELETE | /api/places/{place_id} | Bearer + owner | detail includes `photos` |
+| GET | /api/places/{place_id}/photos | Bearer + owner | list photos of place |
+| POST | /api/places/{place_id}/photos | Bearer + owner | **multipart** upload (`photo` field, ≤10MB) |
 | GET | /api/photos | Bearer | all photos of auth user |
-| GET/PUT/DELETE | /api/photos/{photo_id} | – | |
-| GET | /api/trips/{trip_id}/timeline | – | places grouped by visit date |
-| PUT | /api/trips/{trip_id}/timeline/reorder | – | body: `[place_id, ...]` new order |
+| GET/PUT/DELETE | /api/photos/{photo_id} | Bearer + owner | ownership via `photos.user_id` |
+| GET | /api/trips/{trip_id}/timeline | Bearer + owner | places grouped by visit date |
+| PUT | /api/trips/{trip_id}/timeline/reorder | Bearer + owner | body: `[place_id, ...]` new order |
+
+Every `/api` route except `register`/`login` requires a valid Bearer token
+(401 otherwise) **and** that the addressed resource belongs to the caller
+(403 `Forbidden` otherwise; lookups go through `trip_owner`/`place_owner`/
+`photo_owner` in the services, enforced by `routes::require_owner`). Public
+endpoints are only: the about page, `/health`, `/api/auth/register`,
+`/api/auth/login`, `/uploads/*` and `/thumbnails/*` static files.
 
 `TripStatus` serializes snake_case: `planned`, `in_progress`, `completed`,
 `cancelled`.
@@ -180,11 +186,14 @@ thumbnails in `./thumbnails` (both auto-created; served at
    use the helpers in `database/connection.rs` (`get_opt_naive_datetime`,
    `get_timestamp`, ...). Dates are stored as TEXT
    (`YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`, or RFC3339 for timestamps).
-5. Auth is **not** middleware — protected handlers call
-   `routes::auth_user_id(&req, &auth_service)` which parses the
-   `Authorization: Bearer <jwt>` header. Ownership checks (does this trip
-   belong to the caller?) are mostly NOT enforced on `{id}` routes — a
-   known limitation, fine for MVP.
+5. Auth is **not** middleware — every protected handler calls
+   `routes::auth_user_id(&req, &auth_service)` (parses the
+   `Authorization: Bearer <jwt>` header; 401 on failure), and every
+   resource-addressing handler then calls
+   `routes::require_owner(<service>.trip_owner/place_owner/photo_owner(id).await, user_id)`
+   which turns a foreign resource into 403. register/login and /health are
+   the only public +JSON endpoints. New resources need both: an owner lookup
+   in the service and a require_owner call in the handler.
 6. SQLite access is via `db_pool.with_conn(|conn| ...)` (synchronous,
    mutex-guarded). Do all bcrypt hashing *outside* the closure — it returns
    `rusqlite::Error`, not `ApiError`.
@@ -199,8 +208,6 @@ thumbnails in `./thumbnails` (both auto-created; served at
   a dependency) to generate real scaled thumbnails.
 - `middleware/auth.rs` (`actix-web-httpauth` bearer middleware) exists but
   is unused; handlers do manual header parsing instead.
-- `timeline reorder` ignores auth; places/photos routes don't verify the
-  resource owner.
 
 ## Frontend scripts
 

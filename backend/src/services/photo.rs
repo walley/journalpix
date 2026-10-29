@@ -1,5 +1,5 @@
 use crate::database::connection::{
-    DatabaseConnection, PHOTO_COLS,
+    DatabaseConnection, PHOTO_COLS, get_uuid,
 };
 use crate::models::photo::{Photo, PhotoMetadata, PhotoResponse, UpdatePhotoRequest};
 use crate::models::response::ApiResponse;
@@ -138,6 +138,23 @@ impl PhotoService {
                     &format!("SELECT {PHOTO_COLS} FROM photos WHERE id = ?1"),
                     [photo_id.to_string()],
                     map_photo_response,
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound("Photo not found".into()),
+                other => db_err(other),
+            })
+    }
+
+    /// The user id owning `photo_id` — used for ownership checks in route
+    /// handlers (`routes::require_owner`). 404 when the photo does not exist.
+    pub async fn photo_owner(&self, photo_id: Uuid) -> Result<Uuid, ApiError> {
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT user_id FROM photos WHERE id = ?1",
+                    [photo_id.to_string()],
+                    |r| get_uuid(r, 0),
                 )
             })
             .map_err(|e| match e {

@@ -50,6 +50,9 @@ pub struct PlaceWithPhotos {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePlaceRequest {
+    /// Overridden by the path trip_id in the handler; `default` lets the
+    /// client omit it (required purely by history).
+    #[serde(default)]
     pub trip_id: Uuid,
     pub name: String,
     pub description: Option<String>,

@@ -166,6 +166,23 @@ impl TripService {
             })
     }
 
+    /// The user id owning `trip_id` — used for ownership checks in route
+    /// handlers (`routes::require_owner`). 404 when the trip does not exist.
+    pub async fn trip_owner(&self, trip_id: Uuid) -> Result<Uuid, ApiError> {
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT user_id FROM trips WHERE id = ?1",
+                    [trip_id.to_string()],
+                    |r| get_uuid(r, 0),
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound("Trip not found".into()),
+                other => db_err(other),
+            })
+    }
+
     pub async fn update_trip(
         &self,
         trip_id: Uuid,

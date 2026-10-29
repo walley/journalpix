@@ -3,6 +3,7 @@ use actix_multipart::Multipart;
 use futures::StreamExt;
 use crate::models::photo::{UpdatePhotoRequest};
 use crate::services::photo::PhotoService;
+use crate::services::place::PlaceService;
 use crate::utils::auth::AuthService;
 use crate::utils::error::ApiError;
 use crate::utils::file::{get_file_extension, FileService};
@@ -10,7 +11,7 @@ use uuid::Uuid;
 use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
-use super::auth_user_id;
+use super::{auth_user_id, require_owner};
 
 const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10 MB
 
@@ -25,12 +26,25 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 }
 
 pub async fn get_photos_for_place(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     place_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
-    match photo_service.get_photos(Some(*place_id), Uuid::nil()).await {
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(place_service.place_owner(*place_id).await, user_id) {
+        return e.error_response();
+    }
+
+    match photo_service.get_photos(Some(*place_id), user_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => e.error_response(),
     }
@@ -50,6 +64,13 @@ pub async fn upload_photo_to_place(
     };
 
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(place_service.place_owner(*place_id).await, user_id) {
+        log::warn!("Photo upload user_id={} place_id={}: failed ({})", user_id, *place_id, e);
+        return e.error_response();
+    }
+
     let mut payload_stream = payload;
 
     while let Some(result) = payload_stream.next().await {
@@ -163,11 +184,22 @@ pub async fn get_all_photos(
 }
 
 pub async fn get_photo(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     photo_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(photo_service.photo_owner(*photo_id).await, user_id) {
+        return e.error_response();
+    }
 
     match photo_service.get_photo(*photo_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -176,39 +208,67 @@ pub async fn get_photo(
 }
 
 pub async fn update_photo(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     photo_id: web::Path<Uuid>,
     request: web::Json<UpdatePhotoRequest>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(photo_service.photo_owner(*photo_id).await, user_id) {
+        log::warn!("Photo update user_id={} photo_id={}: failed ({})", user_id, *photo_id, e);
+        return e.error_response();
+    }
 
     match photo_service.update_photo(*photo_id, request.into_inner()).await {
         Ok(response) => {
-            log::info!("Photo update photo_id={}: success", *photo_id);
+            log::info!(
+                "Photo update user_id={} photo_id={}: success",
+                user_id,
+                *photo_id
+            );
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
-            log::warn!("Photo update photo_id={}: failed ({})", *photo_id, e);
+            log::warn!("Photo update user_id={} photo_id={}: failed ({})", user_id, *photo_id, e);
             e.error_response()
         }
     }
 }
 
 pub async fn delete_photo(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     photo_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(photo_service.photo_owner(*photo_id).await, user_id) {
+        log::warn!("Photo delete user_id={} photo_id={}: failed ({})", user_id, *photo_id, e);
+        return e.error_response();
+    }
 
     match photo_service.delete_photo(*photo_id).await {
         Ok(response) => {
-            log::info!("Photo delete photo_id={}: success", *photo_id);
+            log::info!("Photo delete user_id={} photo_id={}: success", user_id, *photo_id);
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
-            log::warn!("Photo delete photo_id={}: failed ({})", *photo_id, e);
+            log::warn!("Photo delete user_id={} photo_id={}: failed ({})", user_id, *photo_id, e);
             e.error_response()
         }
     }

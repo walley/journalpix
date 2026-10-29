@@ -6,7 +6,7 @@ use uuid::Uuid;
 use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
-use super::auth_user_id;
+use super::{auth_user_id, require_owner};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -72,10 +72,21 @@ pub async fn create_trip(
 }
 
 pub async fn get_trip(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     trip_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let trip_service = TripService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(trip_service.trip_owner(*trip_id).await, user_id) {
+        return e.error_response();
+    }
 
     match trip_service.get_trip(*trip_id).await {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -84,37 +95,65 @@ pub async fn get_trip(
 }
 
 pub async fn update_trip(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     trip_id: web::Path<Uuid>,
     request: web::Json<UpdateTripRequest>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let trip_service = TripService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(trip_service.trip_owner(*trip_id).await, user_id) {
+        log::warn!("Trip update user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
+        return e.error_response();
+    }
 
     match trip_service.update_trip(*trip_id, request.into_inner()).await {
         Ok(response) => {
-            log::info!("Trip update trip_id={}: success", *trip_id);
+            log::info!(
+                "Trip update user_id={} trip_id={}: success",
+                user_id,
+                *trip_id
+            );
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
-            log::warn!("Trip update trip_id={}: failed ({})", *trip_id, e);
+            log::warn!("Trip update user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
             e.error_response()
         }
     }
 }
 
 pub async fn delete_trip(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
     trip_id: web::Path<Uuid>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
 ) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
     let trip_service = TripService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(trip_service.trip_owner(*trip_id).await, user_id) {
+        log::warn!("Trip delete user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
+        return e.error_response();
+    }
 
     match trip_service.delete_trip(*trip_id).await {
         Ok(response) => {
-            log::info!("Trip delete trip_id={}: success", *trip_id);
+            log::info!("Trip delete user_id={} trip_id={}: success", user_id, *trip_id);
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
-            log::warn!("Trip delete trip_id={}: failed ({})", *trip_id, e);
+            log::warn!("Trip delete user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
             e.error_response()
         }
     }

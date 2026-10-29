@@ -34,3 +34,21 @@ pub fn auth_user_id(req: &HttpRequest, auth_service: &AuthService) -> Result<Uui
         .get_user_id_from_token(token)
         .map_err(|e| ApiError::Unauthorized(e.to_string()))
 }
+
+/// Enforce that the resource found by an owner lookup belongs to `user_id`.
+/// Owners come from service lookups (`trip_owner`/`place_owner`/`photo_owner`)
+/// which resolve 404 themselves; a resource that exists but belongs to
+/// another user becomes 403. Every API route is login-gated, and route
+/// handlers use this on top to reject cross-user access.
+pub fn require_owner(
+    lookup: Result<Uuid, ApiError>,
+    user_id: Uuid,
+) -> Result<(), ApiError> {
+    match lookup {
+        Err(e) => Err(e),
+        Ok(owner) if owner == user_id => Ok(()),
+        Ok(_) => Err(ApiError::Forbidden(
+            "This resource belongs to another user".into(),
+        )),
+    }
+}

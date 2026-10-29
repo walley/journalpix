@@ -189,6 +189,25 @@ impl PlaceService {
             })
     }
 
+    /// The user id owning `place_id` via its trip — used for ownership
+    /// checks in route handlers (`routes::require_owner`). 404 when the
+    /// place (or its trip) does not exist.
+    pub async fn place_owner(&self, place_id: Uuid) -> Result<Uuid, ApiError> {
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT t.user_id FROM places p JOIN trips t ON t.id = p.trip_id
+                     WHERE p.id = ?1",
+                    [place_id.to_string()],
+                    |r| get_uuid(r, 0),
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound("Place not found".into()),
+                other => db_err(other),
+            })
+    }
+
     pub async fn get_place(&self, place_id: Uuid) -> Result<ApiResponse<PlaceWithPhotos>, ApiError> {
         let place = self.find_place(place_id).await?;
         let photos = self
