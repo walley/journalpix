@@ -648,4 +648,27 @@ object OfflineStore {
         createdAt = o.optString("createdAt", ""),
         place = null
     )
+
+    fun mergeBackendTimeline(timeline: TripTimeline) {
+        val trip = timeline.trip
+        trips[trip.id] = trip
+
+        val newPlaces = mutableListOf<PlaceWithPhotos>()
+        val allPhotos = mutableMapOf<String, MutableList<PhotoResponse>>()
+
+        for (item in timeline.timeline) {
+            for (place in item.places) {
+                val p =
+                    if (place.visitDate.isNullOrBlank()) place.copy(visitDate = item.date) else place
+                newPlaces.add(p)
+                allPhotos[p.id] = p.photos.toMutableList()
+            }
+        }
+
+        placesByTrip[trip.id] = newPlaces
+        for ((placeId, photos) in allPhotos) {
+            photosByPlace[placeId] = photos
+        }
+        persist()
+    }
 }
