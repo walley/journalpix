@@ -2,7 +2,10 @@ package com.journalpix.sync
 
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.CreatePlaceRequest
@@ -17,13 +20,18 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.lang.ref.WeakReference
 
 object SyncManager {
     const val ACTION_SYNC = "com.journalpix.ACTION_SYNC"
     private const val TAG = "SyncManager"
 
+    @Volatile
+    private var appContextRef: WeakReference<Context>? = null
+
     fun triggerSync(context: Context?) {
         context?.let { ctx ->
+            appContextRef = WeakReference(ctx.applicationContext)
             Log.d(TAG, "Triggering synchronization intent: $ACTION_SYNC")
             val intent = Intent(ACTION_SYNC).apply {
                 setPackage(ctx.packageName)
@@ -34,14 +42,19 @@ object SyncManager {
         }
     }
 
-    private fun performSync(context: Context) {
-        val sharedPrefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val token = AppSession.currentUser.value?.token ?: sharedPrefs.getString("auth_token", null)
-
-        if (token.isNullOrBlank() || token.startsWith("demo")) {
-            Log.d(TAG, "Skipping backend sync: No valid auth token or is demo token")
-            return
+    private fun toast(message: String) {
+        val ctx = appContextRef?.get() ?: return
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(ctx, message, Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun performSync(context: Context) {
+        appContextRef = WeakReference(context.applicationContext)
+        val sharedPrefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val token = AppSession.currentUser.value?.token
+            ?: sharedPrefs.getString("auth_token", null)
+            ?: ""
 
         CoroutineScope(Dispatchers.IO).launch {
             performSyncSuspend(token)
@@ -49,10 +62,10 @@ object SyncManager {
     }
 
     suspend fun performSyncSuspend(token: String) {
-        if (token.isBlank() || token.startsWith("demo")) return
-        val bearerToken = "Bearer $token"
+        val bearerToken = if (token.isBlank()) "" else "Bearer $token"
+        val errors = mutableListOf<String>()
 
-        // 1. Push pending local changes to backend (try update first, fallback to create and map server IDs)
+        // 1. Push pending local changes to backend
         val pendingIds = OfflineStore.pendingSyncIds()
         if (pendingIds.isNotEmpty()) {
             Log.d(TAG, "Syncing ${pendingIds.size} pending local items to backend...")
@@ -86,6 +99,10 @@ object SyncManager {
                                 OfflineStore.updateTripServerId(id, createData)
                                 OfflineStore.clearPending(id)
                                 Log.d(TAG, "Created and mapped trip: $id -> ${createData.id}")
+                            } else {
+                                val msg = createResp.error ?: updateResp.error ?: "trip sync failed"
+                                errors.add("Trip: $msg")
+                                Log.e(TAG, "Trip sync failed for $id: $msg")
                             }
                         }
                         continue
@@ -126,6 +143,10 @@ object SyncManager {
                                 OfflineStore.updatePlaceServerId(id, createData)
                                 OfflineStore.clearPending(id)
                                 Log.d(TAG, "Created and mapped place: $id -> ${createData.id}")
+                            } else {
+                                val msg = createResp.error ?: updateResp.error ?: "place sync failed"
+                                errors.add("Place: $msg")
+                                Log.e(TAG, "Place sync failed for $id: $msg")
                             }
                         }
                         continue
@@ -144,9 +165,16 @@ object SyncManager {
                             if (response.success) {
                                 OfflineStore.clearPending(id)
                                 Log.d(TAG, "Synced photo: $id")
+                            } else {
+                                val msg = response.error ?: "photo upload failed"
+                                errors.add("Photo: $msg")
+                                Log.e(TAG, "Photo upload failed for $id: $msg")
                             }
                         } else {
-                            OfflineStore.clearPending(id)
+                            val msg = "photo file missing: ${photo.filePath}"
+                            errors.add("Photo: $msg")
+                            Log.e(TAG, "Photo file missing for $id: ${photo.filePath}")
+                            // keep pending so a later copy can retry
                         }
                         continue
                     }
@@ -154,11 +182,12 @@ object SyncManager {
                     OfflineStore.clearPending(id)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to sync item $id", e)
+                    errors.add("${e.message ?: e.javaClass.simpleName}")
                 }
             }
         }
 
-        // 2. Pull remote items from backend (load things that are on BE and not in app / update app)
+        // 2. Pull remote items from backend
         try {
             Log.d(TAG, "Pulling remote items from backend...")
             val tripsResponse = ApiService.apiClient.getTrips(bearerToken)
@@ -172,9 +201,19 @@ object SyncManager {
                         Log.d(TAG, "Pulled and merged timeline for trip: ${trip.id}")
                     }
                 }
+            } else if (!tripsResponse.success) {
+                val msg = tripsResponse.error ?: "failed to pull trips"
+                errors.add(msg)
+                Log.e(TAG, "Pull trips failed: $msg")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to pull remote data from backend", e)
+            errors.add(e.message ?: "pull failed")
+        }
+
+        if (errors.isNotEmpty()) {
+            val summary = errors.distinct().take(3).joinToString(" · ")
+            toast("Sync failed: $summary")
         }
     }
 }
