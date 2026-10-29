@@ -76,6 +76,12 @@ object OfflineStore {
         val file = storeFile(ctx)
         if (!file.exists()) return
         try {
+            trips.clear()
+            placesByTrip.clear()
+            photosByPlace.clear()
+            addresses.clear()
+            syncPending.clear()
+
             val root = JSONObject(file.readText())
             val tripsArr = root.optJSONArray("trips") ?: JSONArray()
             for (i in 0 until tripsArr.length()) {

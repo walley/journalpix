@@ -261,19 +261,14 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                     expanded = expanded,
                                     onToggle = { expandedDays[dayKey] = !expanded },
                                     onAddPhoto = {
-                                        val targetPlaceId = if (dayItem.places.isNotEmpty()) {
-                                            dayItem.places.first().id
-                                        } else {
-                                            val newPlace = OfflineStore.addPlace(
-                                                tripId = effectiveTripId,
-                                                name = "Place on $dayKey",
-                                                visitDate = if (isBeforeAfter) LocalDate.now()
-                                                  .toString() else dayKey
-                                            )
-                                            refresh()
-                                            newPlace.id
-                                        }
-                                        startAddPhoto(targetPlaceId)
+                                        val newPlace = OfflineStore.addPlace(
+                                            tripId = effectiveTripId,
+                                            name = "Place on $dayKey",
+                                            visitDate = if (isBeforeAfter) LocalDate.now()
+                                              .toString() else dayKey
+                                        )
+                                        refresh()
+                                        startAddPhoto(newPlace.id)
                                     }
                                 )
                             }
@@ -558,7 +553,11 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             mutableStateOf(createPlaceDay ?: LocalDate.now().toString())
         }
         AlertDialog(
-            onDismissRequest = { showCreatePlaceDialog = false },
+            onDismissRequest = {
+                showCreatePlaceDialog = false
+                newPlaceName = ""
+                createPlaceDay = null
+            },
             title = { Text("Add a place") },
             text = {
                 Column {
@@ -611,7 +610,11 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                 }) { Text("Add") }
             },
             dismissButton = {
-                TextButton(onClick = { showCreatePlaceDialog = false }) { Text("Cancel") }
+                TextButton(onClick = {
+                    showCreatePlaceDialog = false
+                    newPlaceName = ""
+                    createPlaceDay = null
+                }) { Text("Cancel") }
             }
         )
     }
