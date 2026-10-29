@@ -32,6 +32,7 @@ build:
 version:
 	@echo "source: $(VERSION)"
 	@printf "public: "; curl -fsS -m 5 $(HEALTH_URL) | sed -n 's/.*"version":"\([^"]*\)".*/\1/p' || echo "unreachable"
+	@echo ""
 
 install:
 	install -d $(BINDIR)
