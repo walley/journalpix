@@ -140,6 +140,7 @@ object OfflineStore {
     private fun markPending(id: String) {
         syncPending.add(id)
         persist()
+        com.journalpix.sync.SyncManager.triggerSync(appContext)
     }
 
     fun pendingSyncIds(): Set<String> = syncPending.toSet()
@@ -147,6 +148,24 @@ object OfflineStore {
     fun clearPending(id: String) {
         syncPending.remove(id)
         persist()
+    }
+
+    fun getTrip(id: String): TripResponse? = trips[id]
+
+    fun findPlace(placeId: String): Pair<PlaceWithPhotos, String>? {
+        for ((tripId, places) in placesByTrip) {
+            val found = places.find { it.id == placeId }
+            if (found != null) return Pair(found, tripId)
+        }
+        return null
+    }
+
+    fun findPhotoWithPlace(photoId: String): Pair<PhotoResponse, String>? {
+        for ((placeId, photos) in photosByPlace) {
+            val found = photos.find { it.id == photoId }
+            if (found != null) return Pair(found, placeId)
+        }
+        return null
     }
 
     fun ensureDemoTrip(tripId: String): TripResponse {

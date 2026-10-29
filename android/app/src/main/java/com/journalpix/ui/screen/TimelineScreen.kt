@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -187,130 +189,147 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             )
         }
     ) { paddingValues ->
-        if (timelineViewModel.isLoading.value) {
-            Box(
-                Modifier
-                  .fillMaxSize()
-                  .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
-        } else if (timeline == null) {
-            Box(
-                Modifier
-                  .fillMaxSize()
-                  .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) { Text("No timeline data") }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(paddingValues),
-                contentPadding = PaddingValues(bottom = 32.dp)
-            ) {
-                item {
-                    Row(
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .clickable { showEditDatesDialog = true }
-                          .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Trip itinerary",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            val from = timeline.trip.startDate ?: "—"
-                            val to = timeline.trip.endDate ?: "—"
-                            Text(
-                                text = "From $from  →  $to",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit dates",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
+        val isRefreshing = timelineViewModel.isSyncing.value
+        val pullToRefreshState = rememberPullToRefreshState()
 
-                timeline.timeline.forEachIndexed { dayIndex, dayItem ->
-                    val dayKey = dayItem.date
-                    val isBeforeAfter = dayKey == OfflineStore.BEFORE_AFTER_KEY
-                    val expanded = expandedDays[dayKey] ?: true
-                    val inRangeIndex = timeline.timeline
-                        .take(dayIndex)
-                        .count { it.date != OfflineStore.BEFORE_AFTER_KEY }
-                    item(key = "day-header-$dayKey") {
-                        DayHeader(
-                            dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
-                            date = dayItem.date,
-                            isBeforeAfter = isBeforeAfter,
-                            placeCount = dayItem.places.size,
-                            photoCount = dayItem.places.sumOf { it.photos.size },
-                            expanded = expanded,
-                            onToggle = { expandedDays[dayKey] = !expanded }
-                        )
-                    }
-                    if (expanded) {
-                        itemsIndexed(
-                            items = dayItem.places,
-                            key = { _, place -> place.id }
-                        ) { placeIndex, place ->
-                            if (placeIndex > 0) {
-                                TransportBetweenRow(
-                                    place = place,
-                                    onEdit = { editTransportPlaceId = place.id }
+        Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(paddingValues)
+        ) {
+            PullToRefreshBox(
+                isRefreshing = isRefreshing, onRefresh = {
+                    timelineViewModel.syncAndRefresh(token, effectiveTripId)
+                }, state = pullToRefreshState, modifier = Modifier.fillMaxSize()
+            ) {
+                if (timelineViewModel.isLoading.value) {
+                    Box(
+                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
+                } else if (timeline == null) {
+                    Box(
+                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    ) { Text("No timeline data") }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .clickable { showEditDatesDialog = true }
+                                  .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Trip itinerary",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    val from = timeline.trip.startDate ?: "—"
+                                    val to = timeline.trip.endDate ?: "—"
+                                    Text(
+                                        text = "From $from  →  $to",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Edit dates",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            PlaceTimelineRow(
-                                number = placeIndex + 1,
-                                place = place,
-                                isLast = placeIndex == dayItem.places.lastIndex,
-                                onPlaceClick = { selectedPlace = place },
-                                onAddPhoto = { startAddPhoto(place.id) },
-                                resolvedAddresses = photoViewModel.resolvedAddresses,
-                                geocodeLoading = photoViewModel.geocodeLoadingIds,
-                                onReverseGeocode = { onReverseGeocode(it) }
-                            )
                         }
-                        if (!isBeforeAfter) {
-                            item(key = "add-place-$dayKey") {
-                                TextButton(
-                                    onClick = {
-                                        createPlaceDay = dayKey
-                                        showCreatePlaceDialog = true
-                                    },
-                                    modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Add a place")
+
+                        timeline.timeline.forEachIndexed { dayIndex, dayItem ->
+                            val dayKey = dayItem.date
+                            val isBeforeAfter = dayKey == OfflineStore.BEFORE_AFTER_KEY
+                            val expanded = expandedDays[dayKey] ?: true
+                            val inRangeIndex = timeline.timeline.take(dayIndex)
+                              .count { it.date != OfflineStore.BEFORE_AFTER_KEY }
+                            item(key = "day-header-$dayKey") {
+                                DayHeader(
+                                    dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
+                                    date = dayItem.date,
+                                    isBeforeAfter = isBeforeAfter,
+                                    placeCount = dayItem.places.size,
+                                    photoCount = dayItem.places.sumOf { it.photos.size },
+                                    expanded = expanded,
+                                    onToggle = { expandedDays[dayKey] = !expanded }
+                                )
+                            }
+                            if (expanded) {
+                                itemsIndexed(
+                                    items = dayItem.places,
+                                    key = { _, place -> place.id }) { placeIndex, place ->
+                                    if (placeIndex > 0) {
+                                        TransportBetweenRow(
+                                            place = place,
+                                            onEdit = { editTransportPlaceId = place.id })
+                                    }
+                                    PlaceTimelineRow(
+                                        number = placeIndex + 1,
+                                        place = place,
+                                        isLast = placeIndex == dayItem.places.lastIndex,
+                                        onPlaceClick = { selectedPlace = place },
+                                        onAddPhoto = { startAddPhoto(place.id) },
+                                        resolvedAddresses = photoViewModel.resolvedAddresses,
+                                        geocodeLoading = photoViewModel.geocodeLoadingIds,
+                                        onReverseGeocode = { onReverseGeocode(it) })
+                                }
+                                if (!isBeforeAfter) {
+                                    item(key = "add-place-$dayKey") {
+                                        TextButton(
+                                            onClick = {
+                                                createPlaceDay = dayKey
+                                                showCreatePlaceDialog = true
+                                            },
+                                            modifier = Modifier.padding(
+                                                start = 48.dp,
+                                                bottom = 8.dp
+                                            )
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Add,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Add a place")
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
 
-                item {
-                    OutlinedButton(
-                        onClick = {
-                            timelineViewModel.addNewDay(token, effectiveTripId)
-                        },
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add a new day")
+                        item {
+                            OutlinedButton(
+                                onClick = {
+                                    timelineViewModel.addNewDay(effectiveTripId)
+                                },
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Add a new day")
+                            }
+                        }
                     }
                 }
+            }
+
+            if (isRefreshing) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .align(Alignment.TopCenter)
+                )
             }
         }
     }
@@ -477,7 +496,6 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             return@Button
                         }
                         timelineViewModel.updateTripDates(
-                            "",
                             effectiveTripId,
                             s.toString(),
                             e.toString()

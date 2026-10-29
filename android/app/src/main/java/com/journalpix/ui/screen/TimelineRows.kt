@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.viewmodel.PhotoViewModel
 
 @Composable
@@ -37,8 +39,8 @@ fun PlaceTimelineRow(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp)
+          .fillMaxWidth()
+          .padding(start = 12.dp, end = 12.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -47,9 +49,9 @@ fun PlaceTimelineRow(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                  .size(28.dp)
+                  .clip(CircleShape)
+                  .background(MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Text(
                     "$number",
@@ -60,17 +62,17 @@ fun PlaceTimelineRow(
             if (!isLast) {
                 Box(
                     modifier = Modifier
-                        .width(2.dp)
-                        .weight(1f)
-                        .background(lineColor)
+                      .width(2.dp)
+                      .weight(1f)
+                      .background(lineColor)
                 )
             }
         }
         Card(
             onClick = onPlaceClick,
             modifier = Modifier
-                .weight(1f)
-                .padding(start = 8.dp, bottom = 12.dp)
+              .weight(1f)
+              .padding(start = 8.dp, bottom = 12.dp)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Row(
@@ -111,17 +113,17 @@ fun PlaceTimelineRow(
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                  .size(56.dp)
+                                  .clip(RoundedCornerShape(6.dp))
                             )
                         }
                         if (place.photos.size > 4) {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                  .size(56.dp)
+                                  .clip(RoundedCornerShape(6.dp))
+                                  .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Text("+${place.photos.size - 4}", style = MaterialTheme.typography.labelMedium)
                             }
@@ -194,7 +196,9 @@ fun PhotoItem(
     geocodeError: String? = null,
     onReverseGeocode: () -> Unit = {}
 ) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Card(modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 4.dp)) {
         Column(modifier = Modifier.padding(8.dp)) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -204,9 +208,9 @@ fun PhotoItem(
                 contentDescription = photo.caption ?: "Photo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                  .fillMaxWidth()
+                  .height(160.dp)
+                  .clip(RoundedCornerShape(8.dp))
             )
             Spacer(Modifier.height(8.dp))
             if (photo.latitude != null && photo.longitude != null) {
@@ -240,5 +244,59 @@ fun PhotoItem(
                 Text("Taken: $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlaceTimelineRowPreview() {
+    JournalPixTheme {
+        PlaceTimelineRow(
+            number = 1,
+            place = PlaceWithPhotos(
+                id = "p1",
+                tripId = "t1",
+                name = "Eiffel Tower",
+                description = "Beautiful view",
+                latitude = 48.8584,
+                longitude = 2.2945,
+                address = "Paris, France",
+                visitDate = "2025-05-15",
+                orderIndex = 0,
+                transportFromPrevious = null,
+                createdAt = "",
+                photos = emptyList()
+            ),
+            isLast = false,
+            onPlaceClick = {},
+            onAddPhoto = {},
+            resolvedAddresses = emptyMap(),
+            geocodeLoading = emptyMap(),
+            onReverseGeocode = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PhotoItemPreview() {
+    JournalPixTheme {
+        PhotoItem(
+            photo = PhotoResponse(
+                id = "ph1",
+                placeId = "p1",
+                userId = "u1",
+                filePath = "https://example.com/photo.jpg",
+                thumbnailPath = "",
+                caption = "Sunset at Eiffel Tower",
+                latitude = 48.8584,
+                longitude = 2.2945,
+                takenAt = "2025-05-15T18:30:00Z",
+                orderIndex = 0,
+                createdAt = ""
+            ),
+            resolvedAddress = "Paris, France",
+            isGeocoding = false,
+            geocodeError = null,
+            onReverseGeocode = {})
     }
 }

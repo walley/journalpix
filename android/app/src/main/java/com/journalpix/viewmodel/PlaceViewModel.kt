@@ -48,27 +48,10 @@ class PlaceViewModel : ViewModel() {
     }
 
     fun createPlace(token: String, tripId: String, request: CreatePlaceRequest, onSuccess: () -> Unit) {
-        if (AuthViewModel.isDemoToken(token) || token.isBlank() || token == "Bearer token") {
-            OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
-            isLoading.value = false
-            errorMessage.value = null
-            onSuccess()
-            return
-        }
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-            try {
-                val apiRequest = request.copy(visitDate = normalizeVisitDate(request.visitDate))
-                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, apiRequest)
-                if (response.success) onSuccess()
-                else errorMessage.value = response.error ?: "Failed to create place"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+        OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
+        isLoading.value = false
+        errorMessage.value = null
+        onSuccess()
     }
 
     fun getPlace(token: String, placeId: String) {
