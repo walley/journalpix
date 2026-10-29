@@ -33,7 +33,7 @@ class PhotoViewModel : ViewModel() {
     val lastExifNote = mutableStateOf<String?>(null)
 
     fun getPhotosForPlace(token: String, placeId: String) {
-        if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
+      if (token.isBlank()) {
             photos.value = OfflineStore.photosFor(placeId)
             OfflineStore.addresses.forEach { (id, addr) -> resolvedAddresses[id] = addr }
             isLoading.value = false
@@ -129,7 +129,7 @@ class PhotoViewModel : ViewModel() {
     }
 
     fun uploadPhoto(token: String, placeId: String, bitmap: Bitmap, onSuccess: () -> Unit) {
-        if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
+      if (token.isBlank()) {
             errorMessage.value = "Use gallery picker for offline photos"
             return
         }

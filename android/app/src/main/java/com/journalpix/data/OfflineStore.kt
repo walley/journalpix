@@ -2,6 +2,7 @@ package com.journalpix.data
 
 import android.content.Context
 import com.journalpix.models.PhotoResponse
+import com.journalpix.models.PlaceResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TimelineItem
 import com.journalpix.models.TransportMode
@@ -155,6 +156,50 @@ object OfflineStore {
     fun clearPending(id: String) {
         syncPending.remove(id)
         persist()
+    }
+
+    fun updateTripServerId(localId: String, serverTrip: TripResponse) {
+        if (trips.containsKey(localId)) {
+            trips.remove(localId)
+            trips[serverTrip.id] = serverTrip
+
+            val places = placesByTrip.remove(localId)
+            if (places != null) {
+                placesByTrip[serverTrip.id] = places.map { it.copy(tripId = serverTrip.id) }
+                  .toMutableList()
+            }
+            persist()
+        }
+    }
+
+    fun updatePlaceServerId(localId: String, serverPlace: PlaceResponse) {
+        for ((_, places) in placesByTrip) {
+            val index = places.indexOfFirst { it.id == localId }
+            if (index != -1) {
+                val oldPlace = places[index]
+                val updatedPlace = oldPlace.copy(
+                    id = serverPlace.id,
+                    name = serverPlace.name,
+                    description = serverPlace.description,
+                    latitude = serverPlace.latitude,
+                    longitude = serverPlace.longitude,
+                    address = serverPlace.address,
+                    visitDate = serverPlace.visitDate ?: oldPlace.visitDate,
+                    orderIndex = serverPlace.orderIndex
+                )
+                places[index] = updatedPlace
+
+                val photos = photosByPlace.remove(localId)
+                if (photos != null) {
+                    photosByPlace[serverPlace.id] = photos
+                    photos.forEachIndexed { pIdx, ph ->
+                        photos[pIdx] = ph.copy(placeId = serverPlace.id)
+                    }
+                }
+                persist()
+                break
+            }
+        }
     }
 
     fun getTrip(id: String): TripResponse? = trips[id]

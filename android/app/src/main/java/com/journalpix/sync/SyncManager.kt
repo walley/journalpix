@@ -19,7 +19,6 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 object SyncManager {
-
     const val ACTION_SYNC = "com.journalpix.ACTION_SYNC"
     private const val TAG = "SyncManager"
 
@@ -53,7 +52,7 @@ object SyncManager {
         if (token.isBlank() || token.startsWith("demo")) return
         val bearerToken = "Bearer $token"
 
-        // 1. Push pending local changes to backend (try update first, fallback to create)
+        // 1. Push pending local changes to backend (try update first, fallback to create and map server IDs)
         val pendingIds = OfflineStore.pendingSyncIds()
         if (pendingIds.isNotEmpty()) {
             Log.d(TAG, "Syncing ${pendingIds.size} pending local items to backend...")
@@ -82,9 +81,11 @@ object SyncManager {
                                 status = trip.status
                             )
                             val createResp = ApiService.apiClient.createTrip(bearerToken, createReq)
-                            if (createResp.success) {
+                            val createData = createResp.data
+                            if (createResp.success && createData != null) {
+                                OfflineStore.updateTripServerId(id, createData)
                                 OfflineStore.clearPending(id)
-                                Log.d(TAG, "Created trip: $id")
+                                Log.d(TAG, "Created and mapped trip: $id -> ${createData.id}")
                             }
                         }
                         continue
@@ -120,9 +121,11 @@ object SyncManager {
                             )
                             val createResp =
                                 ApiService.apiClient.createPlace(bearerToken, tripId, createReq)
-                            if (createResp.success) {
+                            val createData = createResp.data
+                            if (createResp.success && createData != null) {
+                                OfflineStore.updatePlaceServerId(id, createData)
                                 OfflineStore.clearPending(id)
-                                Log.d(TAG, "Created place: $id")
+                                Log.d(TAG, "Created and mapped place: $id -> ${createData.id}")
                             }
                         }
                         continue

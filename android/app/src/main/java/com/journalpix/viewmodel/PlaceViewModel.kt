@@ -28,7 +28,7 @@ class PlaceViewModel : ViewModel() {
     }
 
     fun getPlaces(token: String, tripId: String) {
-        if (AuthViewModel.isDemoToken(token) || token.isBlank()) {
+        if (token.isBlank()) {
             isLoading.value = false
             return
         }
@@ -48,10 +48,45 @@ class PlaceViewModel : ViewModel() {
     }
 
     fun createPlace(token: String, tripId: String, request: CreatePlaceRequest, onSuccess: () -> Unit) {
-        OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
-        isLoading.value = false
-        errorMessage.value = null
-        onSuccess()
+        val normalizedDate = normalizeVisitDate(request.visitDate)
+        val apiRequest = request.copy(visitDate = normalizedDate)
+
+        if (token.isBlank() || token == "Bearer token") {
+            OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
+            isLoading.value = false
+            errorMessage.value = null
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            isLoading.value = true
+            errorMessage.value = null
+            try {
+                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, apiRequest)
+                if (response.success && response.data != null) {
+                    val placeResp = response.data
+                    OfflineStore.addPlace(
+                        tripId = tripId,
+                        name = placeResp.name,
+                        visitDate = placeResp.visitDate ?: request.visitDate,
+                        address = placeResp.address,
+                        latitude = placeResp.latitude,
+                        longitude = placeResp.longitude,
+                        transportFromPrevious = placeResp.transportFromPrevious
+                    )
+                    onSuccess()
+                } else {
+                    errorMessage.value = response.error ?: "Failed to create place"
+                }
+            } catch (e: Exception) {
+                errorMessage.value = "Network error: ${e.message}"
+                OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
+                onSuccess()
+            } finally {
+                isLoading.value = false
+            }
+        }
     }
 
     fun getPlace(token: String, placeId: String) {

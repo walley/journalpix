@@ -96,8 +96,8 @@ fun HomeScreen(navController: NavController) {
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+              .fillMaxSize()
+              .padding(paddingValues)
         ) {
             if (tripViewModel.isLoading.value) {
                 Box(
@@ -216,20 +216,16 @@ fun HomeScreen(navController: NavController) {
         )
     }
 
-    // Only show non-demo network errors
     tripViewModel.errorMessage.value?.let { error ->
-        if (!AuthViewModel.isDemoToken(token)) {
-            AlertDialog(
-                onDismissRequest = { tripViewModel.errorMessage.value = null },
-                title = { Text("Error") },
-                text = { Text(error) },
-                confirmButton = {
-                    Button(onClick = { tripViewModel.errorMessage.value = null }) {
-                        Text("OK")
-                    }
-                }
-            )
-        }
+      AlertDialog(
+        onDismissRequest = { tripViewModel.errorMessage.value = null },
+        title = { Text("Error") },
+        text = { Text(error) },
+        confirmButton = {
+          Button(onClick = { tripViewModel.errorMessage.value = null }) {
+            Text("OK")
+          }
+        })
     }
 }
 
@@ -255,9 +251,9 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(onClick = onClick)
+          .fillMaxWidth()
+          .padding(8.dp)
+          .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -311,9 +307,9 @@ fun TripCard(trip: TripResponse, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelMedium,
                 color = statusContentColor,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(statusContainerColor)
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(statusContainerColor)
+                  .padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
     }
