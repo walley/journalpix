@@ -20,7 +20,15 @@ impl std::fmt::Debug for DatabaseConnection {
 pub type DbPool = DatabaseConnection;
 
 pub const PHOTO_COLS: &str =
-    "id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, caption, order_index, created_at";
+    "id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, taken_timezone, caption, order_index, created_at";
+
+pub const PLACE_COLS: &str =
+    "id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, created_at, updated_at";
+
+pub const TRIP_COLS: &str =
+    "id, user_id, title, description, start_date, start_timezone, end_date, end_timezone, status, created_at, updated_at";
+
+pub const USER_COLS: &str = "id, email, name, password_hash, timezone, created_at, updated_at";
 
 impl DatabaseConnection {
     /// Open the database described by `config` and run migrations.
@@ -114,6 +122,37 @@ pub fn get_opt_string(row: &Row, idx: usize) -> Result<Option<String>, rusqlite:
     row.get(idx)
 }
 
+/// An IANA zone name column, defaulting to UTC when absent or unrecognised.
+/// Rows written before timezones existed have no zone, so this must not fail.
+pub fn get_tz(row: &Row, idx: usize) -> Result<chrono_tz::Tz, rusqlite::Error> {
+    let s: Option<String> = row.get(idx)?;
+    Ok(crate::models::zoned::tz_or_utc(s.as_deref()))
+}
+
+/// Read a stored moment from an instant column plus its zone column.
+pub fn get_opt_zoned_time(
+    row: &Row,
+    idx_utc: usize,
+    idx_tz: usize,
+) -> Result<Option<crate::models::zoned::ZonedTime>, rusqlite::Error> {
+    match row.get_ref(idx_utc)? {
+        ValueRef::Null => Ok(None),
+        ValueRef::Text(s) => {
+            let s = String::from_utf8_lossy(s);
+            let utc = crate::models::zoned::parse_instant_utc(&s).ok_or_else(|| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    idx_utc,
+                    rusqlite::types::Type::Text,
+                    "invalid timestamp".into(),
+                )
+            })?;
+            let tz = get_tz(row, idx_tz)?;
+            Ok(Some(crate::models::zoned::ZonedTime::new(utc, tz)))
+        }
+        _ => Ok(None),
+    }
+}
+
 pub fn get_opt_f64(row: &Row, idx: usize) -> Result<Option<f64>, rusqlite::Error> {
     row.get(idx)
 }
@@ -133,36 +172,18 @@ pub fn get_timestamp(row: &Row, idx: usize) -> Result<chrono::DateTime<chrono::U
         .map_err(|e| rusqlite::Error::FromSqlConversionFailure(idx, rusqlite::types::Type::Text, e.into()))
 }
 
-pub fn get_opt_naive_datetime(
-    row: &Row,
-    idx: usize,
-) -> Result<Option<chrono::NaiveDateTime>, rusqlite::Error> {
-    match row.get_ref(idx)? {
-        ValueRef::Null => Ok(None),
-        ValueRef::Text(s) => {
-            let s = String::from_utf8_lossy(s);
-            chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S")
-                .or_else(|_| chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S"))
-                .map(Some)
-                .map_err(|e| {
-                    rusqlite::Error::FromSqlConversionFailure(
-                        idx,
-                        rusqlite::types::Type::Text,
-                        e.into(),
-                    )
-                })
-        }
-        _ => Ok(None),
-    }
-}
-
+/// A plain calendar-date column (`YYYY-MM-DD`). Tolerates a trailing time
+/// part, so a full timestamp can be stored here and still read as a date.
 pub fn get_opt_naive_date(row: &Row, idx: usize) -> Result<Option<chrono::NaiveDate>, rusqlite::Error> {
     match row.get_ref(idx)? {
         ValueRef::Null => Ok(None),
         ValueRef::Text(s) => {
             let s = String::from_utf8_lossy(s);
-            let s = s.split('T').next().unwrap_or(&s);
-            chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+            // Take the date part only: `2026-07-04` out of `2026-07-04`,
+            // `2026-07-04T10:30:00` or `2026-07-04T10:30:00+02:00`. Splitting
+            // on 'T' alone is not enough — an offset also carries a sign.
+            let date_part = s.get(..10).unwrap_or(&s);
+            chrono::NaiveDate::parse_from_str(date_part, "%Y-%m-%d")
                 .map(Some)
                 .map_err(|e| {
                     rusqlite::Error::FromSqlConversionFailure(

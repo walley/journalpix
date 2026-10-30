@@ -1,4 +1,5 @@
 use actix_web::{web, HttpResponse, Responder, ResponseError};
+use crate::models::zoned::RenderInZone;
 use crate::services::timeline::TimelineService;
 use crate::services::trip::TripService;
 use crate::utils::auth::AuthService;
@@ -6,7 +7,7 @@ use uuid::Uuid;
 use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
-use super::{auth_user_id, require_owner};
+use super::{auth_user_id, require_owner, requested_tz};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     // NOTE: scope prefixes are literal (no {param}); use full-path routes.
@@ -33,7 +34,14 @@ pub async fn get_timeline(
     }
 
     match timeline_service.get_timeline(*trip_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
+        Ok(mut response) => {
+            if let Ok(Some(tz)) = requested_tz(&req) {
+                if let Some(data) = response.data.as_mut() {
+                    data.render_in_zone(tz);
+                }
+            }
+            HttpResponse::Ok().json(response)
+        }
         Err(e) => e.error_response(),
     }
 }

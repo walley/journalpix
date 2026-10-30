@@ -1,6 +1,6 @@
 use crate::database::connection::{
-    get_opt_f64, get_opt_naive_datetime, get_opt_string, get_timestamp, get_uuid, DatabaseConnection,
-    PHOTO_COLS,
+    get_opt_f64, get_opt_string, get_opt_zoned_time, get_timestamp, get_uuid,
+    DatabaseConnection, PHOTO_COLS, PLACE_COLS,
 };
 use crate::models::photo::PhotoResponse;
 use crate::models::place::PlaceWithPhotos;
@@ -31,15 +31,14 @@ impl TimelineService {
     }
 
     pub async fn get_timeline(&self, trip_id: Uuid) -> Result<ApiResponse<TripTimeline>, ApiError> {
-        let _trip = self.trip_service.find_trip(trip_id).await?;
+        let trip = self.trip_service.find_trip(trip_id).await?;
 
         let places = self
             .db_pool
             .with_conn(|c| {
-                let mut stmt = c.prepare(
-                    "SELECT id, trip_id, name, description, latitude, longitude, address, visit_date, order_index, created_at, updated_at
-                     FROM places WHERE trip_id = ?1 ORDER BY order_index, visit_date",
-                )?;
+                let mut stmt = c.prepare(&format!(
+                    "SELECT {PLACE_COLS} FROM places WHERE trip_id = ?1 ORDER BY day, order_index, visit_date"
+                ))?;
                 let rows = stmt
                     .query_map([trip_id.to_string()], |r| {
                         Ok(crate::models::place::Place {
@@ -50,10 +49,11 @@ impl TimelineService {
                             latitude: get_opt_f64(r, 4)?,
                             longitude: get_opt_f64(r, 5)?,
                             address: get_opt_string(r, 6)?,
-                            visit_date: get_opt_naive_datetime(r, 7)?,
-                            order_index: r.get(8)?,
-                            created_at: get_timestamp(r, 9)?,
-                            updated_at: get_timestamp(r, 10)?,
+                            day: r.get(7)?,
+                            visit_date: get_opt_zoned_time(r, 8, 9)?,
+                            order_index: r.get(10)?,
+                            created_at: get_timestamp(r, 11)?,
+                            updated_at: get_timestamp(r, 12)?,
                         })
                     })?
                     .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -61,6 +61,9 @@ impl TimelineService {
             })
             .map_err(db_err)?;
 
+        // Group places by trip day. Trip days increment one by one regardless
+        // of timezone jumps, so the calendar date of day N is
+        // `trip.start_date + (N-1)` days.
         let mut timeline: Vec<TimelineItem> = Vec::new();
 
         for place in places {
@@ -77,11 +80,6 @@ impl TimelineService {
                 })
                 .map_err(db_err)?;
 
-            let date = place
-                .visit_date
-                .map(|v| v.date())
-                .unwrap_or(place.created_at.date_naive());
-
             let item = PlaceWithPhotos {
                 id: place.id,
                 trip_id: place.trip_id,
@@ -90,21 +88,29 @@ impl TimelineService {
                 latitude: place.latitude,
                 longitude: place.longitude,
                 address: place.address,
+                day: place.day,
                 visit_date: place.visit_date,
                 order_index: place.order_index,
                 created_at: place.created_at,
                 photos,
             };
 
-            if let Some(existing) = timeline.iter_mut().find(|i| i.date == date) {
+            if let Some(existing) = timeline.iter_mut().find(|i| i.day == place.day) {
                 existing.places.push(item);
             } else {
+                let date = trip
+                    .start_date
+                    .map(|s| s + chrono::Duration::days(place.day as i64 - 1));
                 timeline.push(TimelineItem {
+                    day: place.day,
                     date,
                     places: vec![item],
                 });
             }
         }
+
+        // Sort by day so the timeline is always sequential.
+        timeline.sort_by_key(|i| i.day);
 
         let trip_response = self
             .trip_service

@@ -1,6 +1,6 @@
 [package]
 name = "journalpix-backend"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -37,6 +37,8 @@ image = "0.24"
 
 # Date/Time
 chrono = { version = "0.4", features = ["serde"] }
+# IANA timezone database (DST-correct conversions for any zone)
+chrono-tz = "0.10"
 
 # Environment
 dotenv = "0.15"

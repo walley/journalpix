@@ -10,6 +10,8 @@ data class User(
     val email: String,
     val name: String,
     val token: String? = null,
+    /** IANA zone used as the default when a record carries none of its own. */
+    val timezone: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -18,6 +20,8 @@ data class UserResponse(
     val id: String,
     val email: String,
     val name: String,
+    /** IANA zone name, or null when the user has not set one. */
+    val timezone: String? = null,
     val createdAt: String
 )
 
@@ -29,7 +33,17 @@ data class LoginRequest(
 data class RegisterRequest(
     val email: String,
     val name: String,
-    val password: String
+    val password: String,
+    /** Optional; falls back to UTC on the server when absent. */
+    val timezone: String? = null
+)
+
+data class UpdateUserRequest(
+    val name: String? = null,
+    val email: String? = null,
+    val password: String? = null,
+    /** null clears the zone (back to the server default). */
+    val timezone: String? = null
 )
 
 data class LoginResponse(

@@ -170,6 +170,28 @@ endpoints are only: the about page, `/health`, `/api/auth/register`,
 
 ## Critical gotchas (bugs already fixed — don't reintroduce)
 
+### Timezone model (v0.2.0+)
+
+Every moment is stored as **two columns**: a UTC instant (`TEXT` RFC3339) and
+the IANA zone where it happened (`TEXT`, e.g. `Europe/Rome`). The zone is part
+of the data, not a display preference — a photo shot in Tokyo keeps Tokyo
+wall-clock time after the traveler lands in Berlin.
+
+- **Storage**: `taken_at` / `visit_date` are `ZonedTime` (utc + timezone),
+  serialized as `{utc, timezone, local, local_timezone}` in responses.
+- **Requests** accept `ZonedTimeInput`: either `{utc, timezone}` or
+  `{local, timezone}` or a bare string. DST gaps/folds → 422.
+- **Per-request override**: `?tz=` or `X-Timezone` header re-renders `local`
+  in the requested zone; `local_timezone` names it.
+- **Trip days are sequential indices** (`places.day`, 1-based), not calendar
+  dates. Crossing zones can make local arrival precede local departure, so
+  day numbers only increment by one. `TimelineItem.date` =
+  `trip.start_date + (day - 1)`.
+- **Trips** record `start_timezone` / `end_timezone` (zones at departure/end).
+- **User profile** has `timezone` (IANA default for records without one).
+- **Config** has `[time] default_timezone` (server-wide fallback).
+- `chrono-tz` crate provides the IANA database with DST-correct conversions.
+
 1. **actix-web scope prefixes are literal** — `{param}` in a scope prefix
    (e.g. `web::scope("/trips/{trip_id}/places")`) never matches. Nested
    resource routes must be registered as plain full-path routes:
@@ -183,7 +205,7 @@ endpoints are only: the about page, `/health`, `/api/auth/register`,
    panics at request time (500s). `DatabaseConnection` is registered as
    `Data<Arc<DatabaseConnection>>`.
 4. **rusqlite without chrono feature**: never `row.get::<NaiveDateTime>` —
-   use the helpers in `database/connection.rs` (`get_opt_naive_datetime`,
+   use the helpers in `database/connection.rs` (`get_opt_zoned_time`,
    `get_timestamp`, ...). Dates are stored as TEXT
    (`YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`, or RFC3339 for timestamps).
 5. Auth is **not** middleware — every protected handler calls

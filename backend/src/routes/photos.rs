@@ -1,7 +1,9 @@
 use actix_web::{web, HttpResponse, Responder, ResponseError};
 use actix_multipart::Multipart;
 use futures::StreamExt;
+use crate::config::Config;
 use crate::models::photo::{UpdatePhotoRequest};
+use crate::models::zoned::RenderInZone;
 use crate::services::photo::PhotoService;
 use crate::services::place::PlaceService;
 use crate::utils::auth::AuthService;
@@ -11,7 +13,7 @@ use uuid::Uuid;
 use std::sync::Arc;
 use crate::database::connection::DatabaseConnection;
 
-use super::{auth_user_id, require_owner};
+use super::{auth_user_id, require_owner, requested_tz};
 
 const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10 MB
 
@@ -45,7 +47,16 @@ pub async fn get_photos_for_place(
     }
 
     match photo_service.get_photos(Some(*place_id), user_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
+        Ok(mut response) => {
+            if let Ok(Some(tz)) = requested_tz(&req) {
+                if let Some(data) = response.data.as_mut() {
+                    for photo in data.iter_mut() {
+                        photo.render_in_zone(tz);
+                    }
+                }
+            }
+            HttpResponse::Ok().json(response)
+        }
         Err(e) => e.error_response(),
     }
 }
@@ -57,6 +68,7 @@ pub async fn upload_photo_to_place(
     auth_service: web::Data<AuthService>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
+    config: web::Data<Config>,
 ) -> impl Responder {
     let user_id = match auth_user_id(&req, &auth_service) {
         Ok(id) => id,
@@ -128,7 +140,7 @@ pub async fn upload_photo_to_place(
         }
 
         match photo_service
-            .upload_photo(user_id, Some(*place_id), file_name, content)
+            .upload_photo(user_id, Some(*place_id), file_name, content, config.default_tz())
             .await
         {
             Ok(response) => {
@@ -178,7 +190,16 @@ pub async fn get_all_photos(
 
     let photo_service = PhotoService::new(file_service.get_ref().clone(), db_pool.get_ref().clone());
     match photo_service.get_photos(None, user_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
+        Ok(mut response) => {
+            if let Ok(Some(tz)) = requested_tz(&req) {
+                if let Some(data) = response.data.as_mut() {
+                    for photo in data.iter_mut() {
+                        photo.render_in_zone(tz);
+                    }
+                }
+            }
+            HttpResponse::Ok().json(response)
+        }
         Err(e) => e.error_response(),
     }
 }
@@ -202,7 +223,14 @@ pub async fn get_photo(
     }
 
     match photo_service.get_photo(*photo_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
+        Ok(mut response) => {
+            if let Ok(Some(tz)) = requested_tz(&req) {
+                if let Some(data) = response.data.as_mut() {
+                    data.render_in_zone(tz);
+                }
+            }
+            HttpResponse::Ok().json(response)
+        }
         Err(e) => e.error_response(),
     }
 }
@@ -214,6 +242,7 @@ pub async fn update_photo(
     request: web::Json<UpdatePhotoRequest>,
     db_pool: web::Data<Arc<DatabaseConnection>>,
     file_service: web::Data<Arc<FileService>>,
+    config: web::Data<Config>,
 ) -> impl Responder {
     let user_id = match auth_user_id(&req, &auth_service) {
         Ok(id) => id,
@@ -227,7 +256,7 @@ pub async fn update_photo(
         return e.error_response();
     }
 
-    match photo_service.update_photo(*photo_id, request.into_inner()).await {
+    match photo_service.update_photo(*photo_id, request.into_inner(), config.default_tz()).await {
         Ok(response) => {
             log::info!(
                 "Photo update user_id={} photo_id={}: success",

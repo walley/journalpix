@@ -30,7 +30,10 @@ data class Photo(
     val thumbnailPath: String,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** RFC3339 UTC instant; zone is kept separately in [takenTimezone]. */
     val takenAt: String? = null,
+    /** IANA zone where the photo was taken, e.g. "Asia/Tokyo". */
+    val takenTimezone: String? = null,
     val caption: String? = null,
     val orderIndex: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
@@ -45,12 +48,21 @@ data class PhotoResponse(
     val thumbnailPath: String,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val takenAt: String? = null,
+    val takenAt: ZonedTime? = null,
     val caption: String? = null,
     val orderIndex: Int,
     val createdAt: String,
     val place: PlaceResponse? = null
-)
+) {
+    /** UTC instant string, for chronological sorting. */
+    val takenSortKey: String get() = takenAt?.sortKey ?: createdAt
+
+    /** Wall-clock label in the effective display zone. */
+    fun takenLabel(): String? = takenAt?.let { "${it.dateTimeLabel()} (${shortZone(it)})" }
+
+    private fun shortZone(z: ZonedTime): String =
+        (z.localTimezone ?: z.timezone).substringAfterLast('/').replace('_', ' ')
+}
 
 data class CreatePhotoRequest(
     val placeId: String? = null,
@@ -58,7 +70,7 @@ data class CreatePhotoRequest(
     val thumbnailPath: String,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val takenAt: String? = null,
+    val takenAt: ZonedTimeInput? = null,
     val caption: String? = null,
     val orderIndex: Int? = null
 )
@@ -68,13 +80,14 @@ data class UpdatePhotoRequest(
     val caption: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val takenAt: String? = null,
+    val takenAt: ZonedTimeInput? = null,
     val orderIndex: Int? = null
 )
 
 data class PhotoMetadata(
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** Raw EXIF `DateTimeOriginal` string: local wall-clock with no zone. */
     val takenAt: String? = null
 )
 
