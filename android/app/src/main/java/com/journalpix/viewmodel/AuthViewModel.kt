@@ -20,6 +20,9 @@ object AppSession {
     val currentUser = mutableStateOf<LoginResponse?>(null)
     val isLoggedIn = mutableStateOf(false)
 
+    /** Place pending creation from map selection: lat, lon, name. */
+    val pendingMapPlace = mutableStateOf<Triple<Double, Double, String>?>(null)
+
     fun setUser(user: LoginResponse?) {
         currentUser.value = user
         isLoggedIn.value = user != null
@@ -28,6 +31,10 @@ object AppSession {
     fun clear() {
         currentUser.value = null
         isLoggedIn.value = false
+    }
+
+    fun clearPendingMapPlace() {
+        pendingMapPlace.value = null
     }
 }
 

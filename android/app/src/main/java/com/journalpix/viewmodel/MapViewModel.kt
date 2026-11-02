@@ -13,6 +13,7 @@ class MapViewModel : ViewModel() {
     val mapRoute = mutableStateOf<MapRoute?>(null)
     val selectedPlace = mutableStateOf<MapPlace?>(null)
     val bubbleStates = mutableStateOf<Map<String, Boolean>>(emptyMap())
+    val mapTapPoint = mutableStateOf<RoutePoint?>(null) // lat/lon tapped on empty map
     val viewportState = mutableStateOf(
         MapViewportState(
             centerLatitude = 0.0,
@@ -101,6 +102,14 @@ class MapViewModel : ViewModel() {
 
     fun clearSelection() {
         selectedPlace.value = null
+    }
+
+    fun setMapTapPoint(latitude: Double, longitude: Double) {
+        mapTapPoint.value = RoutePoint(latitude = latitude, longitude = longitude)
+    }
+
+    fun clearMapTapPoint() {
+        mapTapPoint.value = null
     }
 
     fun fitToRoute() {

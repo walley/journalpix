@@ -36,14 +36,54 @@ import de.afarber.openmapview.compose.Polyline
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.journalpix.models.MapPlace
+import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.viewmodel.MapViewModel
+import de.afarber.openmapview.CameraPosition
+import de.afarber.openmapview.LatLng
+import de.afarber.openmapview.MapType
+import de.afarber.openmapview.compose.MapProperties
+import de.afarber.openmapview.compose.MapUiSettings
+import de.afarber.openmapview.compose.MarkerComposable
+import de.afarber.openmapview.compose.OpenMap
+import de.afarber.openmapview.compose.Polyline
+import de.afarber.openmapview.compose.rememberCameraPositionState
+import de.afarber.openmapview.compose.rememberMarkerState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
     tripId: String = "",
-    places: List<PlaceWithPhotos> = emptyList()
+    places: List<PlaceWithPhotos> = emptyList(),
+    addPlaceMode: Boolean = false,
+    onPlaceAdded: ((Double, Double, String) -> Unit)? = null
 ) {
     val mapViewModel: MapViewModel = remember { MapViewModel() }
+    val context = LocalContext.current
+    var newPlaceName by remember { mutableStateOf("") }
+    var showAddPlaceDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
@@ -65,6 +105,15 @@ fun MapScreen(
             LatLng(viewport.centerLatitude, viewport.centerLongitude),
             viewport.zoom
         )
+    }
+
+    // Handle map tap in add-place mode
+    if (addPlaceMode && mapViewModel.mapTapPoint.value != null) {
+        val tapPoint = mapViewModel.mapTapPoint.value!!
+        LaunchedEffect(tapPoint) {
+            showAddPlaceDialog = true
+            newPlaceName = ""
+        }
     }
 
     Scaffold(
@@ -92,6 +141,16 @@ fun MapScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.End
             ) {
+                if (addPlaceMode && onPlaceAdded != null) {
+                    FloatingActionButton(
+                        onClick = {
+                            mapViewModel.clearMapTapPoint()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Cancel add place")
+                    }
+                }
                 FloatingActionButton(
                     onClick = {
                         val current = cameraPositionState.position
@@ -122,6 +181,19 @@ fun MapScreen(
                 ) {
                     Icon(Icons.Default.ZoomOut, contentDescription = "Zoom out")
                 }
+                if (addPlaceMode && onPlaceAdded != null) {
+                    FloatingActionButton(
+                        onClick = {
+                            mapViewModel.setMapTapPoint(
+                                cameraPositionState.position.target.latitude,
+                                cameraPositionState.position.target.longitude
+                            )
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add place at location")
+                    }
+                }
             }
         }
     ) { paddingValues ->
@@ -140,7 +212,12 @@ fun MapScreen(
                 ),
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false
-                )
+                ),
+                onClick = { latLng ->
+                    if (addPlaceMode && onPlaceAdded != null) {
+                        mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
+                    }
+                }
             ) {
                 // Route polyline
                 mapViewModel.mapRoute.value?.let { route ->
@@ -210,6 +287,60 @@ fun MapScreen(
                 PlaceDetailDialog(
                     place = place,
                     onDismiss = { mapViewModel.clearSelection() }
+                )
+            }
+
+            // Add place dialog
+            if (showAddPlaceDialog && mapViewModel.mapTapPoint.value != null) {
+                val tapPoint = mapViewModel.mapTapPoint.value!!
+                AlertDialog(
+                    onDismissRequest = {
+                        showAddPlaceDialog = false
+                        mapViewModel.clearMapTapPoint()
+                    },
+                    title = { Text("Add place at location") },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Lat: ${tapPoint.latitude}, Lon: ${tapPoint.longitude}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedTextField(
+                                value = newPlaceName,
+                                onValueChange = { newPlaceName = it },
+                                label = { Text("Place name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            if (newPlaceName.isNotBlank()) {
+                                onPlaceAdded!!(
+                                    tapPoint.latitude,
+                                    tapPoint.longitude,
+                                    newPlaceName.trim()
+                                )
+                                showAddPlaceDialog = false
+                                mapViewModel.clearMapTapPoint()
+                                newPlaceName = ""
+                            }
+                        }) {
+                            Text("Add")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showAddPlaceDialog = false
+                            mapViewModel.clearMapTapPoint()
+                            newPlaceName = ""
+                        }) {
+                            Text("Cancel")
+                        }
+                    }
                 )
             }
         }

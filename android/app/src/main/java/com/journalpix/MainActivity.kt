@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.map.MapScreen
 import com.journalpix.ui.screen.AboutScreen
@@ -60,9 +61,23 @@ class MainActivity : ComponentActivity() {
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             TimelineScreen(navController, tripId)
                         }
-                        composable("map/{tripId}") { backStackEntry ->
+                        composable(
+                            "map/{tripId}",
+                            arguments = listOf(
+                                navArgument("addPlaceMode") { defaultValue = false }
+                            )
+                        ) { backStackEntry ->
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-                            MapScreen(navController, tripId = tripId)
+                            val addPlaceMode = backStackEntry.arguments?.getBoolean("addPlaceMode") ?: false
+                            MapScreen(
+                                navController,
+                                tripId = tripId,
+                                addPlaceMode = addPlaceMode,
+                                onPlaceAdded = { lat, lon, name ->
+                                    AppSession.pendingMapPlace.value = Triple(lat, lon, name)
+                                    navController.popBackStack()
+                                }
+                            )
                         }
                         composable("about") { AboutScreen(navController) }
                     }

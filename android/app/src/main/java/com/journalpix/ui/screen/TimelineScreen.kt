@@ -159,6 +159,28 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         }
     }
 
+    // Handle place added from map selection
+    LaunchedEffect(AppSession.pendingMapPlace.value) {
+        val pending = AppSession.pendingMapPlace.value
+        if (pending != null) {
+            val (lat, lon, name) = pending
+            val request = com.journalpix.models.CreatePlaceRequest(
+                tripId = effectiveTripId,
+                name = name,
+                description = null,
+                latitude = lat,
+                longitude = lon,
+                address = null,
+                visitDate = null,
+                orderIndex = null
+            )
+            placeViewModel.createPlace(token, effectiveTripId, request) {
+                AppSession.clearPendingMapPlace()
+                refresh()
+            }
+        }
+    }
+
     val timeline = timelineViewModel.timeline.value
 
     Scaffold(
@@ -194,6 +216,12 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     }
                     IconButton(onClick = { navController.navigate("map/$effectiveTripId") }) {
                         Icon(Icons.Default.Map, contentDescription = "View on map")
+                    }
+                    IconButton(onClick = {
+                        AppSession.clearPendingMapPlace()
+                        navController.navigate("map/$effectiveTripId?addPlaceMode=true")
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add place on map")
                     }
                 }
             )
