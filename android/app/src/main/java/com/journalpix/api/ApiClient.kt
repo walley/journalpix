@@ -134,7 +134,7 @@ class ApiClientBuilder(private val baseUrl: String) {
     
     fun build(): ApiClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.HEADERS
         }
         
         val client = OkHttpClient.Builder()
