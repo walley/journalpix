@@ -81,6 +81,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     var editTransportPlaceId by remember { mutableStateOf<String?>(null) }
     var createPlaceDay by remember { mutableStateOf<String?>(null) }
     var newPlaceName by remember { mutableStateOf("") }
+    var mapSelectedLat by remember { mutableStateOf<Double?>(null) }
+    var mapSelectedLon by remember { mutableStateOf<Double?>(null) }
     var uploadTargetPlaceId by remember { mutableStateOf<String?>(null) }
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
@@ -160,19 +162,29 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         val pending = AppSession.pendingMapPlace.value
         if (pending != null) {
             val (lat, lon, name) = pending
-            val request = com.journalpix.models.CreatePlaceRequest(
-                tripId = effectiveTripId,
-                name = name,
-                description = null,
-                latitude = lat,
-                longitude = lon,
-                address = null,
-                visitDate = null,
-                orderIndex = null
-            )
-            placeViewModel.createPlace(token, effectiveTripId, request) {
-                AppSession.clearPendingMapPlace()
-                refresh()
+            AppSession.clearPendingMapPlace()
+            if (showCreatePlaceDialog) {
+                // Populate the add-place dialog with the map selection
+                mapSelectedLat = lat
+                mapSelectedLon = lon
+                if (newPlaceName.isBlank()) {
+                    newPlaceName = name
+                }
+            } else {
+                val request = com.journalpix.models.CreatePlaceRequest(
+                    tripId = effectiveTripId,
+                    name = name,
+                    description = null,
+                    latitude = lat,
+                    longitude = lon,
+                    address = null,
+                    visitDate = null,
+                    orderIndex = null
+                )
+                placeViewModel.createPlace(token, effectiveTripId, request) {
+                    AppSession.clearPendingMapPlace()
+                    refresh()
+                }
             }
         }
     }
@@ -606,6 +618,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     showCreatePlaceDialog = false
                     newPlaceName = ""
                     createPlaceDay = null
+                    mapSelectedLat = null
+                    mapSelectedLon = null
                     placeViewModel.errorMessage.value = null
                 }
             },
@@ -648,6 +662,35 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+
+                    // Map location picker
+                    val mapLocationText = buildString {
+                        append("Location: ")
+                        if (mapSelectedLat != null && mapSelectedLon != null) {
+                            append("%.6f, %.6f".format(mapSelectedLat, mapSelectedLon))
+                        } else {
+                            append("not selected")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = mapLocationText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Button(
+                            onClick = {
+                                navController.navigate("map/$effectiveTripId?addPlaceMode=true")
+                            },
+                            enabled = !isAddingPlace && !placeViewModel.isLoading.value
+                        ) {
+                            Text("Pick on map")
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -661,8 +704,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 tripId = effectiveTripId,
                                 name = newPlaceName.trim(),
                                 description = null,
-                                latitude = null,
-                                longitude = null,
+                                latitude = mapSelectedLat,
+                                longitude = mapSelectedLon,
                                 address = null,
                                 visitDate = ZonedTimeInput(
                                     local = placeDateText.trim().ifBlank {
@@ -679,6 +722,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 showCreatePlaceDialog = false
                                 newPlaceName = ""
                                 createPlaceDay = null
+                                mapSelectedLat = null
+                                mapSelectedLon = null
                                 refresh()
                             }
                         }
@@ -702,6 +747,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         showCreatePlaceDialog = false
                         newPlaceName = ""
                         createPlaceDay = null
+                        mapSelectedLat = null
+                        mapSelectedLon = null
                         placeViewModel.errorMessage.value = null
                     }, enabled = !isAdding
                 ) { Text("Cancel") }
