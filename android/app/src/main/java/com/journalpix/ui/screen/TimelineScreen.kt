@@ -150,7 +150,13 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     }
 
     LaunchedEffect(effectiveTripId) {
-        timelineViewModel.getTimeline(token, effectiveTripId)
+        if (OfflineStore.getTrip(effectiveTripId) == null) {
+            // No trip data on mobile yet — sync from server to populate local store
+            timelineViewModel.syncAndRefresh(token, effectiveTripId)
+        } else {
+            // Trip data already on mobile — read offline, no network pull
+            timelineViewModel.getTimeline(token, effectiveTripId)
+        }
     }
 
     val timeline = timelineViewModel.timeline.value
