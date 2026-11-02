@@ -180,8 +180,36 @@ object SyncManager {
                             val requestFile = file.asRequestBody("image/jpeg".toMediaType())
                             val body =
                                 MultipartBody.Part.createFormData("photo", file.name, requestFile)
-                            val response =
+                            var response =
                                 ApiService.apiClient.uploadPhoto(bearerToken, placeId, body)
+                            if (!response.success) {
+                                // If the place doesn't exist on the server yet, create it,
+                                // then retry the upload.
+                                val placeRes = OfflineStore.findPlace(photo.placeId ?: "")
+                                if (placeRes != null && response.error?.contains("not found") == true) {
+                                    val (place, tripId) = placeRes
+                                    val createReq = CreatePlaceRequest(
+                                        tripId = tripId,
+                                        name = place.name,
+                                        description = place.description,
+                                        latitude = place.latitude,
+                                        longitude = place.longitude,
+                                        address = place.address,
+                                        visitDate = place.visitDate?.toInput(),
+                                        orderIndex = place.orderIndex,
+                                        transportFromPrevious = place.transportFromPrevious
+                                    )
+                                    val createResp =
+                                        ApiService.apiClient.createPlace(bearerToken, tripId, createReq)
+                                    if (createResp.success && createResp.data != null) {
+                                        OfflineStore.updatePlaceServerId(photo.placeId ?: "", createResp.data)
+                                        // Retry upload with the server place id
+                                        response = ApiService.apiClient.uploadPhoto(
+                                            bearerToken, createResp.data.id, body
+                                        )
+                                    }
+                                }
+                            }
                             if (response.success) {
                                 OfflineStore.clearPending(id)
                                 Log.d(TAG, "Synced photo: $id")
