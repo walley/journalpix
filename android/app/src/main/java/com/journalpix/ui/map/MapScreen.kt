@@ -168,6 +168,13 @@ fun MapScreen(
               .fillMaxSize()
               .padding(paddingValues)
         ) {
+            // NOTE: OpenMapView has built-in two-level tile caching enabled by
+            // default — no app-side configuration needed:
+            //   Level 1: Memory LRU cache (~1/8 of heap)
+            //   Level 2: Disk cache (50 MB max, context.cacheDir/tiles2/,
+            //            persists across restarts, 7-day expiry)
+            // Tiles are cached automatically on download; stale tiles are shown
+            // as offline fallback if re-download fails.
             OpenMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
