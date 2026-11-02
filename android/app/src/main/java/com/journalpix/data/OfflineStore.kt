@@ -286,7 +286,27 @@ object OfflineStore {
     }
 
     fun timelineFor(tripId: String): TripTimeline {
-        val trip = ensureDemoTrip(tripId)
+        val trip = trips[tripId]
+        if (trip == null) {
+            return TripTimeline(
+                trip = TripResponse(
+                    id = tripId,
+                    userId = "",
+                    title = "",
+                    description = null,
+                    startDate = null,
+                    startTimezone = null,
+                    endDate = null,
+                    endTimezone = null,
+                    status = TripStatus.PLANNED,
+                    createdAt = "",
+                    updatedAt = "",
+                    placesCount = 0,
+                    photosCount = 0
+                ),
+                timeline = emptyList()
+            )
+        }
         val places = placesByTrip[trip.id].orEmpty()
             .map { place ->
                 val photos = photosByPlace[place.id].orEmpty()
