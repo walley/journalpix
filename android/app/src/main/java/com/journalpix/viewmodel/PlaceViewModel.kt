@@ -6,7 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.*
+import com.journalpix.models.ZonedTime
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class PlaceViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
@@ -14,16 +18,14 @@ class PlaceViewModel : ViewModel() {
     val places = mutableStateOf<List<PlaceResponse>>(emptyList())
     val currentPlace = mutableStateOf<PlaceWithPhotos?>(null)
 
-    /**
-     * The backend stores visit dates as NaiveDateTime ("YYYY-MM-DDTHH:MM:SS");
-     * the UI/offline store uses plain dates, so expand them for API requests.
-     */
-    private fun normalizeVisitDate(value: String?): String? {
-        if (value.isNullOrBlank()) return null
-        return if (Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) {
-            "${value}T00:00:00"
-        } else {
-            value
+    /** Convert a ZonedTimeInput (from API request) into a ZonedTime for offline storage. */
+    private fun toZonedTime(input: ZonedTimeInput?): ZonedTime? {
+        return input?.let {
+            it.utc?.let { utc ->
+                ZonedTime.fromInstant(Instant.parse(utc), it.timezone ?: ZoneId.systemDefault().id)
+            } ?: it.local?.let { local ->
+                ZonedTime.fromLocal(LocalDateTime.parse(local), it.timezone ?: ZoneId.systemDefault().id)
+            } ?: null
         }
     }
 
@@ -48,11 +50,8 @@ class PlaceViewModel : ViewModel() {
     }
 
     fun createPlace(token: String, tripId: String, request: CreatePlaceRequest, onSuccess: () -> Unit) {
-        val normalizedDate = normalizeVisitDate(request.visitDate)
-        val apiRequest = request.copy(visitDate = normalizedDate)
-
         if (token.isBlank() || token == "Bearer token") {
-            OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
+            OfflineStore.addPlace(tripId, request.name, visitDate = toZonedTime(request.visitDate))
             isLoading.value = false
             errorMessage.value = null
             onSuccess()
@@ -63,13 +62,13 @@ class PlaceViewModel : ViewModel() {
             isLoading.value = true
             errorMessage.value = null
             try {
-                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, apiRequest)
+                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, request)
                 if (response.success && response.data != null) {
                     val placeResp = response.data
                     OfflineStore.addPlace(
                         tripId = tripId,
                         name = placeResp.name,
-                        visitDate = placeResp.visitDate ?: request.visitDate,
+                        visitDate = placeResp.visitDate,
                         address = placeResp.address,
                         latitude = placeResp.latitude,
                         longitude = placeResp.longitude,
@@ -78,10 +77,12 @@ class PlaceViewModel : ViewModel() {
                     onSuccess()
                 } else {
                     errorMessage.value = response.error ?: "Failed to create place"
+                    OfflineStore.addPlace(tripId, request.name, visitDate = toZonedTime(request.visitDate))
+                    onSuccess()
                 }
             } catch (e: Exception) {
                 errorMessage.value = "Network error: ${e.message}"
-                OfflineStore.addPlace(tripId, request.name, visitDate = request.visitDate)
+                OfflineStore.addPlace(tripId, request.name, visitDate = toZonedTime(request.visitDate))
                 onSuccess()
             } finally {
                 isLoading.value = false
@@ -108,8 +109,7 @@ class PlaceViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val apiRequest = request.copy(visitDate = normalizeVisitDate(request.visitDate))
-                val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, apiRequest)
+                val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, request)
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to update place"
             } catch (e: Exception) {

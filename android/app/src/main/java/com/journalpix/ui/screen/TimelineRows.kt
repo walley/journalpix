@@ -21,6 +21,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.models.ZonedTime
 import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.viewmodel.PhotoViewModel
 
@@ -241,7 +242,7 @@ fun PhotoItem(
                 Text("No GPS in EXIF", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             photo.takenAt?.let {
-                Text("Taken: $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                Text("Taken: ${it.dateTimeLabel()}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
             }
         }
     }
@@ -261,7 +262,7 @@ fun PlaceTimelineRowPreview() {
                 latitude = 48.8584,
                 longitude = 2.2945,
                 address = "Paris, France",
-                visitDate = "2025-05-15",
+                visitDate = ZonedTime.parseLegacy("2025-05-15"),
                 orderIndex = 0,
                 transportFromPrevious = null,
                 createdAt = "",
@@ -290,7 +291,7 @@ fun PhotoItemPreview() {
                 caption = "Sunset at Eiffel Tower",
                 latitude = 48.8584,
                 longitude = 2.2945,
-                takenAt = "2025-05-15T18:30:00Z",
+                takenAt = ZonedTime.parseLegacy("2025-05-15T18:30:00Z"),
                 orderIndex = 0,
                 createdAt = ""
             ),

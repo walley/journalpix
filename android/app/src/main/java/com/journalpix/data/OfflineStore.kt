@@ -9,11 +9,14 @@ import com.journalpix.models.TransportMode
 import com.journalpix.models.TripResponse
 import com.journalpix.models.TripStatus
 import com.journalpix.models.TripTimeline
+import com.journalpix.models.ZonedTime
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -233,7 +236,7 @@ object OfflineStore {
                     latitude = null,
                     longitude = null,
                     address = null,
-                    visitDate = LocalDate.now().toString(),
+                    visitDate = null,
                     orderIndex = 0,
                     transportFromPrevious = null,
                     createdAt = "2024-01-01T00:00:00Z",
@@ -300,12 +303,11 @@ object OfflineStore {
         val inRange = mutableListOf<PlaceWithPhotos>()
 
         for (p in places) {
-            val day = placeDay(p)
-            val d = runCatching { LocalDate.parse(day) }.getOrNull()
-            if (d != null && start != null && end != null) {
-                if (d.isBefore(start)) {
+            val visitLocalDate = p.visitDate?.localDate
+            if (visitLocalDate != null && start != null && end != null) {
+                if (visitLocalDate.isBefore(start)) {
                     beforePlaces.add(p)
-                } else if (d.isAfter(end)) {
+                } else if (visitLocalDate.isAfter(end)) {
                     afterPlaces.add(p)
                 } else {
                     inRange.add(p)
@@ -321,10 +323,17 @@ object OfflineStore {
             val ordered = beforePlaces.sortedWith(
                 compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
             )
-            items.add(TimelineItem(date = BEFORE_KEY, places = ordered))
+            items.add(TimelineItem(day = 0, date = BEFORE_KEY, places = ordered))
         }
 
-        val grouped = inRange.groupBy { placeDay(it) }
+        // Group in-range places by trip day number.
+        val grouped = inRange.groupBy { p ->
+            p.visitDate?.localDate?.let { ld ->
+                start?.let { s ->
+                    java.time.temporal.ChronoUnit.DAYS.between(s, ld).toInt() + 1
+                } ?: p.day
+            } ?: p.day
+        }
 
         if (start != null && end != null && !end.isBefore(start) && java.time.temporal.ChronoUnit.DAYS.between(
                 start,
@@ -334,28 +343,20 @@ object OfflineStore {
             var curr = start
             while (!curr!!.isAfter(end)) {
                 val dateStr = curr.toString()
-                val list = grouped[dateStr].orEmpty()
+                val dayNum = java.time.temporal.ChronoUnit.DAYS.between(start!!, curr).toInt() + 1
+                val list = grouped[dayNum].orEmpty()
                   .sortedWith(
                       compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
                   )
-                items.add(TimelineItem(date = dateStr, places = list))
+                items.add(TimelineItem(day = dayNum, date = dateStr, places = list))
                 curr = curr.plusDays(1)
             }
-            grouped.keys.filter { key -> items.none { it.date == key } }
-              .forEach { dateStr ->
-                  val list = grouped[dateStr].orEmpty()
-                    .sortedWith(
-                        compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
-                    )
-                  items.add(TimelineItem(date = dateStr, places = list))
-              }
-        } else {
             grouped.entries.sortedBy { it.key }
-              .forEach { (date, list) ->
+              .forEach { (day, list) ->
                   val ordered = list.sortedWith(
                       compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
                   )
-                  items.add(TimelineItem(date = date, places = ordered))
+                  items.add(TimelineItem(day = day, date = null, places = ordered))
               }
         }
 
@@ -363,7 +364,7 @@ object OfflineStore {
             val ordered = afterPlaces.sortedWith(
                 compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
             )
-            items.add(TimelineItem(date = AFTER_KEY, places = ordered))
+            items.add(TimelineItem(day = -1, date = AFTER_KEY, places = ordered))
         }
 
         return TripTimeline(
@@ -378,14 +379,13 @@ object OfflineStore {
     fun addPlace(
         tripId: String,
         name: String,
-        visitDate: String? = null,
+        visitDate: ZonedTime? = null,
         address: String? = null,
         latitude: Double? = null,
         longitude: Double? = null,
         transportFromPrevious: String? = null
     ): PlaceWithPhotos {
         val trip = ensureDemoTrip(tripId)
-        val day = visitDate ?: LocalDate.now().toString()
         val place = PlaceWithPhotos(
             id = "place-${UUID.randomUUID()}",
             tripId = trip.id,
@@ -394,7 +394,7 @@ object OfflineStore {
             latitude = latitude,
             longitude = longitude,
             address = address,
-            visitDate = day,
+            visitDate = visitDate,
             orderIndex = placesByTrip[trip.id]?.size ?: 0,
             transportFromPrevious = transportFromPrevious,
             createdAt = java.time.Instant.now().toString(),
@@ -421,11 +421,9 @@ object OfflineStore {
         uriString: String,
         latitude: Double?,
         longitude: Double?,
-        takenAt: String?,
+        takenAt: ZonedTime? = null,
         caption: String? = null
     ): PhotoResponse {
-        val dayFromExif = takenAt?.let { parseExifDay(it) }
-
         val photo = PhotoResponse(
             id = "photo-${UUID.randomUUID()}",
             placeId = placeId,
@@ -449,8 +447,8 @@ object OfflineStore {
                 if (p.latitude == null && latitude != null && longitude != null) {
                     p = p.copy(latitude = latitude, longitude = longitude)
                 }
-                if (dayFromExif != null) {
-                    p = p.copy(visitDate = dayFromExif)
+                if (takenAt != null) {
+                    p = p.copy(visitDate = takenAt)
                 }
                 list[idx] = p
             }
@@ -486,8 +484,8 @@ object OfflineStore {
         val photo = findPhoto(photoId)
             ?: return addPlace(trip.id, shortName, address = address, latitude = latitude, longitude = longitude)
 
-        val day = photo.takenAt?.let { parseExifDay(it) }
-            ?: LocalDate.now().toString()
+        val visit = photo.takenAt
+            ?: ZonedTime.fromInstant(Instant.now(), ZoneId.systemDefault().id)
 
         val existing = placesByTrip[trip.id].orEmpty().firstOrNull { place ->
             val sameAddress = !place.address.isNullOrBlank() &&
@@ -507,7 +505,7 @@ object OfflineStore {
                 address = address,
                 latitude = latitude ?: existing.latitude,
                 longitude = longitude ?: existing.longitude,
-                visitDate = day
+                visitDate = visit
             )
             list[idx] = updated
             updated
@@ -515,7 +513,7 @@ object OfflineStore {
             addPlace(
                 tripId = trip.id,
                 name = shortName,
-                visitDate = day,
+                visitDate = visit,
                 address = address,
                 latitude = latitude,
                 longitude = longitude
@@ -564,26 +562,14 @@ object OfflineStore {
         return r * c
     }
 
-    private fun placeDay(p: PlaceWithPhotos): String {
-        val vd = p.visitDate
-        if (!vd.isNullOrBlank()) {
-            return try {
-                if (vd.length >= 10) LocalDate.parse(vd.take(10)).toString() else vd
-            } catch (_: Exception) {
-                vd.take(10)
-            }
-        }
-        return LocalDate.now().toString()
-    }
-
     private fun placeSortKey(p: PlaceWithPhotos): String {
         val photos = photosByPlace[p.id].orEmpty()
-        val times = photos.mapNotNull { it.takenAt }.sorted()
-        return times.firstOrNull() ?: (p.visitDate ?: "")
+        val times = photos.mapNotNull { it.takenAt?.sortKey }.sorted()
+        return times.firstOrNull() ?: (p.visitDate?.sortKey ?: "")
     }
 
     private fun photoSortKey(p: PhotoResponse): String =
-        p.takenAt ?: p.createdAt
+        p.takenAt?.sortKey ?: p.createdAt
 
     private fun parseExifDay(takenAt: String): String? {
         return try {
@@ -605,7 +591,10 @@ object OfflineStore {
         put("title", t.title)
         put("description", t.description)
         put("startDate", t.startDate)
+        put("startTimezone", t.startTimezone)
         put("endDate", t.endDate)
+        put("endTimezone", t.endTimezone)
+        put("daysCount", t.daysCount)
         put("status", t.status.name)
         put("createdAt", t.createdAt)
         put("updatedAt", t.updatedAt)
@@ -617,7 +606,10 @@ object OfflineStore {
         title = o.getString("title"),
         description = o.optString("description", null).takeIf { it.isNotBlank() },
         startDate = o.optString("startDate", null).takeIf { it.isNotBlank() },
+        startTimezone = o.optString("startTimezone", null).takeIf { it.isNotBlank() },
         endDate = o.optString("endDate", null).takeIf { it.isNotBlank() },
+        endTimezone = o.optString("endTimezone", null).takeIf { it.isNotBlank() },
+        daysCount = o.optInt("daysCount", 0).takeIf { it > 0 },
         status = try {
             TripStatus.valueOf(o.optString("status", "PLANNED"))
         } catch (_: Exception) {
@@ -637,7 +629,14 @@ object OfflineStore {
         put("latitude", p.latitude)
         put("longitude", p.longitude)
         put("address", p.address)
-        put("visitDate", p.visitDate)
+        p.visitDate?.let { zt ->
+            put("visitDate", JSONObject().apply {
+                put("utc", zt.utc)
+                put("timezone", zt.timezone)
+                put("local", zt.local)
+                zt.localTimezone?.let { put("localTimezone", it) }
+            })
+        }
         put("orderIndex", p.orderIndex)
         put("transportFromPrevious", p.transportFromPrevious)
         put("createdAt", p.createdAt)
@@ -651,7 +650,14 @@ object OfflineStore {
         latitude = if (o.isNull("latitude")) null else o.optDouble("latitude"),
         longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
         address = o.optString("address", null).takeIf { it.isNotBlank() },
-        visitDate = o.optString("visitDate", null).takeIf { it.isNotBlank() },
+        visitDate = o.optJSONObject("visitDate")?.let {
+            ZonedTime(
+                utc = it.getString("utc"),
+                timezone = it.getString("timezone"),
+                local = it.getString("local"),
+                localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
+            )
+        },
         orderIndex = o.optInt("orderIndex", 0),
         transportFromPrevious = o.optString("transportFromPrevious", null).takeIf { it.isNotBlank() },
         createdAt = o.optString("createdAt", ""),
@@ -666,7 +672,14 @@ object OfflineStore {
         put("thumbnailPath", p.thumbnailPath)
         put("latitude", p.latitude)
         put("longitude", p.longitude)
-        put("takenAt", p.takenAt)
+        p.takenAt?.let { zt ->
+            put("takenAt", JSONObject().apply {
+                put("utc", zt.utc)
+                put("timezone", zt.timezone)
+                put("local", zt.local)
+                zt.localTimezone?.let { put("localTimezone", it) }
+            })
+        }
         put("caption", p.caption)
         put("orderIndex", p.orderIndex)
         put("createdAt", p.createdAt)
@@ -680,7 +693,14 @@ object OfflineStore {
         thumbnailPath = o.optString("thumbnailPath", o.getString("filePath")),
         latitude = if (o.isNull("latitude")) null else o.optDouble("latitude"),
         longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
-        takenAt = o.optString("takenAt", null).takeIf { it.isNotBlank() },
+        takenAt = o.optJSONObject("takenAt")?.let {
+            ZonedTime(
+                utc = it.getString("utc"),
+                timezone = it.getString("timezone"),
+                local = it.getString("local"),
+                localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
+            )
+        },
         caption = o.optString("caption", null).takeIf { it.isNotBlank() },
         orderIndex = o.optInt("orderIndex", 0),
         createdAt = o.optString("createdAt", ""),
@@ -697,7 +717,7 @@ object OfflineStore {
         for (item in timeline.timeline) {
             for (place in item.places) {
                 val p =
-                    if (place.visitDate.isNullOrBlank()) place.copy(visitDate = item.date) else place
+                    if (place.visitDate == null) place.copy(visitDate = ZonedTime.parseLegacy(item.date)) else place
                 newPlaces.add(p)
                 allPhotos[p.id] = p.photos.toMutableList()
             }

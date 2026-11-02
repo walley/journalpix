@@ -1,13 +1,17 @@
 use crate::database::connection::{
-    get_i64_count, get_opt_f64, get_opt_naive_datetime, get_opt_string, get_opt_uuid, get_timestamp,
-    get_uuid, DatabaseConnection, PHOTO_COLS,
+    get_i64_count, get_opt_f64, get_opt_string, get_opt_uuid, get_opt_zoned_time, get_timestamp,
+    get_uuid, DatabaseConnection, PHOTO_COLS, PLACE_COLS,
 };
 use crate::models::photo::PhotoResponse;
-use crate::models::place::{CreatePlaceRequest, Place, PlaceResponse, PlaceWithPhotos, UpdatePlaceRequest};
+use crate::models::place::{
+    CreatePlaceRequest, Place, PlaceResponse, PlaceWithPhotos, UpdatePlaceRequest,
+};
 use crate::models::response::ApiResponse;
+use crate::models::zoned::{ZonedTime, ZonedTimeInput};
 use crate::utils::error::ApiError;
 use crate::utils::validation::validate_coordinates;
 use chrono::Utc;
+use chrono_tz::Tz;
 use uuid::Uuid;
 use std::sync::Arc;
 
@@ -20,9 +24,6 @@ fn db_err(e: rusqlite::Error) -> ApiError {
     ApiError::DatabaseError(e.to_string())
 }
 
-const PLACE_COLS: &str =
-    "id, trip_id, name, description, latitude, longitude, address, visit_date, order_index, created_at, updated_at";
-
 fn map_place(r: &rusqlite::Row) -> rusqlite::Result<Place> {
     Ok(Place {
         id: get_uuid(r, 0)?,
@@ -32,10 +33,11 @@ fn map_place(r: &rusqlite::Row) -> rusqlite::Result<Place> {
         latitude: get_opt_f64(r, 4)?,
         longitude: get_opt_f64(r, 5)?,
         address: get_opt_string(r, 6)?,
-        visit_date: get_opt_naive_datetime(r, 7)?,
-        order_index: r.get(8)?,
-        created_at: get_timestamp(r, 9)?,
-        updated_at: get_timestamp(r, 10)?,
+        day: r.get(7)?,
+        visit_date: get_opt_zoned_time(r, 8, 9)?,
+        order_index: r.get(10)?,
+        created_at: get_timestamp(r, 11)?,
+        updated_at: get_timestamp(r, 12)?,
     })
 }
 
@@ -48,10 +50,10 @@ pub fn map_photo_response(r: &rusqlite::Row) -> rusqlite::Result<PhotoResponse> 
         thumbnail_path: r.get(4)?,
         latitude: get_opt_f64(r, 5)?,
         longitude: get_opt_f64(r, 6)?,
-        taken_at: get_opt_naive_datetime(r, 7)?,
-        caption: get_opt_string(r, 8)?,
-        order_index: r.get(9)?,
-        created_at: get_timestamp(r, 10)?,
+        taken_at: get_opt_zoned_time(r, 7, 8)?,
+        caption: get_opt_string(r, 9)?,
+        order_index: r.get(10)?,
+        created_at: get_timestamp(r, 11)?,
         place: None,
     })
 }
@@ -82,6 +84,7 @@ impl PlaceService {
             latitude: p.latitude,
             longitude: p.longitude,
             address: p.address,
+            day: p.day,
             visit_date: p.visit_date,
             order_index: p.order_index,
             created_at: p.created_at,
@@ -90,10 +93,23 @@ impl PlaceService {
         })
     }
 
+    /// Resolve a client-supplied moment against the user's zone. `None` in,
+    /// `None` out; an explicit instant or a local reading both work.
+    fn resolve_visit(
+        input: Option<ZonedTimeInput>,
+        default_tz: Tz,
+    ) -> Result<Option<ZonedTime>, ApiError> {
+        match input {
+            None => Ok(None),
+            Some(i) => i.resolve(default_tz),
+        }
+    }
+
     pub async fn create_place(
         &self,
         trip_id: Uuid,
         request: CreatePlaceRequest,
+        default_tz: Tz,
     ) -> Result<ApiResponse<PlaceResponse>, ApiError> {
         if request.name.trim().is_empty() {
             return Err(ApiError::ValidationError("Name is required".into()));
@@ -115,6 +131,14 @@ impl PlaceService {
             return Err(ApiError::NotFound("Trip not found".into()));
         }
 
+        let day = request.day.unwrap_or(1);
+        if day < 1 {
+            return Err(ApiError::ValidationError(
+                "day must be 1 or greater".into(),
+            ));
+        }
+        let visit_date = Self::resolve_visit(request.visit_date, default_tz)?;
+
         let place = Place {
             id: Uuid::new_v4(),
             trip_id,
@@ -123,7 +147,8 @@ impl PlaceService {
             latitude: request.latitude,
             longitude: request.longitude,
             address: request.address,
-            visit_date: request.visit_date,
+            day,
+            visit_date,
             order_index: request.order_index.unwrap_or(0),
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -132,8 +157,8 @@ impl PlaceService {
         self.db_pool
             .with_conn(|c| {
                 c.execute(
-                    "INSERT INTO places (id, trip_id, name, description, latitude, longitude, address, visit_date, order_index, created_at, updated_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
+                    "INSERT INTO places (id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)",
                     rusqlite::params![
                         place.id.to_string(),
                         place.trip_id.to_string(),
@@ -142,7 +167,9 @@ impl PlaceService {
                         place.latitude,
                         place.longitude,
                         place.address,
-                        place.visit_date.map(|d| d.format("%Y-%m-%dT%H:%M:%S").to_string()),
+                        place.day,
+                        place.visit_date.as_ref().map(|d| d.utc.to_rfc3339()),
+                        place.visit_date.as_ref().map(|d| d.timezone.name().to_string()),
                         place.order_index,
                         place.created_at.to_rfc3339(),
                     ],
@@ -158,7 +185,7 @@ impl PlaceService {
             .db_pool
             .with_conn(|c| {
                 let mut stmt = c.prepare(&format!(
-                    "SELECT {PLACE_COLS} FROM places WHERE trip_id = ?1 ORDER BY order_index, visit_date"
+                    "SELECT {PLACE_COLS} FROM places WHERE trip_id = ?1 ORDER BY day, order_index, visit_date"
                 ))?;
                 let rows = stmt
                     .query_map([trip_id.to_string()], map_place)?
@@ -231,6 +258,7 @@ impl PlaceService {
             latitude: place.latitude,
             longitude: place.longitude,
             address: place.address,
+            day: place.day,
             visit_date: place.visit_date,
             order_index: place.order_index,
             created_at: place.created_at,
@@ -242,12 +270,30 @@ impl PlaceService {
         &self,
         place_id: Uuid,
         request: UpdatePlaceRequest,
+        default_tz: Tz,
     ) -> Result<ApiResponse<PlaceResponse>, ApiError> {
         self.find_place(place_id).await?;
         validate_coordinates(request.latitude, request.longitude)?;
 
+        if let Some(day) = request.day {
+            if day < 1 {
+                return Err(ApiError::ValidationError(
+                    "day must be 1 or greater".into(),
+                ));
+            }
+        }
+
         let now = Utc::now().to_rfc3339();
         let id = place_id.to_string();
+
+        // Resolve any client-supplied moment before opening the connection,
+        // since `resolve_visit` returns ApiError and the closure below must
+        // return rusqlite::Error only.
+        let resolved_visit: Option<ZonedTime> = match &request.visit_date {
+            None => None,
+            Some(visit) => visit.clone().resolve(default_tz)?,
+        };
+
         self.db_pool
             .with_conn(|c| {
                 if let Some(n) = &request.name {
@@ -268,10 +314,17 @@ impl PlaceService {
                 if request.address.is_some() {
                     c.execute("UPDATE places SET address = ?1 WHERE id = ?2", rusqlite::params![request.address, id])?;
                 }
+                if let Some(day) = request.day {
+                    c.execute("UPDATE places SET day = ?1 WHERE id = ?2", rusqlite::params![day, id])?;
+                }
                 if request.visit_date.is_some() {
                     c.execute(
-                        "UPDATE places SET visit_date = ?1 WHERE id = ?2",
-                        rusqlite::params![request.visit_date.map(|d| d.format("%Y-%m-%dT%H:%M:%S").to_string()), id],
+                        "UPDATE places SET visit_date = ?1, visit_timezone = ?2 WHERE id = ?3",
+                        rusqlite::params![
+                            resolved_visit.as_ref().map(|d| d.utc.to_rfc3339()),
+                            resolved_visit.as_ref().map(|d| d.timezone.name().to_string()),
+                            id
+                        ],
                     )?;
                 }
                 if let Some(oi) = request.order_index {

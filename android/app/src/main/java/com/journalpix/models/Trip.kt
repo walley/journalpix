@@ -30,7 +30,11 @@ data class Trip(
     val title: String,
     val description: String? = null,
     val startDate: String? = null,
+    /** IANA zone in effect at departure, e.g. "Asia/Tokyo". */
+    val startTimezone: String? = null,
     val endDate: String? = null,
+    /** IANA zone in effect at the end of the trip. */
+    val endTimezone: String? = null,
     val status: TripStatus = TripStatus.PLANNED,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
@@ -43,7 +47,11 @@ data class TripResponse(
     val title: String,
     val description: String? = null,
     val startDate: String? = null,
+    val startTimezone: String? = null,
     val endDate: String? = null,
+    val endTimezone: String? = null,
+    /** Number of trip days, inclusive of both ends. */
+    val daysCount: Int? = null,
     val status: TripStatus,
     val createdAt: String,
     val updatedAt: String,
@@ -55,7 +63,9 @@ data class CreateTripRequest(
     val title: String,
     val description: String? = null,
     val startDate: String? = null,
+    val startTimezone: String? = null,
     val endDate: String? = null,
+    val endTimezone: String? = null,
     val status: TripStatus? = null
 )
 
@@ -63,7 +73,9 @@ data class UpdateTripRequest(
     val title: String? = null,
     val description: String? = null,
     val startDate: String? = null,
+    val startTimezone: String? = null,
     val endDate: String? = null,
+    val endTimezone: String? = null,
     val status: TripStatus? = null
 )
 
@@ -77,7 +89,14 @@ data class TripTimeline(
     val timeline: List<TimelineItem>
 )
 
+/**
+ * One trip day. Days are sequential indices, not calendar dates: crossing
+ * zones can make local arrival precede local departure, so day numbers only
+ * increment by one. [date] is `trip.startDate + (day - 1)` and may be null
+ * when the trip has no start date.
+ */
 data class TimelineItem(
-    val date: String,
+    val day: Int,
+    val date: String? = null,
     val places: List<PlaceWithPhotos>
 )

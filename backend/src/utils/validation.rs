@@ -51,6 +51,27 @@ pub fn validate_coordinates(lat: Option<f64>, lon: Option<f64>) -> Result<(), Ap
     Ok(())
 }
 
+/// Validate an IANA timezone name. `None` and an empty string both mean
+/// "not set" (the caller then falls back to the user's zone or the server
+/// default); anything else must resolve to a real zone, so a typo fails
+/// loudly instead of silently landing on UTC.
+pub fn validate_timezone(tz: Option<String>) -> Result<Option<String>, ApiError> {
+    match tz {
+        None => Ok(None),
+        Some(name) if name.trim().is_empty() => Ok(None),
+        Some(name) => {
+            if crate::models::zoned::parse_tz(&name).is_some() {
+                Ok(Some(name.trim().to_string()))
+            } else {
+                Err(ApiError::ValidationError(format!(
+                    "Unknown timezone: {}",
+                    name
+                )))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,5 +86,19 @@ mod tests {
     #[test]
     fn empty_password_is_rejected() {
         assert!(validate_password("").is_err());
+    }
+
+    #[test]
+    fn timezone_names_are_validated() {
+        assert_eq!(
+            validate_timezone(Some("Europe/Rome".into())).unwrap(),
+            Some("Europe/Rome".to_string())
+        );
+        assert_eq!(validate_timezone(Some("UTC".into())).unwrap(), Some("UTC".to_string()));
+        // Absent and empty both mean "unset".
+        assert_eq!(validate_timezone(None).unwrap(), None);
+        assert_eq!(validate_timezone(Some("  ".into())).unwrap(), None);
+        // A typo must not silently become UTC.
+        assert!(validate_timezone(Some("Mars/Olympus".into())).is_err());
     }
 }

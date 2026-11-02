@@ -47,12 +47,16 @@ import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TransportMode
+import com.journalpix.models.ZonedTime
+import com.journalpix.models.ZonedTimeInput
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 import com.journalpix.viewmodel.PhotoViewModel
 import com.journalpix.viewmodel.PlaceViewModel
 import com.journalpix.viewmodel.TimelineViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Calendar
@@ -246,7 +250,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         }
 
                         timeline.timeline.forEachIndexed { dayIndex, dayItem ->
-                            val dayKey = dayItem.date
+                            val dayKey = dayItem.date ?: ""
                             val isBefore = dayKey == OfflineStore.BEFORE_KEY
                             val isAfter = dayKey == OfflineStore.AFTER_KEY
                             val isBeforeAfter = isBefore || isAfter
@@ -256,7 +260,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             item(key = "day-header-$dayKey") {
                                 DayHeader(
                                     dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
-                                    date = dayItem.date,
+                                    date = dayKey,
                                     isBeforeAfter = isBeforeAfter,
                                     placeCount = dayItem.places.size,
                                     photoCount = dayItem.places.sumOf { it.photos.size },
@@ -266,8 +270,10 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                         val newPlace = OfflineStore.addPlace(
                                             tripId = effectiveTripId,
                                             name = "Place on $dayKey",
-                                            visitDate = if (isBeforeAfter) LocalDate.now()
-                                              .toString() else dayKey
+                                            visitDate = if (isBeforeAfter)
+                                                ZonedTime.fromLocal(LocalDateTime.now(), ZoneId.systemDefault().id)
+                                            else
+                                                ZonedTime.parseLegacy(dayKey)
                                         )
                                         refresh()
                                         startAddPhoto(newPlace.id)
@@ -554,11 +560,22 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         var placeDateText by remember(createPlaceDay) {
             mutableStateOf(createPlaceDay ?: LocalDate.now().toString())
         }
+        var isAddingPlace by remember { mutableStateOf(false) }
+
+        LaunchedEffect(placeViewModel.isLoading.value) {
+            if (!placeViewModel.isLoading.value && placeViewModel.errorMessage.value != null) {
+                isAddingPlace = false
+            }
+        }
+
         AlertDialog(
             onDismissRequest = {
-                showCreatePlaceDialog = false
-                newPlaceName = ""
-                createPlaceDay = null
+                if (!isAddingPlace && !placeViewModel.isLoading.value) {
+                    showCreatePlaceDialog = false
+                    newPlaceName = ""
+                    createPlaceDay = null
+                    placeViewModel.errorMessage.value = null
+                }
             },
             title = { Text("Add a place") },
             text = {
@@ -568,7 +585,8 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         onValueChange = { newPlaceName = it },
                         label = { Text("Place name") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isAddingPlace && !placeViewModel.isLoading.value
                     )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
@@ -577,46 +595,84 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         label = { Text("Date (yyyy-MM-dd)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !isAddingPlace && !placeViewModel.isLoading.value,
                         trailingIcon = {
-                            IconButton(onClick = {
-                                showDatePicker(placeDateText) { selectedDate ->
-                                    placeDateText = selectedDate.toString()
-                                }
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    showDatePicker(placeDateText) { selectedDate ->
+                                        placeDateText = selectedDate.toString()
+                                    }
+                                }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
+                            ) {
                                 Icon(Icons.Default.DateRange, contentDescription = "Select date")
                             }
                         }
                     )
+                    placeViewModel.errorMessage.value?.let { error ->
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (newPlaceName.isNotBlank()) {
-                        val request = com.journalpix.models.CreatePlaceRequest(
-                            tripId = effectiveTripId,
-                            name = newPlaceName.trim(),
-                            description = null,
-                            latitude = null,
-                            longitude = null,
-                            address = null,
-                            visitDate = placeDateText.trim().ifBlank { LocalDate.now().toString() },
-                            orderIndex = null
-                        )
-                        placeViewModel.createPlace(token, effectiveTripId, request) {
-                            showCreatePlaceDialog = false
-                            newPlaceName = ""
-                            createPlaceDay = null
-                            refresh()
+                val isAdding = isAddingPlace || placeViewModel.isLoading.value
+                Button(
+                    onClick = {
+                        if (newPlaceName.isNotBlank() && !isAdding) {
+                            isAddingPlace = true
+                            placeViewModel.errorMessage.value = null
+                            val request = com.journalpix.models.CreatePlaceRequest(
+                                tripId = effectiveTripId,
+                                name = newPlaceName.trim(),
+                                description = null,
+                                latitude = null,
+                                longitude = null,
+                                address = null,
+                                visitDate = ZonedTimeInput(
+                                    local = placeDateText.trim().ifBlank {
+                                        LocalDate.now().atStartOfDay().toString()
+                                    }.let { d ->
+                                        if (d.contains("T")) d else "${d}T00:00:00"
+                                    },
+                                    timezone = ZoneId.systemDefault().id
+                                ),
+                                orderIndex = null
+                            )
+                            placeViewModel.createPlace(token, effectiveTripId, request) {
+                                isAddingPlace = false
+                                showCreatePlaceDialog = false
+                                newPlaceName = ""
+                                createPlaceDay = null
+                                refresh()
+                            }
                         }
+                    }, enabled = !isAdding && newPlaceName.isNotBlank()
+                ) {
+                    if (isAdding) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(Modifier.width(8.dp))
                     }
-                }) { Text("Add") }
+                    Text("Add")
+                }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showCreatePlaceDialog = false
-                    newPlaceName = ""
-                    createPlaceDay = null
-                }) { Text("Cancel") }
+                val isAdding = isAddingPlace || placeViewModel.isLoading.value
+                TextButton(
+                    onClick = {
+                        showCreatePlaceDialog = false
+                        newPlaceName = ""
+                        createPlaceDay = null
+                        placeViewModel.errorMessage.value = null
+                    }, enabled = !isAdding
+                ) { Text("Cancel") }
             }
         )
     }

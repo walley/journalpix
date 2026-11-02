@@ -1,12 +1,12 @@
-use crate::database::connection::{
-    DatabaseConnection, PHOTO_COLS, get_uuid,
-};
+use crate::database::connection::{DatabaseConnection, PHOTO_COLS, get_uuid};
 use crate::models::photo::{Photo, PhotoMetadata, PhotoResponse, UpdatePhotoRequest};
 use crate::models::response::ApiResponse;
+use crate::models::zoned::{ZonedTime, ZonedTimeInput};
 use crate::utils::error::ApiError;
 use crate::utils::exif::ExifService;
 use crate::utils::file::FileService;
-use chrono::Utc;
+use chrono::{NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Tz;
 use uuid::Uuid;
 use std::sync::Arc;
 
@@ -21,6 +21,18 @@ pub struct PhotoService {
 
 fn db_err(e: rusqlite::Error) -> ApiError {
     ApiError::DatabaseError(e.to_string())
+}
+
+/// EXIF `DateTimeOriginal` is local wall-clock with no zone attached. Read it
+/// as such and pair it with `tz` so the stored instant is correct; a DST gap
+/// or fold in that zone leaves `taken_at` unset rather than guessing.
+fn exif_taken_at(raw: Option<String>, tz: Tz) -> Option<ZonedTime> {
+    let raw = raw?;
+    let naive = NaiveDateTime::parse_from_str(&raw, "%Y:%m:%d %H:%M:%S").ok()?;
+    match tz.from_local_datetime(&naive) {
+        chrono::LocalResult::Single(dt) => Some(ZonedTime::new(dt.with_timezone(&Utc), tz)),
+        _ => None,
+    }
 }
 
 impl PhotoService {
@@ -38,6 +50,9 @@ impl PhotoService {
         place_id: Option<Uuid>,
         file_name: String,
         file_content: Vec<u8>,
+        // Zone used for EXIF times, which carry none of their own. Falls
+        // back to the user's zone, then the server default.
+        default_tz: Tz,
     ) -> Result<ApiResponse<PhotoResponse>, ApiError> {
         let metadata = self.exif_service.extract_metadata(&file_content)?;
 
@@ -53,9 +68,7 @@ impl PhotoService {
             thumbnail_path,
             latitude: metadata.latitude,
             longitude: metadata.longitude,
-            taken_at: metadata
-                .taken_at
-                .and_then(|s| chrono::NaiveDateTime::parse_from_str(&s, "%Y:%m:%d %H:%M:%S").ok()),
+            taken_at: exif_taken_at(metadata.taken_at, default_tz),
             caption: None,
             order_index: 0,
             created_at: Utc::now(),
@@ -64,8 +77,8 @@ impl PhotoService {
         self.db_pool
             .with_conn(|c| {
                 c.execute(
-                    "INSERT INTO photos (id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, caption, order_index, created_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                    "INSERT INTO photos (id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, taken_timezone, caption, order_index, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
                     rusqlite::params![
                         photo.id.to_string(),
                         photo.place_id.map(|p| p.to_string()),
@@ -74,7 +87,8 @@ impl PhotoService {
                         photo.thumbnail_path,
                         photo.latitude,
                         photo.longitude,
-                        photo.taken_at.map(|d| d.format("%Y-%m-%dT%H:%M:%S").to_string()),
+                        photo.taken_at.as_ref().map(|d| d.utc.to_rfc3339()),
+                        photo.taken_at.as_ref().map(|d| d.timezone.name().to_string()),
                         photo.caption,
                         photo.order_index,
                         photo.created_at.to_rfc3339(),
@@ -171,8 +185,19 @@ impl PhotoService {
         &self,
         photo_id: Uuid,
         request: UpdatePhotoRequest,
+        default_tz: Tz,
     ) -> Result<ApiResponse<PhotoResponse>, ApiError> {
         self.find_photo(photo_id).await?;
+
+        // Resolve any client-supplied moment *before* opening the connection:
+        // `resolve` returns ApiError, and the closure below must return
+        // rusqlite::Error only.
+        let resolved_taken: Option<ZonedTime> = match &request.taken_at {
+            None => None,
+            // `null` and an empty string both clear the stored moment.
+            Some(ZonedTimeInput::Str(s)) if s.trim().is_empty() => None,
+            Some(other) => other.clone().resolve(default_tz).map_err(|e| e)?,
+        };
 
         self.db_pool
             .with_conn(|c| {
@@ -202,8 +227,12 @@ impl PhotoService {
                 }
                 if request.taken_at.is_some() {
                     c.execute(
-                        "UPDATE photos SET taken_at = ?1 WHERE id = ?2",
-                        rusqlite::params![request.taken_at.map(|d| d.format("%Y-%m-%dT%H:%M:%S").to_string()), photo_id.to_string()],
+                        "UPDATE photos SET taken_at = ?1, taken_timezone = ?2 WHERE id = ?3",
+                        rusqlite::params![
+                            resolved_taken.as_ref().map(|d| d.utc.to_rfc3339()),
+                            resolved_taken.as_ref().map(|d| d.timezone.name().to_string()),
+                            photo_id.to_string()
+                        ],
                     )?;
                 }
                 if let Some(oi) = request.order_index {
@@ -240,9 +269,7 @@ impl PhotoService {
         Ok(PhotoMetadata {
             latitude: metadata.latitude,
             longitude: metadata.longitude,
-            taken_at: metadata
-                .taken_at
-                .and_then(|s| chrono::NaiveDateTime::parse_from_str(&s, "%Y:%m:%d %H:%M:%S").ok()),
+            taken_at: metadata.taken_at,
         })
     }
 }

@@ -24,10 +24,14 @@
 //   thumbnail_dir = ./thumbnails
 //   [cors]
 //   origins = http://localhost:3000,http://localhost:8080
+//   [time]
+//   default_timezone = UTC   # IANA zone when nothing else says otherwise
 
 use std::collections::BTreeMap;
 use std::env;
 use std::path::PathBuf;
+
+use chrono_tz::Tz;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DatabaseType {
@@ -70,6 +74,9 @@ pub struct Config {
     pub thumbnail_dir: String,
     pub server_port: u16,
     pub cors_origins: Vec<String>,
+    /// IANA zone used when a record has none of its own and the user has not
+    /// set one either. Defaults to `UTC`.
+    pub default_timezone: String,
     /// Where the loaded config came from (None = defaults only).
     pub config_path: Option<PathBuf>,
 }
@@ -156,6 +163,9 @@ impl Config {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
+        if let Some(v) = get("time", "default_timezone") {
+            cfg.default_timezone = v;
+        }
         cfg
     }
 
@@ -173,6 +183,7 @@ impl Config {
                 "http://localhost:3000".to_string(),
                 "http://localhost:8080".to_string(),
             ],
+            default_timezone: "UTC".to_string(),
             config_path: None,
         }
     }
@@ -211,11 +222,24 @@ impl Config {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
+        if let Ok(v) = env::var("DEFAULT_TIMEZONE") {
+            self.default_timezone = v;
+        }
     }
     /// True when no secret is configured — main.rs must generate a random
     /// ephemeral one (logins won't survive a restart).
     pub fn jwt_secret_is_ephemeral(&self) -> bool {
         self.jwt_secret.trim().is_empty()
+    }
+
+    /// The server's default IANA zone, parsed from `[time] default_timezone`.
+    /// Falls back to `UTC` if unparsable (which shouldn't happen — we validate
+    /// the config at load time).
+    pub fn default_tz(&self) -> Tz {
+        crate::models::zoned::parse_tz(&self.default_timezone).unwrap_or_else(|| {
+            log::warn!("Invalid default_timezone {:?}, falling back to UTC", self.default_timezone);
+            crate::models::zoned::parse_tz("UTC").unwrap()
+        })
     }
 }
 

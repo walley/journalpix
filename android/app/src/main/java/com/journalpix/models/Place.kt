@@ -24,7 +24,12 @@ data class Place(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
+    /** 1-based trip day index (not a calendar date). */
+    val day: Int = 1,
+    /** RFC3339 UTC instant of the visit; zone kept separately. */
     val visitDate: String? = null,
+    /** IANA zone where the visit happened. */
+    val visitTimezone: String? = null,
     val orderIndex: Int = 0,
     /** How we got here from the previous place (TransportMode name). */
     val transportFromPrevious: String? = null,
@@ -41,7 +46,9 @@ data class PlaceResponse(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
-    val visitDate: String? = null,
+    /** 1-based trip day index. */
+    val day: Int = 1,
+    val visitDate: ZonedTime? = null,
     val orderIndex: Int,
     val transportFromPrevious: String? = null,
     val createdAt: String,
@@ -57,12 +64,23 @@ data class PlaceWithPhotos(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
-    val visitDate: String? = null,
+    /** 1-based trip day index. */
+    val day: Int = 1,
+    val visitDate: ZonedTime? = null,
     val orderIndex: Int,
     val transportFromPrevious: String? = null,
     val createdAt: String,
     val photos: List<PhotoResponse>
-)
+) {
+    /** Chronological sort key: earliest photo, else the visit instant. */
+    fun sortKey(): String {
+        val firstPhoto = photos.mapNotNull { it.takenAt?.sortKey }.minOrNull()
+        return firstPhoto ?: visitDate?.sortKey ?: createdAt
+    }
+
+    /** Wall-clock label of the visit, e.g. "Jul 1, 2026 10:30 (Tokyo)". */
+    fun visitLabel(): String? = visitDate?.dateTimeLabel()
+}
 
 data class CreatePlaceRequest(
     val tripId: String,
@@ -71,7 +89,9 @@ data class CreatePlaceRequest(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
-    val visitDate: String? = null,
+    /** 1-based trip day; defaults to 1 on the server. */
+    val day: Int? = null,
+    val visitDate: ZonedTimeInput? = null,
     val orderIndex: Int? = null,
     val transportFromPrevious: String? = null
 )
@@ -82,7 +102,8 @@ data class UpdatePlaceRequest(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
-    val visitDate: String? = null,
+    val day: Int? = null,
+    val visitDate: ZonedTimeInput? = null,
     val orderIndex: Int? = null,
     val transportFromPrevious: String? = null
 )

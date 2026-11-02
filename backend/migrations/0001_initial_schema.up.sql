@@ -1,5 +1,13 @@
 -- PostgreSQL migration
 -- This migration creates the initial schema for JournalPix
+--
+-- NOTE: PostgreSQL is NOT implemented in the backend (DatabaseConnection
+-- refuses to start with DATABASE_TYPE=postgres). This file is kept in sync
+-- with migrations/0002_sqlite_schema.sql so the two describe the same model.
+--
+-- TIME MODEL: instants are stored as TIMESTAMP WITH TIME ZONE (normalised to
+-- UTC by PostgreSQL) and every moment additionally carries the IANA zone it
+-- happened in. See the header of 0002_sqlite_schema.sql for the rationale.
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -7,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    timezone VARCHAR(64),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -18,7 +27,9 @@ CREATE TABLE IF NOT EXISTS trips (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     start_date DATE,
+    start_timezone VARCHAR(64),
     end_date DATE,
+    end_timezone VARCHAR(64),
     status VARCHAR(50) NOT NULL DEFAULT 'planned',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -33,7 +44,9 @@ CREATE TABLE IF NOT EXISTS places (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     address TEXT,
+    day INTEGER NOT NULL DEFAULT 1,
     visit_date TIMESTAMP WITH TIME ZONE,
+    visit_timezone VARCHAR(64),
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -49,6 +62,7 @@ CREATE TABLE IF NOT EXISTS photos (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     taken_at TIMESTAMP WITH TIME ZONE,
+    taken_timezone VARCHAR(64),
     caption TEXT,
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -58,7 +72,7 @@ CREATE TABLE IF NOT EXISTS photos (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_trips_user_id ON trips(user_id);
 CREATE INDEX IF NOT EXISTS idx_places_trip_id ON places(trip_id);
+CREATE INDEX IF NOT EXISTS idx_places_day ON places(day);
 CREATE INDEX IF NOT EXISTS idx_photos_place_id ON photos(place_id);
 CREATE INDEX IF NOT EXISTS idx_photos_user_id ON photos(user_id);
-CREATE INDEX IF NOT EXISTS idx_places_order ON places(order_index);
 CREATE INDEX IF NOT EXISTS idx_photos_order ON photos(order_index);

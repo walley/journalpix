@@ -1,5 +1,9 @@
-use crate::database::connection::{get_timestamp, get_uuid, DatabaseConnection};
-use crate::models::user::{CreateUserRequest, LoginRequest, LoginResponse, UpdateUserRequest, User, UserResponse};
+use crate::database::connection::{
+    get_opt_string, get_timestamp, get_uuid, DatabaseConnection,
+};
+use crate::models::user::{
+    CreateUserRequest, LoginRequest, LoginResponse, UpdateUserRequest, User, UserResponse,
+};
 use crate::models::response::ApiResponse;
 use crate::utils::auth::{hash_password, verify_password, AuthService};
 use crate::utils::error::ApiError;
@@ -32,8 +36,9 @@ fn map_user_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<User> {
         email: r.get(1)?,
         name: r.get(2)?,
         password_hash: r.get(3)?,
-        created_at: get_timestamp(r, 4)?,
-        updated_at: get_timestamp(r, 5)?,
+        timezone: get_opt_string(r, 4)?,
+        created_at: get_timestamp(r, 5)?,
+        updated_at: get_timestamp(r, 6)?,
     })
 }
 
@@ -50,6 +55,7 @@ impl UserService {
         validate_name(&request.name)?;
         validate_email(&request.email)?;
         validate_password(&request.password)?;
+        let timezone = crate::utils::validation::validate_timezone(request.timezone)?;
 
         let email = request.email.trim().to_lowercase();
         let user_id = Uuid::new_v4();
@@ -74,9 +80,16 @@ impl UserService {
         self.db_pool
             .with_conn(|c| {
                 c.execute(
-                    "INSERT INTO users (id, email, name, password_hash, created_at, updated_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
-                    rusqlite::params![user_id.to_string(), email, request.name, password_hash, now],
+                    "INSERT INTO users (id, email, name, password_hash, timezone, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
+                    rusqlite::params![
+                        user_id.to_string(),
+                        email,
+                        request.name,
+                        password_hash,
+                        timezone,
+                        now
+                    ],
                 )
             })
             .map_err(db_err)?;
@@ -85,6 +98,7 @@ impl UserService {
             id: user_id,
             email,
             name: request.name,
+            timezone,
             created_at: Utc::now(),
         };
 
@@ -142,6 +156,7 @@ impl UserService {
             id: user.id,
             email: user.email.clone(),
             name: user.name.clone(),
+            timezone: user.timezone.clone(),
             created_at: user.created_at,
         };
         let token = auth_service.create_token(user.id, email)?;
@@ -182,7 +197,7 @@ impl UserService {
         value: &str,
     ) -> Result<Vec<User>, ApiError> {
         let sql = format!(
-            "SELECT id, email, name, password_hash, created_at, updated_at
+            "SELECT id, email, name, password_hash, created_at, updated_at, timezone
              FROM users WHERE {condition}"
         );
         self.db_pool
@@ -195,18 +210,36 @@ impl UserService {
             .map_err(db_err)
     }
 
+    /// The user's configured zone, or `None` when they have not set one.
+    /// Used as the fallback when a record carries no zone of its own.
+    pub async fn user_timezone(&self, user_id: Uuid) -> Result<Option<String>, ApiError> {
+        self.db_pool
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT timezone FROM users WHERE id = ?1",
+                    [user_id.to_string()],
+                    |r| get_opt_string(r, 0),
+                )
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound("User not found".into()),
+                other => db_err(other),
+            })
+    }
+
     pub async fn get_user(&self, user_id: Uuid) -> Result<ApiResponse<UserResponse>, ApiError> {
         self.db_pool
             .with_conn(|c| {
                 c.query_row(
-                    "SELECT id, email, name, created_at FROM users WHERE id = ?1",
+                    "SELECT id, email, name, timezone, created_at FROM users WHERE id = ?1",
                     [user_id.to_string()],
                     |r| {
                         Ok(UserResponse {
                             id: get_uuid(r, 0)?,
                             email: r.get(1)?,
                             name: r.get(2)?,
-                            created_at: get_timestamp(r, 3)?,
+                            timezone: get_opt_string(r, 3)?,
+                            created_at: get_timestamp(r, 4)?,
                         })
                     },
                 )
@@ -232,6 +265,10 @@ impl UserService {
         if let Some(password) = &request.password {
             validate_password(password)?;
         }
+        // `Some(null)` (or an empty string) clears the zone; a real name is
+        // validated so a typo fails loudly instead of silently becoming UTC.
+        let has_timezone = request.timezone.is_some();
+        let timezone = crate::utils::validation::validate_timezone(request.timezone)?;
 
         let now = Utc::now().to_rfc3339();
         let id = user_id.to_string();
@@ -251,6 +288,9 @@ impl UserService {
                 if let Some(_password) = &request.password {
                     let hash = password_hash.clone().unwrap_or_default();
                     c.execute("UPDATE users SET password_hash = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![hash, now, id])?;
+                }
+                if has_timezone {
+                    c.execute("UPDATE users SET timezone = ?1, updated_at = ?2 WHERE id = ?3", rusqlite::params![timezone, now, id])?;
                 }
                 Ok(())
             })

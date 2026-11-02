@@ -1,11 +1,14 @@
 use crate::database::connection::{
     get_i64_count, get_opt_naive_date, get_opt_string, get_timestamp, get_trip_status, get_uuid,
-    DatabaseConnection,
+    DatabaseConnection, TRIP_COLS,
 };
-use crate::models::trip::{CreateTripRequest, Trip, TripResponse, TripStatus, UpdateTripRequest};
+use crate::models::trip::{
+    CreateTripRequest, Trip, TripResponse, TripStatus, UpdateTripRequest,
+};
 use crate::models::response::ApiResponse;
 use crate::utils::error::ApiError;
-use chrono::Utc;
+use crate::utils::validation::validate_timezone;
+use chrono::{NaiveDate, Utc};
 use uuid::Uuid;
 use std::sync::Arc;
 
@@ -18,9 +21,6 @@ fn db_err(e: rusqlite::Error) -> ApiError {
     ApiError::DatabaseError(e.to_string())
 }
 
-const TRIP_COLS: &str =
-    "id, user_id, title, description, start_date, end_date, status, created_at, updated_at";
-
 fn map_trip(r: &rusqlite::Row) -> rusqlite::Result<Trip> {
     Ok(Trip {
         id: get_uuid(r, 0)?,
@@ -28,11 +28,22 @@ fn map_trip(r: &rusqlite::Row) -> rusqlite::Result<Trip> {
         title: r.get(2)?,
         description: get_opt_string(r, 3)?,
         start_date: get_opt_naive_date(r, 4)?,
-        end_date: get_opt_naive_date(r, 5)?,
-        status: get_trip_status(r, 6)?,
-        created_at: get_timestamp(r, 7)?,
-        updated_at: get_timestamp(r, 8)?,
+        start_timezone: get_opt_string(r, 5)?,
+        end_date: get_opt_naive_date(r, 6)?,
+        end_timezone: get_opt_string(r, 7)?,
+        status: get_trip_status(r, 8)?,
+        created_at: get_timestamp(r, 9)?,
+        updated_at: get_timestamp(r, 10)?,
     })
+}
+
+/// Trip days are sequential: day N's date is `start_date + (N-1)` days, so a
+/// zone change can never make the count go backwards or repeat a day.
+pub fn trip_days_count(start: Option<NaiveDate>, end: Option<NaiveDate>) -> Option<i64> {
+    match (start, end) {
+        (Some(s), Some(e)) => Some((e - s).num_days().max(0) + 1),
+        _ => None,
+    }
 }
 
 impl TripService {
@@ -72,8 +83,11 @@ impl TripService {
             user_id: trip.user_id,
             title: trip.title,
             description: trip.description,
+            days_count: trip_days_count(trip.start_date, trip.end_date),
             start_date: trip.start_date,
+            start_timezone: trip.start_timezone,
             end_date: trip.end_date,
+            end_timezone: trip.end_timezone,
             status: trip.status,
             created_at: trip.created_at,
             updated_at: trip.updated_at,
@@ -90,6 +104,8 @@ impl TripService {
         if request.title.trim().is_empty() {
             return Err(ApiError::ValidationError("Title is required".into()));
         }
+        let start_timezone = validate_timezone(request.start_timezone)?;
+        let end_timezone = validate_timezone(request.end_timezone)?;
         let status = request.status.unwrap_or(TripStatus::Planned);
         let trip = Trip {
             id: Uuid::new_v4(),
@@ -97,7 +113,9 @@ impl TripService {
             title: request.title,
             description: request.description,
             start_date: request.start_date,
+            start_timezone,
             end_date: request.end_date,
+            end_timezone,
             status,
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -106,15 +124,17 @@ impl TripService {
         self.db_pool
             .with_conn(|c| {
                 c.execute(
-                    "INSERT INTO trips (id, user_id, title, description, start_date, end_date, status, created_at, updated_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)",
+                    "INSERT INTO trips (id, user_id, title, description, start_date, start_timezone, end_date, end_timezone, status, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
                     rusqlite::params![
                         trip.id.to_string(),
                         trip.user_id.to_string(),
                         trip.title,
                         trip.description,
                         trip.start_date.map(|d| d.to_string()),
+                        trip.start_timezone,
                         trip.end_date.map(|d| d.to_string()),
+                        trip.end_timezone,
                         status_str(&trip.status),
                         trip.created_at.to_rfc3339(),
                     ],
@@ -191,6 +211,9 @@ impl TripService {
         // Ensure it exists first
         self.find_trip(trip_id).await?;
 
+        let start_timezone = validate_timezone(request.start_timezone.clone())?;
+        let end_timezone = validate_timezone(request.end_timezone.clone())?;
+
         let now = Utc::now().to_rfc3339();
         let id = trip_id.to_string();
         self.db_pool
@@ -213,10 +236,22 @@ impl TripService {
                         rusqlite::params![request.start_date.map(|d| d.to_string()), id],
                     )?;
                 }
+                if request.start_timezone.is_some() {
+                    c.execute(
+                        "UPDATE trips SET start_timezone = ?1 WHERE id = ?2",
+                        rusqlite::params![start_timezone, id],
+                    )?;
+                }
                 if request.end_date.is_some() {
                     c.execute(
                         "UPDATE trips SET end_date = ?1 WHERE id = ?2",
                         rusqlite::params![request.end_date.map(|d| d.to_string()), id],
+                    )?;
+                }
+                if request.end_timezone.is_some() {
+                    c.execute(
+                        "UPDATE trips SET end_timezone = ?1 WHERE id = ?2",
+                        rusqlite::params![end_timezone, id],
                     )?;
                 }
                 if let Some(s) = &request.status {

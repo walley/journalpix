@@ -15,7 +15,70 @@ pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 use crate::utils::auth::AuthService;
 use crate::utils::error::ApiError;
 use actix_web::HttpRequest;
+use chrono_tz::Tz;
 use uuid::Uuid;
+
+/// The zone a response should be rendered in, when the caller asks for one.
+///
+/// Two ways to ask, query parameter winning over the header:
+///   * `?tz=Asia/Tokyo`
+///   * `X-Timezone: Asia/Tokyo`
+///
+/// This only affects how `local` is rendered — the stored instant and the
+/// record's own zone are untouched. An unknown name is a 422 rather than a
+/// silent fallback, because silently rendering in UTC would show the caller
+/// a time they explicitly said they did not want.
+pub fn requested_tz(req: &HttpRequest) -> Result<Option<Tz>, ApiError> {
+    let raw = req
+        .query_string()
+        .split('&')
+        .find_map(|kv| kv.strip_prefix("tz="))
+        .or_else(|| {
+            req.headers()
+                .get("X-Timezone")
+                .and_then(|v| v.to_str().ok())
+        });
+
+    match raw {
+        None => Ok(None),
+        Some(s) if s.trim().is_empty() => Ok(None),
+        Some(s) => {
+            let decoded = url_decode(s);
+            match crate::models::zoned::parse_tz(&decoded) {
+                Some(tz) => Ok(Some(tz)),
+                None => Err(ApiError::ValidationError(format!(
+                    "Unknown timezone: {}",
+                    decoded
+                ))),
+            }
+        }
+    }
+}
+
+/// Percent-decode a query value (`%2F` -> `/`), which is how a client must
+/// send an IANA name containing a slash.
+fn url_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        // `%XX` needs two hex digits after the '%'.
+        if bytes[i] == b'%' && i + 3 <= bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or("");
+            match u8::from_str_radix(hex, 16) {
+                Ok(b) => {
+                    out.push(b);
+                    i += 3;
+                    continue;
+                }
+                Err(_) => {}
+            }
+        }
+        out.push(if bytes[i] == b'+' { b' ' } else { bytes[i] });
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
 
 /// Extract the authenticated user id from the `Authorization: Bearer <jwt>`
 /// header. Every protected endpoint goes through this.
