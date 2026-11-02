@@ -250,7 +250,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         }
 
                         timeline.timeline.forEachIndexed { dayIndex, dayItem ->
-                            val dayKey = dayItem.date
+                            val dayKey = dayItem.date ?: ""
                             val isBefore = dayKey == OfflineStore.BEFORE_KEY
                             val isAfter = dayKey == OfflineStore.AFTER_KEY
                             val isBeforeAfter = isBefore || isAfter
@@ -260,7 +260,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             item(key = "day-header-$dayKey") {
                                 DayHeader(
                                     dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
-                                    date = dayItem.date,
+                                    date = dayKey,
                                     isBeforeAfter = isBeforeAfter,
                                     placeCount = dayItem.places.size,
                                     photoCount = dayItem.places.sumOf { it.photos.size },
