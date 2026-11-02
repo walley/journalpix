@@ -29,10 +29,16 @@ deliberately no stderr/file fallback: if no local syslog socket (`/dev/log`,
 `/var/run/syslog` or `/var/run/log`) is reachable, the process reports the
 error on stderr and exits with status 1 instead of starting.
 
-Login attempts are audited too: `Login attempt email="<as entered>":
-success (user_id=...)` at info, and `...: failed (<reason>)` at warning. The
-email is PII and lands in syslog, but the password is never logged. The email
-is formatted with `{:?}`, so embedded quotes/newlines cannot forge log lines.
+Login attempts are audited too: `Login attempt login="<identifier as
+entered>": success (user_id=...)` at info, and `...: failed (<reason>)` at
+warning. The identifier is either the email or the account name (both
+accepted at 0.1.6; `LoginRequest.email` kept as the field name for old
+clients, `username` accepted as an alias). Failures describe exactly what
+mismatched (unknown email / unknown name / wrong password per identifier /
+ambiguous name) — user enumeration is a deliberate trade-off. The
+identifier is PII and lands in syslog, but the password is never logged.
+It is formatted with `{:?}`, so embedded quotes/newlines cannot forge log
+lines.
 
 Mutating endpoints write one audit line each, same style:
 `<Entity> <action> <context>: success (<detail>)` at info and

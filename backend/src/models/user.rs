@@ -29,8 +29,26 @@ pub struct CreateUserRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
+    /// Login identifier: either the email **or** the account name. The
+    /// field name stays `email` for old clients; `username` is accepted as
+    /// an alias for the same value. Empty means "missing".
+    #[serde(default)]
+    pub email: Option<String>,
+    #[serde(default)]
+    pub username: Option<String>,
     pub password: String,
+}
+
+impl LoginRequest {
+    /// The single identifier to resolve: `email` wins when both fields are
+    /// set (older clients always populate it).
+    pub fn identifier(&self) -> String {
+        self.email
+            .clone()
+            .filter(|v| !v.trim().is_empty())
+            .or_else(|| self.username.clone().filter(|v| !v.trim().is_empty()))
+            .unwrap_or_default()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

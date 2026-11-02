@@ -49,10 +49,11 @@ pub async fn login(
 ) -> impl Responder {
     let login_request = request.into_inner();
 
-    // Audit trail for login attempts: the email as entered plus the outcome.
-    // `{:?}` escapes quotes/control characters so a crafted email cannot
-    // forge extra log lines. The password is never logged.
-    let attempted_email = login_request.email.clone();
+    // Audit trail for login attempts: the identifier as entered (email or
+    // account name) plus the outcome. `{:?}` escapes quotes/control
+    // characters so a crafted identifier cannot forge log lines. The
+    // password is never logged.
+    let attempted_login = login_request.identifier();
     let user_service = UserService::new(db_pool.get_ref().clone());
 
     match user_service.login(login_request, &auth_service).await {
@@ -63,14 +64,14 @@ pub async fn login(
                 .map(|d| d.user.id.to_string())
                 .unwrap_or_else(|| "-".to_string());
             log::info!(
-                "Login attempt email={:?}: success (user_id={})",
-                attempted_email,
+                "Login attempt login={:?}: success (user_id={})",
+                attempted_login,
                 user_id
             );
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
-            log::warn!("Login attempt email={:?}: failed ({})", attempted_email, e);
+            log::warn!("Login attempt login={:?}: failed ({})", attempted_login, e);
             e.error_response()
         }
     }

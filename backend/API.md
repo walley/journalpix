@@ -54,11 +54,22 @@ Returns `data`: `{ "user": { id, email, name, created_at }, "token": "..." }`.
 
 ### POST /api/auth/login
 
-```json
-{ "email": "ada@example.org", "password": "secret1" }
-```
+The identifier is either the email **or** the account name (matched
+case-insensitively): `{"email": "<email-or-name>", "password": "..."}` or
+`{"username": "<email-or-name>", "password": "..."}` — both shapes are
+accepted. Returns the same response shape as register.
 
-Same response shape as register. Duplicate email on register → `422`.
+Failures deliberately pinpoint what is wrong (user enumeration is a
+documented trade-off):
+
+| Situation | HTTP | `error` |
+|---|---|---|
+| No account with that email | 401 | `No account exists with this email` |
+| No account with that name | 401 | `No account exists with this username` |
+| Email matches, wrong password | 401 | `Email exists but the password is incorrect` |
+| Name matches, wrong password | 401 | `Username exists but the password is incorrect` |
+| Name is ambiguous (several accounts) | 422 | `This username matches multiple accounts; log in with your email instead` |
+| Identifier or password missing | 422 | `Email (or username) and password are required` |
 
 ### GET /api/auth/me (Bearer)
 

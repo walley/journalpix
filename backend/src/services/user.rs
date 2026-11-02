@@ -17,6 +17,26 @@ fn db_err(e: rusqlite::Error) -> ApiError {
     ApiError::DatabaseError(e.to_string())
 }
 
+/// How a login identifier resolved. Login failures report which of the two
+/// matched ("email exists but the password is incorrect" vs the username
+/// variant) — intentional user enumeration, requested behaviour.
+enum LoginMatch {
+    Email(User),
+    Username(User),
+}
+
+/// Shared row mapping for the login resolver.
+fn map_user_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<User> {
+    Ok(User {
+        id: get_uuid(r, 0)?,
+        email: r.get(1)?,
+        name: r.get(2)?,
+        password_hash: r.get(3)?,
+        created_at: get_timestamp(r, 4)?,
+        updated_at: get_timestamp(r, 5)?,
+    })
+}
+
 impl UserService {
     pub fn new(db_pool: Arc<DatabaseConnection>) -> Self {
         UserService { db_pool }
@@ -80,24 +100,48 @@ impl UserService {
         request: LoginRequest,
         auth_service: &AuthService,
     ) -> Result<ApiResponse<LoginResponse>, ApiError> {
-        if request.email.is_empty() || request.password.is_empty() {
-            return Err(ApiError::ValidationError("Email and password are required".into()));
+        let identifier = request.identifier();
+        if identifier.is_empty() || request.password.is_empty() {
+            return Err(ApiError::ValidationError(
+                "Email (or username) and password are required".into(),
+            ));
         }
 
-        let user = self
-            .find_user_by_email(request.email.trim())
-            .await?;
+        // Deliberate user enumeration: report exactly what failed (which
+        // identifier type hit / missed, wrong password vs unknown account).
+        let matches = self.resolve_login(&identifier).await?;
+        if matches.is_empty() {
+            return Err(if identifier.contains('@') {
+                ApiError::Unauthorized("No account exists with this email".into())
+            } else {
+                ApiError::Unauthorized("No account exists with this username".into())
+            });
+        }
+        if matches.len() > 1 {
+            return Err(ApiError::ValidationError(
+                "This username matches multiple accounts; log in with your email instead".into(),
+            ));
+        }
+
+        let (via_email, user) = match &matches[0] {
+            LoginMatch::Email(user) => (true, user),
+            LoginMatch::Username(user) => (false, user),
+        };
 
         let ok = verify_password(&request.password, &user.password_hash)?;
         if !ok {
-            return Err(ApiError::Unauthorized("Invalid email or password".into()));
+            return Err(if via_email {
+                ApiError::Unauthorized("Email exists but the password is incorrect".into())
+            } else {
+                ApiError::Unauthorized("Username exists but the password is incorrect".into())
+            });
         }
 
         let email = user.email.clone();
         let response = UserResponse {
             id: user.id,
-            email: user.email,
-            name: user.name,
+            email: user.email.clone(),
+            name: user.name.clone(),
             created_at: user.created_at,
         };
         let token = auth_service.create_token(user.id, email)?;
@@ -107,31 +151,48 @@ impl UserService {
         }))
     }
 
-    pub async fn find_user_by_email(&self, email: &str) -> Result<User, ApiError> {
+    /// Resolve a login identifier (trimmed) to candidate accounts.
+    ///
+    /// 1. Exact, lowercase email match first — when it hits we stop (emails
+    ///    are unique).
+    /// 2. Otherwise case-insensitive account-name matches; **all** of them
+    ///    are returned so the caller can reject ambiguous usernames.
+    async fn resolve_login(&self, input: &str) -> Result<Vec<LoginMatch>, ApiError> {
+        let lowered = input.trim().to_lowercase();
+
+        let email_matches = self.fetch_users_where("email = ?1", &lowered).await?;
+        if !email_matches.is_empty() {
+            return Ok(email_matches.into_iter().map(LoginMatch::Email).collect());
+        }
+
+        // No email hit: match the account name case-insensitively.
+        let name_matches = self
+            .fetch_users_where("LOWER(name) = ?1", &lowered)
+            .await?;
+        Ok(name_matches.into_iter().map(LoginMatch::Username).collect())
+    }
+
+    /// Fetch users by a raw SQL equality condition with exactly one bound
+    /// parameter. Internal callers only pass fixed conditions
+    /// (`"email = ?1"`, `"LOWER(name) = ?1"`); the value is always bound,
+    /// never concatenated into the SQL.
+    async fn fetch_users_where(
+        &self,
+        condition: &str,
+        value: &str,
+    ) -> Result<Vec<User>, ApiError> {
+        let sql = format!(
+            "SELECT id, email, name, password_hash, created_at, updated_at
+             FROM users WHERE {condition}"
+        );
         self.db_pool
-            .with_conn(|c| {
-                c.query_row(
-                    "SELECT id, email, name, password_hash, created_at, updated_at
-                     FROM users WHERE email = ?1",
-                    [email.trim().to_lowercase()],
-                    |r| {
-                        Ok(User {
-                            id: get_uuid(r, 0)?,
-                            email: r.get(1)?,
-                            name: r.get(2)?,
-                            password_hash: r.get(3)?,
-                            created_at: get_timestamp(r, 4)?,
-                            updated_at: get_timestamp(r, 5)?,
-                        })
-                    },
-                )
+            .with_conn(|c| -> Result<Vec<User>, rusqlite::Error> {
+                let mut stmt = c.prepare(&sql)?;
+                Ok(stmt
+                    .query_map([value], map_user_row)?
+                    .collect::<rusqlite::Result<Vec<_>>>()?)
             })
-            .map_err(|e| match e {
-                rusqlite::Error::QueryReturnedNoRows => {
-                    ApiError::Unauthorized("Invalid email or password".into())
-                }
-                other => db_err(other),
-            })
+            .map_err(db_err)
     }
 
     pub async fn get_user(&self, user_id: Uuid) -> Result<ApiResponse<UserResponse>, ApiError> {
