@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.journalpix.api.ApiService
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.ZonedTime
@@ -108,7 +109,14 @@ fun PlaceTimelineRow(
                         place.photos.take(4).forEach { photo ->
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data(photo.thumbnailPath.ifBlank { photo.filePath })
+                                    .data({
+                                        val path = photo.thumbnailPath.ifBlank { photo.filePath }
+                                        if (photo.thumbnailPath.isNotBlank()) {
+                                            ApiService.thumbnailUrl(path)
+                                        } else {
+                                            ApiService.uploadUrl(path)
+                                        }
+                                    })
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = null,
@@ -203,7 +211,14 @@ fun PhotoItem(
         Column(modifier = Modifier.padding(8.dp)) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(photo.thumbnailPath.ifBlank { photo.filePath })
+                    .data({
+                        val path = photo.thumbnailPath.ifBlank { photo.filePath }
+                        if (photo.thumbnailPath.isNotBlank()) {
+                            ApiService.thumbnailUrl(path)
+                        } else {
+                            ApiService.uploadUrl(path)
+                        }
+                    })
                     .crossfade(true)
                     .build(),
                 contentDescription = photo.caption ?: "Photo",
