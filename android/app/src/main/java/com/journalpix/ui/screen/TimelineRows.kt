@@ -109,14 +109,7 @@ fun PlaceTimelineRow(
                         place.photos.take(4).forEach { photo ->
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data({
-                                        val path = photo.thumbnailPath.ifBlank { photo.filePath }
-                                        if (photo.thumbnailPath.isNotBlank()) {
-                                            ApiService.thumbnailUrl(path)
-                                        } else {
-                                            ApiService.uploadUrl(path)
-                                        }
-                                    })
+                                    .data(photoImageUrl(photo))
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = null,
@@ -211,14 +204,7 @@ fun PhotoItem(
         Column(modifier = Modifier.padding(8.dp)) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data({
-                        val path = photo.thumbnailPath.ifBlank { photo.filePath }
-                        if (photo.thumbnailPath.isNotBlank()) {
-                            ApiService.thumbnailUrl(path)
-                        } else {
-                            ApiService.uploadUrl(path)
-                        }
-                    })
+                    .data(photoImageUrl(photo))
                     .crossfade(true)
                     .build(),
                 contentDescription = photo.caption ?: "Photo",
@@ -289,6 +275,25 @@ fun PlaceTimelineRowPreview() {
             resolvedAddresses = emptyMap(),
             geocodeLoading = emptyMap(),
             onReverseGeocode = {})
+    }
+}
+
+/** Resolves a photo's image source for offline-first loading.
+ *
+ * Offline photos carry local device paths (`content://...`, `file://...`,
+ * absolute device paths) and load directly — no network. Only relative
+ * server paths (e.g. `uploads/xxx.jpg`) are converted to public HTTPS URLs
+ * via ApiService, which happens for externally-synced images.
+ */
+fun photoImageUrl(photo: PhotoResponse): String {
+    val path = photo.thumbnailPath.ifBlank { photo.filePath }
+    return when {
+        path.startsWith("content://") ||
+        path.startsWith("file://") ||
+        path.startsWith("http://") ||
+        path.startsWith("https://") -> path
+        photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
+        else -> ApiService.uploadUrl(path)
     }
 }
 
