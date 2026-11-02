@@ -91,6 +91,42 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Seed demo user if not present (so demo/demo works against the backend).
+    {
+        use crate::utils::auth::hash_password;
+        use chrono::Utc;
+        use rusqlite::params;
+        use uuid::Uuid;
+
+        let exists: i64 = db_pool.with_conn(|c| {
+            c.query_row("SELECT COUNT(*) FROM users WHERE email = ?1", ["demo"], |r| r.get::<_, i64>(0))
+        }).unwrap_or(0);
+        if exists == 0 {
+            if let Ok(password_hash) = hash_password("demo") {
+                let user_id = Uuid::new_v4();
+                let now = Utc::now().to_rfc3339();
+                if let Err(e) = db_pool.with_conn(|c| {
+                    c.execute(
+                        "INSERT INTO users (id, email, name, password_hash, timezone, created_at, updated_at)
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
+                        params![
+                            user_id.to_string(),
+                            "demo",
+                            "Demo User",
+                            password_hash,
+                            None::<String>,
+                            now
+                        ],
+                    )
+                }) {
+                    log::warn!("Failed to insert demo user: {}", e);
+                } else {
+                    log::info!("Demo user seeded (email=demo)");
+                }
+            }
+        }
+    }
+
     // File storage (uploads/thumbnails)
     let file_service = match FileService::new(&config.upload_dir, &config.thumbnail_dir) {
         Ok(service) => Arc::new(service),
