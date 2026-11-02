@@ -36,9 +36,9 @@ fn map_user_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<User> {
         email: r.get(1)?,
         name: r.get(2)?,
         password_hash: r.get(3)?,
-        timezone: get_opt_string(r, 4)?,
-        created_at: get_timestamp(r, 5)?,
-        updated_at: get_timestamp(r, 6)?,
+        created_at: get_timestamp(r, 4)?,
+        updated_at: get_timestamp(r, 5)?,
+        timezone: get_opt_string(r, 6)?,
     })
 }
 
