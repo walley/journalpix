@@ -150,13 +150,9 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     }
 
     LaunchedEffect(effectiveTripId) {
-        if (OfflineStore.getTrip(effectiveTripId) == null) {
-            // No trip data on mobile yet — sync from server to populate local store
-            timelineViewModel.syncAndRefresh(token, effectiveTripId)
-        } else {
-            // Trip data already on mobile — read offline, no network pull
-            timelineViewModel.getTimeline(token, effectiveTripId)
-        }
+        // Always sync on trip selection so real server data replaces any
+        // stale/demo data that may be persisted locally in store.json.
+        timelineViewModel.syncAndRefresh(token, effectiveTripId)
     }
 
     // Handle place added from map selection
