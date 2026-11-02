@@ -3,6 +3,7 @@
 // PostgreSQL remains a config option but is not implemented yet.
 
 use crate::config::{Config, DatabaseType};
+use log;
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 
@@ -78,6 +79,52 @@ impl DatabaseConnection {
         };
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(&schema)?;
+
+        // ADD COLUMN is idempotent-only via pragma check: CREATE TABLE IF NOT
+        // EXISTS won't add columns to tables that already exist (e.g. a
+        // database created before v0.2.0), so add missing columns here.
+        Self::add_missing_columns(&conn)?;
+        Ok(())
+    }
+
+    /// Add columns that were introduced after a database was first created.
+    /// `CREATE TABLE IF NOT EXISTS` never alters an existing table, so older
+    /// databases lack the v0.2.0+ timezone columns. Check pragma_table_info
+    /// before each ALTER so this is safe to run on every startup.
+    fn add_missing_columns(conn: &Connection) -> Result<(), rusqlite::Error> {
+        let column_exists = |conn: &Connection, table: &str, column: &str| -> Result<bool, rusqlite::Error> {
+            let n: i64 = conn.query_row(
+                &format!(
+                    "SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name = '{column}'"
+                ),
+                [],
+                |r| r.get(0),
+            )?;
+            Ok(n > 0)
+        };
+
+        let add_col = |conn: &Connection, table: &str, column: &str, definition: &str| -> Result<(), rusqlite::Error> {
+            if !column_exists(conn, table, column)? {
+                conn.execute(
+                    &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+                    [],
+                )?;
+                log::info!("Added column {table}.{column}");
+            }
+            Ok(())
+        };
+
+        // Users
+        add_col(conn, "users", "timezone", "TEXT")?;
+        // Trips
+        add_col(conn, "trips", "start_timezone", "TEXT")?;
+        add_col(conn, "trips", "end_timezone", "TEXT")?;
+        // Places
+        add_col(conn, "places", "day", "INTEGER NOT NULL DEFAULT 1")?;
+        add_col(conn, "places", "visit_timezone", "TEXT")?;
+        // Photos
+        add_col(conn, "photos", "taken_timezone", "TEXT")?;
+
         Ok(())
     }
 
