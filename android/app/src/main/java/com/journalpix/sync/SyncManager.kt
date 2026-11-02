@@ -26,7 +26,7 @@ import java.lang.ref.WeakReference
 
 object SyncManager {
     const val ACTION_SYNC = "com.journalpix.ACTION_SYNC"
-    private const val TAG = "SyncManager"
+    private const val TAG = "JP_SYNC"
 
     @Volatile
     private var appContextRef: WeakReference<Context>? = null
@@ -78,6 +78,8 @@ object SyncManager {
     suspend fun performSyncSuspend(token: String) {
         val bearerToken = if (token.isBlank()) "" else "Bearer $token"
         val errors = mutableListOf<String>()
+
+        Log.d(TAG, "Sync started")
 
         // 1. Push pending local changes to backend
         val pendingIds = OfflineStore.pendingSyncIds()
@@ -261,6 +263,7 @@ object SyncManager {
             else e.message ?: "pull failed")
         }
 
+        Log.d(TAG, "Sync complete, errors=${errors.size}")
         if (errors.isNotEmpty()) {
             val summary = errors.distinct().take(3).joinToString(" · ")
             toast("Sync failed: $summary")

@@ -51,8 +51,8 @@ impl TimelineService {
                             address: get_opt_string(r, 6)?,
                             day: r.get(7)?,
                             visit_date: get_opt_zoned_time(r, 8, 9)?,
-                            transport_from_previous: get_opt_string(r, 10)?,
-                            order_index: r.get(11)?,
+                            order_index: r.get(10)?,
+                            transport_from_previous: get_opt_string(r, 11)?,
                             created_at: get_timestamp(r, 12)?,
                             updated_at: get_timestamp(r, 13)?,
                         })
