@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.util.Log
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -36,6 +37,8 @@ import de.afarber.openmapview.compose.OpenMap
 import de.afarber.openmapview.compose.Polyline
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
+
+private const val TAG_MAP = "JournalPixMap"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +79,9 @@ fun MapScreen(
     // Handle map tap in add-place mode
     if (addPlaceMode && mapViewModel.mapTapPoint.value != null) {
         val tapPoint = mapViewModel.mapTapPoint.value!!
+        Log.d(TAG_MAP, "Map tap point received: lat=${tapPoint.latitude}, lon=${tapPoint.longitude}")
         LaunchedEffect(tapPoint) {
+            Log.i(TAG_MAP, "Opening add-place dialog for tap at lat=${tapPoint.latitude}, lon=${tapPoint.longitude}")
             showAddPlaceDialog = true
             newPlaceName = ""
         }
@@ -110,6 +115,8 @@ fun MapScreen(
                 if (addPlaceMode && onPlaceAdded != null) {
                     FloatingActionButton(
                         onClick = {
+                            val tapPoint = mapViewModel.mapTapPoint.value
+                            Log.w(TAG_MAP, "Cancel add place (tapPoint=${if (tapPoint == null) "none" else "lat=${tapPoint.latitude}, lon=${tapPoint.longitude}"})")
                             mapViewModel.clearMapTapPoint()
                         },
                         modifier = Modifier.size(48.dp)
@@ -150,10 +157,11 @@ fun MapScreen(
                 if (addPlaceMode && onPlaceAdded != null) {
                     FloatingActionButton(
                         onClick = {
-                            mapViewModel.setMapTapPoint(
-                                cameraPositionState.position.target.latitude,
-                                cameraPositionState.position.target.longitude
-                            )
+                            val current = cameraPositionState.position
+                            val lat = current.target.latitude
+                            val lon = current.target.longitude
+                            Log.i(TAG_MAP, "Add place at current location: lat=$lat, lon=$lon")
+                            mapViewModel.setMapTapPoint(lat, lon)
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -187,6 +195,7 @@ fun MapScreen(
                     zoomControlsEnabled = false
                 ), onMapClick = { latLng ->
                     if (addPlaceMode && onPlaceAdded != null) {
+                        Log.d(TAG_MAP, "Map clicked: lat=${latLng.latitude}, lon=${latLng.longitude}")
                         mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
                     }
                 }
@@ -267,6 +276,11 @@ fun MapScreen(
                 val tapPoint = mapViewModel.mapTapPoint.value!!
                 AlertDialog(
                     onDismissRequest = {
+                        Log.w(TAG_MAP, "Add place dialog dismissed via back/system (lat=${
+                            tapPoint.latitude
+                        }, lon=${
+                            tapPoint.longitude
+                        })")
                         showAddPlaceDialog = false
                         mapViewModel.clearMapTapPoint()
                     },
@@ -291,14 +305,22 @@ fun MapScreen(
                     confirmButton = {
                         Button(onClick = {
                             if (newPlaceName.isNotBlank()) {
+                                Log.i(TAG_MAP, "Add place confirmed: lat=${
+                                    tapPoint.latitude
+                                }, lon=${
+                                    tapPoint.longitude
+                                }, name=${newPlaceName.trim()}")
                                 onPlaceAdded!!(
                                     tapPoint.latitude,
                                     tapPoint.longitude,
                                     newPlaceName.trim()
                                 )
+                                Log.d(TAG_MAP, "onPlaceAdded callback invoked, closing dialog")
                                 showAddPlaceDialog = false
                                 mapViewModel.clearMapTapPoint()
                                 newPlaceName = ""
+                            } else {
+                                Log.w(TAG_MAP, "Add place attempted with blank name")
                             }
                         }) {
                             Text("Add")
@@ -306,6 +328,7 @@ fun MapScreen(
                     },
                     dismissButton = {
                         TextButton(onClick = {
+                            Log.w(TAG_MAP, "Add place cancelled by user")
                             showAddPlaceDialog = false
                             mapViewModel.clearMapTapPoint()
                             newPlaceName = ""

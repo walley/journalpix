@@ -5,6 +5,7 @@ import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -65,6 +66,8 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.theme.JournalPixTheme
+
+private const val TAG_TIMELINE = "JournalPixTimeline"
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -162,15 +165,18 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         val pending = AppSession.pendingMapPlace.value
         if (pending != null) {
             val (lat, lon, name) = pending
+            Log.i(TAG_TIMELINE, "Pending map place received: lat=$lat, lon=$lon, name='$name', showCreatePlaceDialog=$showCreatePlaceDialog")
             AppSession.clearPendingMapPlace()
             if (showCreatePlaceDialog) {
                 // Populate the add-place dialog with the map selection
+                Log.d(TAG_TIMELINE, "Populating add-place dialog with map selection: lat=$lat, lon=$lon")
                 mapSelectedLat = lat
                 mapSelectedLon = lon
                 if (newPlaceName.isBlank()) {
                     newPlaceName = name
                 }
             } else {
+                Log.i(TAG_TIMELINE, "Creating place directly from map selection: lat=$lat, lon=$lon, name='$name'")
                 val request = com.journalpix.models.CreatePlaceRequest(
                     tripId = effectiveTripId,
                     name = name,
@@ -182,6 +188,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     orderIndex = null
                 )
                 placeViewModel.createPlace(token, effectiveTripId, request) {
+                    Log.d(TAG_TIMELINE, "createPlace onSuccess invoked for map place: lat=$lat, lon=$lon")
                     AppSession.clearPendingMapPlace()
                     refresh()
                 }
@@ -615,6 +622,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         AlertDialog(
             onDismissRequest = {
                 if (!isAddingPlace && !placeViewModel.isLoading.value) {
+                    Log.w(TAG_TIMELINE, "Add place dialog dismissed via back/system")
                     showCreatePlaceDialog = false
                     newPlaceName = ""
                     createPlaceDay = null
@@ -684,6 +692,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         )
                         Button(
                             onClick = {
+                                Log.i(TAG_TIMELINE, "Pick on map clicked: navigating to map/$effectiveTripId?addPlaceMode=true")
                                 navController.navigate("map/$effectiveTripId?addPlaceMode=true")
                             },
                             enabled = !isAddingPlace && !placeViewModel.isLoading.value
@@ -722,8 +731,11 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 showCreatePlaceDialog = false
                                 newPlaceName = ""
                                 createPlaceDay = null
+                                val createdLat = mapSelectedLat
+                                val createdLon = mapSelectedLon
                                 mapSelectedLat = null
                                 mapSelectedLon = null
+                                Log.i(TAG_TIMELINE, "Place created successfully from dialog: tripId=$effectiveTripId, name='${newPlaceName.trim()}', lat=$createdLat, lon=$createdLon")
                                 refresh()
                             }
                         }
@@ -744,6 +756,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                 val isAdding = isAddingPlace || placeViewModel.isLoading.value
                 TextButton(
                     onClick = {
+                        Log.w(TAG_TIMELINE, "Add place dialog cancelled by user")
                         showCreatePlaceDialog = false
                         newPlaceName = ""
                         createPlaceDay = null

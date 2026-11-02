@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.journalpix.api.ApiService
 import com.journalpix.models.*
 import kotlinx.coroutines.launch
+import android.util.Log
+
+private const val TAG_MAP_VM = "JournalPixMapVM"
 
 class MapViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
@@ -105,10 +108,12 @@ class MapViewModel : ViewModel() {
     }
 
     fun setMapTapPoint(latitude: Double, longitude: Double) {
+        Log.i(TAG_MAP_VM, "setMapTapPoint: lat=$latitude, lon=$longitude")
         mapTapPoint.value = RoutePoint(latitude = latitude, longitude = longitude)
     }
 
     fun clearMapTapPoint() {
+        Log.w(TAG_MAP_VM, "clearMapTapPoint")
         mapTapPoint.value = null
     }
 

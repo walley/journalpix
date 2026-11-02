@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +30,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.InputStream
+
+private const val TAG_MAIN = "JournalPixMain"
 
 class MainActivity : ComponentActivity() {
     private lateinit var photoViewModel: PhotoViewModel
@@ -74,6 +77,7 @@ class MainActivity : ComponentActivity() {
                                 tripId = tripId,
                                 addPlaceMode = addPlaceMode,
                                 onPlaceAdded = { lat, lon, name ->
+                                    Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name'")
                                     AppSession.pendingMapPlace.value = Triple(lat, lon, name)
                                     navController.popBackStack()
                                 }
