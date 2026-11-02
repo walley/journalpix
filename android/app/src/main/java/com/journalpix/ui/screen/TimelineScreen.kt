@@ -47,12 +47,16 @@ import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.TransportMode
+import com.journalpix.models.ZonedTime
+import com.journalpix.models.ZonedTimeInput
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 import com.journalpix.viewmodel.PhotoViewModel
 import com.journalpix.viewmodel.PlaceViewModel
 import com.journalpix.viewmodel.TimelineViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Calendar
@@ -266,8 +270,10 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                         val newPlace = OfflineStore.addPlace(
                                             tripId = effectiveTripId,
                                             name = "Place on $dayKey",
-                                            visitDate = if (isBeforeAfter) LocalDate.now()
-                                              .toString() else dayKey
+                                            visitDate = if (isBeforeAfter)
+                                                ZonedTime.fromLocal(LocalDateTime.now(), ZoneId.systemDefault().id)
+                                            else
+                                                ZonedTime.parseLegacy(dayKey)
                                         )
                                         refresh()
                                         startAddPhoto(newPlace.id)
@@ -626,11 +632,14 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 latitude = null,
                                 longitude = null,
                                 address = null,
-                                visitDate = placeDateText.trim()
-                                  .ifBlank {
-                                      LocalDate.now()
-                                        .toString()
-                                  },
+                                visitDate = ZonedTimeInput(
+                                    local = placeDateText.trim().ifBlank {
+                                        LocalDate.now().atStartOfDay().toString()
+                                    }.let { d ->
+                                        if (d.contains("T")) d else "${d}T00:00:00"
+                                    },
+                                    timezone = ZoneId.systemDefault().id
+                                ),
                                 orderIndex = null
                             )
                             placeViewModel.createPlace(token, effectiveTripId, request) {

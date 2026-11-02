@@ -12,6 +12,7 @@ import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
 import com.journalpix.models.UpdatePhotoRequest
+import com.journalpix.models.ZonedTime
 import com.journalpix.util.ExifLocation
 import com.journalpix.util.NominatimClient
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +75,7 @@ class PhotoViewModel : ViewModel() {
                     uriString = pathForDisplay,
                     latitude = result.gps?.latitude,
                     longitude = result.gps?.longitude,
-                    takenAt = result.gps?.takenAt ?: result.takenAt,
+                    takenAt = ZonedTime.parseLegacy(result.gps?.takenAt ?: result.takenAt),
                     caption = null
                 )
                 if (result.gps == null) {

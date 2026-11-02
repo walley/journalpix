@@ -77,7 +77,9 @@ object SyncManager {
                             title = trip.title,
                             description = trip.description,
                             startDate = trip.startDate,
+                            startTimezone = trip.startTimezone,
                             endDate = trip.endDate,
+                            endTimezone = trip.endTimezone,
                             status = trip.status
                         )
                         val updateResp =
@@ -90,7 +92,9 @@ object SyncManager {
                                 title = trip.title,
                                 description = trip.description,
                                 startDate = trip.startDate,
+                                startTimezone = trip.startTimezone,
                                 endDate = trip.endDate,
+                                endTimezone = trip.endTimezone,
                                 status = trip.status
                             )
                             val createResp = ApiService.apiClient.createTrip(bearerToken, createReq)
@@ -117,7 +121,7 @@ object SyncManager {
                             latitude = place.latitude,
                             longitude = place.longitude,
                             address = place.address,
-                            visitDate = place.visitDate,
+                            visitDate = place.visitDate?.toInput(),
                             orderIndex = place.orderIndex
                         )
                         val updateResp =
@@ -133,7 +137,7 @@ object SyncManager {
                                 latitude = place.latitude,
                                 longitude = place.longitude,
                                 address = place.address,
-                                visitDate = place.visitDate,
+                                visitDate = place.visitDate?.toInput(),
                                 orderIndex = place.orderIndex
                             )
                             val createResp =
