@@ -250,9 +250,10 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         }
 
                         timeline.timeline.forEachIndexed { dayIndex, dayItem ->
-                            val dayKey = dayItem.date ?: ""
-                            val isBefore = dayKey == OfflineStore.BEFORE_KEY
-                            val isAfter = dayKey == OfflineStore.AFTER_KEY
+                            val rawDate = dayItem.date ?: ""
+                            val dayKey = dayItem.date ?: "day-${dayItem.day}-$dayIndex"
+                            val isBefore = rawDate == OfflineStore.BEFORE_KEY
+                            val isAfter = rawDate == OfflineStore.AFTER_KEY
                             val isBeforeAfter = isBefore || isAfter
                             val expanded = expandedDays[dayKey] ?: true
                             val inRangeIndex = timeline.timeline.take(dayIndex)
@@ -260,20 +261,21 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             item(key = "day-header-$dayKey") {
                                 DayHeader(
                                     dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
-                                    date = dayKey,
+                                    date = rawDate,
                                     isBeforeAfter = isBeforeAfter,
                                     placeCount = dayItem.places.size,
                                     photoCount = dayItem.places.sumOf { it.photos.size },
                                     expanded = expanded,
-                                    onToggle = { expandedDays[dayKey] = !expanded },
+                                    onToggle = {
+                                        expandedDays[dayKey] = !(expandedDays[dayKey] ?: true)
+                                    },
                                     onAddPhoto = {
                                         val newPlace = OfflineStore.addPlace(
                                             tripId = effectiveTripId,
-                                            name = "Place on $dayKey",
+                                            name = if (rawDate.isNotBlank()) "Place on $rawDate" else "Place on day ${dayItem.day}",
                                             visitDate = if (isBeforeAfter)
                                                 ZonedTime.fromLocal(LocalDateTime.now(), ZoneId.systemDefault().id)
-                                            else
-                                                ZonedTime.parseLegacy(dayKey)
+                                            else ZonedTime.parseLegacy(rawDate)
                                         )
                                         refresh()
                                         startAddPhoto(newPlace.id)
@@ -283,7 +285,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                             if (expanded) {
                                 itemsIndexed(
                                     items = dayItem.places,
-                                    key = { _, place -> place.id }) { placeIndex, place ->
+                                    key = { placeIndex, place -> "place_${dayKey}_${place.id}_$placeIndex" }) { placeIndex, place ->
                                     if (placeIndex > 0) {
                                         TransportBetweenRow(
                                             place = place,
@@ -303,7 +305,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                     item(key = "add-place-$dayKey") {
                                         TextButton(
                                             onClick = {
-                                                createPlaceDay = dayKey
+                                                createPlaceDay = rawDate
                                                 showCreatePlaceDialog = true
                                             },
                                             modifier = Modifier.padding(

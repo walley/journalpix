@@ -1,9 +1,16 @@
 package com.journalpix.models
 
+import com.google.gson.TypeAdapter
+import com.google.gson.annotations.JsonAdapter
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
+import com.google.gson.stream.JsonWriter
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -31,6 +38,7 @@ import java.time.format.DateTimeParseException
  * @property localTimezone `null` by default; when a request override was used,
  *   the zone [local] is rendered in (see [ApiClient] `?tz=` support)
  */
+@JsonAdapter(ZonedTimeAdapter::class)
 data class ZonedTime(
     val utc: String,
     val timezone: String,
@@ -153,9 +161,32 @@ data class ZonedTime(
             runCatching {
                 return fromInstant(Instant.parse(v), zoneId)
             }
-            // ISO local date-time
+            // ZonedDateTime e.g. 2026-07-01T10:30:00+09:00[Asia/Tokyo]
             runCatching {
-                return fromLocal(LocalDateTime.parse(v.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME), zoneId)
+                val zdt = ZonedDateTime.parse(v)
+                return ZonedTime(
+                    utc = zdt.toInstant()
+                      .toString(),
+                    timezone = zdt.zone.id,
+                    local = zdt.toLocalDateTime()
+                      .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                    localTimezone = null
+                )
+            }
+            // OffsetDateTime e.g. 2026-07-01T10:30:00+09:00
+            runCatching {
+                val odt = OffsetDateTime.parse(v)
+                return fromInstant(odt.toInstant(), zoneId)
+            }
+            // ISO local date-time (with T or space)
+            runCatching {
+                val normalized = v.replace(' ', 'T')
+                return fromLocal(
+                    LocalDateTime.parse(
+                        normalized.take(19),
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    ), zoneId
+                )
             }
             // Date only -> midnight local
             runCatching {
@@ -163,6 +194,93 @@ data class ZonedTime(
                 return fromLocal(d.atStartOfDay(), zoneId)
             }
             return null
+        }
+    }
+}
+
+/**
+ * Custom Gson TypeAdapter for [ZonedTime] that tolerates both JSON Objects
+ * (`{ "utc": ..., "timezone": ..., ... }`) and JSON Strings (`"2026-07-01T01:30:00Z"`).
+ */
+class ZonedTimeAdapter : TypeAdapter<ZonedTime>() {
+
+    override fun write(out: JsonWriter, value: ZonedTime?) {
+        if (value == null) {
+            out.nullValue()
+            return
+        }
+        out.beginObject()
+        out.name("utc")
+          .value(value.utc)
+        out.name("timezone")
+          .value(value.timezone)
+        out.name("local")
+          .value(value.local)
+        if (value.localTimezone != null) {
+            out.name("local_timezone")
+              .value(value.localTimezone)
+        } else {
+            out.name("local_timezone")
+              .nullValue()
+        }
+        out.endObject()
+    }
+
+    override fun read(reader: JsonReader): ZonedTime? {
+        return when (reader.peek()) {
+            JsonToken.NULL         -> {
+                reader.nextNull()
+                null
+            }
+
+            JsonToken.STRING       -> {
+                val str = reader.nextString()
+                if (str.isBlank()) null else ZonedTime.parseLegacy(str)
+            }
+
+            JsonToken.BEGIN_OBJECT -> {
+                reader.beginObject()
+                var utc: String? = null
+                var timezone: String? = null
+                var local: String? = null
+                var localTimezone: String? = null
+
+                while (reader.hasNext()) {
+                    val name = reader.nextName()
+                    if (reader.peek() == JsonToken.NULL) {
+                        reader.nextNull()
+                        continue
+                    }
+                    when (name) {
+                        "utc"                                         -> utc = reader.nextString()
+                        "timezone"                                    -> timezone =
+                            reader.nextString()
+
+                        "local"                                       -> local = reader.nextString()
+                        "local_timezone", "localTimezone", "local_tz" -> localTimezone =
+                            reader.nextString()
+
+                        else                                          -> reader.skipValue()
+                    }
+                }
+                reader.endObject()
+
+                if (utc != null && timezone != null && local != null) {
+                    ZonedTime(utc, timezone, local, localTimezone)
+                } else if (utc != null) {
+                    ZonedTime.parseLegacy(utc) ?: ZonedTime.fromInstant(
+                        runCatching { Instant.parse(utc) }.getOrDefault(Instant.now()),
+                        timezone ?: ZoneId.systemDefault().id
+                    )
+                } else if (local != null) {
+                    ZonedTime.parseLegacy(local, timezone ?: ZoneId.systemDefault().id)
+                } else null
+            }
+
+            else                   -> {
+                reader.skipValue()
+                null
+            }
         }
     }
 }
