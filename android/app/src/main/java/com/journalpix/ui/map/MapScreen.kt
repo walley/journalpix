@@ -5,40 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.ZoomIn
-import androidx.compose.material.icons.filled.ZoomOut
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.journalpix.models.MapPlace
-import com.journalpix.models.PlaceWithPhotos
-import com.journalpix.viewmodel.MapViewModel
-import de.afarber.openmapview.CameraPosition
-import de.afarber.openmapview.LatLng
-import de.afarber.openmapview.MapType
-import de.afarber.openmapview.compose.MapProperties
-import de.afarber.openmapview.compose.MapUiSettings
-import de.afarber.openmapview.compose.MarkerComposable
-import de.afarber.openmapview.compose.OpenMap
-import de.afarber.openmapview.compose.Polyline
-import de.afarber.openmapview.compose.rememberCameraPositionState
-import de.afarber.openmapview.compose.rememberMarkerState
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
@@ -199,8 +165,8 @@ fun MapScreen(
     ) { paddingValues ->
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+              .fillMaxSize()
+              .padding(paddingValues)
         ) {
             OpenMap(
                 modifier = Modifier.fillMaxSize(),
@@ -212,8 +178,7 @@ fun MapScreen(
                 ),
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false
-                ),
-                onClick = { latLng ->
+                ), onMapClick = { latLng ->
                     if (addPlaceMode && onPlaceAdded != null) {
                         mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
                     }
@@ -259,8 +224,8 @@ fun MapScreen(
             if (mapViewModel.isLoading.value) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
+                      .fillMaxSize()
+                      .background(Color.Black.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -270,9 +235,9 @@ fun MapScreen(
             mapViewModel.errorMessage.value?.let { error ->
                 Snackbar(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .align(Alignment.BottomCenter),
+                      .fillMaxWidth()
+                      .padding(16.dp)
+                      .align(Alignment.BottomCenter),
                     action = {
                         Button(onClick = { mapViewModel.errorMessage.value = null }) {
                             Text("Dismiss")
@@ -359,9 +324,9 @@ fun PlaceMarkerBubble(
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .background(Color.Blue, RoundedCornerShape(24.dp))
-                .clip(RoundedCornerShape(24.dp)),
+              .size(48.dp)
+              .background(Color.Blue, RoundedCornerShape(24.dp))
+              .clip(RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -406,9 +371,9 @@ fun PlaceMarkerBubble(
                             contentDescription = "Place thumbnail",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                              .fillMaxWidth()
+                              .height(100.dp)
+                              .clip(RoundedCornerShape(4.dp))
                         )
                     }
 
@@ -418,9 +383,9 @@ fun PlaceMarkerBubble(
                             contentDescription = "Place thumbnail",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                              .fillMaxWidth()
+                              .height(100.dp)
+                              .clip(RoundedCornerShape(4.dp))
                         )
                     }
                 }
@@ -454,8 +419,8 @@ fun PlaceDetailDialog(
                         contentDescription = "Place image",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
+                          .fillMaxWidth()
+                          .height(200.dp)
                     )
                 }
 
@@ -466,8 +431,8 @@ fun PlaceDetailDialog(
                         contentDescription = "Place image",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
+                          .fillMaxWidth()
+                          .height(200.dp)
                     )
                 }
 
