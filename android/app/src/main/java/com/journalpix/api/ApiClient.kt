@@ -148,6 +148,7 @@ class ApiClientBuilder(private val baseUrl: String) {
             // Backend JSON uses snake_case (trip_id, created_at, ...), the
             // Kotlin models use camelCase.
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+          .registerTypeAdapter(ZonedTime::class.java, ZonedTimeAdapter())
             .create()
 
         val retrofit = Retrofit.Builder()

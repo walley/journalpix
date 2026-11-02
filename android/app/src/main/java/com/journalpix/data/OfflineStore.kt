@@ -340,6 +340,8 @@ object OfflineStore {
                 end
             ) < 365
         ) {
+          val totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end)
+            .toInt() + 1
             var curr = start
             while (!curr!!.isAfter(end)) {
                 val dateStr = curr.toString()
@@ -351,6 +353,15 @@ object OfflineStore {
                 items.add(TimelineItem(day = dayNum, date = dateStr, places = list))
                 curr = curr.plusDays(1)
             }
+          grouped.entries.filter { it.key !in 1 .. totalDays }
+            .sortedBy { it.key }
+            .forEach { (day, list) ->
+              val ordered = list.sortedWith(
+                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+              )
+              items.add(TimelineItem(day = day, date = null, places = ordered))
+            }
+        } else {
             grouped.entries.sortedBy { it.key }
               .forEach { (day, list) ->
                   val ordered = list.sortedWith(
@@ -657,7 +668,9 @@ object OfflineStore {
                 local = it.getString("local"),
                 localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
             )
-        },
+        } ?: o.optString("visitDate", null)
+          .takeIf { it.isNotBlank() }
+          ?.let { ZonedTime.parseLegacy(it) },
         orderIndex = o.optInt("orderIndex", 0),
         transportFromPrevious = o.optString("transportFromPrevious", null).takeIf { it.isNotBlank() },
         createdAt = o.optString("createdAt", ""),
@@ -700,7 +713,9 @@ object OfflineStore {
                 local = it.getString("local"),
                 localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
             )
-        },
+        } ?: o.optString("takenAt", null)
+          .takeIf { it.isNotBlank() }
+          ?.let { ZonedTime.parseLegacy(it) },
         caption = o.optString("caption", null).takeIf { it.isNotBlank() },
         orderIndex = o.optInt("orderIndex", 0),
         createdAt = o.optString("createdAt", ""),
@@ -718,7 +733,9 @@ object OfflineStore {
             for (place in item.places) {
                 val p =
                     if (place.visitDate == null) place.copy(visitDate = ZonedTime.parseLegacy(item.date)) else place
+              if (newPlaces.none { it.id == p.id }) {
                 newPlaces.add(p)
+              }
                 allPhotos[p.id] = p.photos.toMutableList()
             }
         }
