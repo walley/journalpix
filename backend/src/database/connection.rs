@@ -24,7 +24,7 @@ pub const PHOTO_COLS: &str =
     "id, place_id, user_id, file_path, thumbnail_path, latitude, longitude, taken_at, taken_timezone, caption, order_index, created_at";
 
 pub const PLACE_COLS: &str =
-    "id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, created_at, updated_at";
+    "id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, transport_from_previous, created_at, updated_at";
 
 pub const TRIP_COLS: &str =
     "id, user_id, title, description, start_date, start_timezone, end_date, end_timezone, status, created_at, updated_at";
@@ -122,6 +122,7 @@ impl DatabaseConnection {
         // Places
         add_col(conn, "places", "day", "INTEGER NOT NULL DEFAULT 1")?;
         add_col(conn, "places", "visit_timezone", "TEXT")?;
+        add_col(conn, "places", "transport_from_previous", "TEXT")?;
         // Photos
         add_col(conn, "photos", "taken_timezone", "TEXT")?;
 

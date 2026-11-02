@@ -51,9 +51,10 @@ impl TimelineService {
                             address: get_opt_string(r, 6)?,
                             day: r.get(7)?,
                             visit_date: get_opt_zoned_time(r, 8, 9)?,
-                            order_index: r.get(10)?,
-                            created_at: get_timestamp(r, 11)?,
-                            updated_at: get_timestamp(r, 12)?,
+                            transport_from_previous: get_opt_string(r, 10)?,
+                            order_index: r.get(11)?,
+                            created_at: get_timestamp(r, 12)?,
+                            updated_at: get_timestamp(r, 13)?,
                         })
                     })?
                     .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -90,6 +91,7 @@ impl TimelineService {
                 address: place.address,
                 day: place.day,
                 visit_date: place.visit_date,
+                transport_from_previous: place.transport_from_previous,
                 order_index: place.order_index,
                 created_at: place.created_at,
                 photos,

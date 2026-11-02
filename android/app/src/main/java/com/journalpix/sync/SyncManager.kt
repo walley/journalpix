@@ -136,7 +136,8 @@ object SyncManager {
                             longitude = place.longitude,
                             address = place.address,
                             visitDate = place.visitDate?.toInput(),
-                            orderIndex = place.orderIndex
+                            orderIndex = place.orderIndex,
+                            transportFromPrevious = place.transportFromPrevious
                         )
                         val updateResp =
                             ApiService.apiClient.updatePlace(bearerToken, place.id, updateReq)
@@ -152,7 +153,8 @@ object SyncManager {
                                 longitude = place.longitude,
                                 address = place.address,
                                 visitDate = place.visitDate?.toInput(),
-                                orderIndex = place.orderIndex
+                                orderIndex = place.orderIndex,
+                                transportFromPrevious = place.transportFromPrevious
                             )
                             val createResp =
                                 ApiService.apiClient.createPlace(bearerToken, tripId, createReq)

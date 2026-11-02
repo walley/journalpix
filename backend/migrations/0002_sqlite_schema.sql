@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS places (
     visit_date TEXT,
     visit_timezone TEXT,
     order_index INTEGER NOT NULL DEFAULT 0,
+    -- How we got here from the previous place (transport mode name).
+    transport_from_previous TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE

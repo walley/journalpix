@@ -35,9 +35,10 @@ fn map_place(r: &rusqlite::Row) -> rusqlite::Result<Place> {
         address: get_opt_string(r, 6)?,
         day: r.get(7)?,
         visit_date: get_opt_zoned_time(r, 8, 9)?,
-        order_index: r.get(10)?,
-        created_at: get_timestamp(r, 11)?,
-        updated_at: get_timestamp(r, 12)?,
+        transport_from_previous: get_opt_string(r, 10)?,
+        order_index: r.get(11)?,
+        created_at: get_timestamp(r, 12)?,
+        updated_at: get_timestamp(r, 13)?,
     })
 }
 
@@ -86,6 +87,7 @@ impl PlaceService {
             address: p.address,
             day: p.day,
             visit_date: p.visit_date,
+            transport_from_previous: p.transport_from_previous,
             order_index: p.order_index,
             created_at: p.created_at,
             updated_at: p.updated_at,
@@ -149,6 +151,7 @@ impl PlaceService {
             address: request.address,
             day,
             visit_date,
+            transport_from_previous: request.transport_from_previous,
             order_index: request.order_index.unwrap_or(0),
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -157,8 +160,8 @@ impl PlaceService {
         self.db_pool
             .with_conn(|c| {
                 c.execute(
-                    "INSERT INTO places (id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, created_at, updated_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)",
+                    "INSERT INTO places (id, trip_id, name, description, latitude, longitude, address, day, visit_date, visit_timezone, order_index, transport_from_previous, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13)",
                     rusqlite::params![
                         place.id.to_string(),
                         place.trip_id.to_string(),
@@ -171,6 +174,7 @@ impl PlaceService {
                         place.visit_date.as_ref().map(|d| d.utc.to_rfc3339()),
                         place.visit_date.as_ref().map(|d| d.timezone.name().to_string()),
                         place.order_index,
+                        place.transport_from_previous,
                         place.created_at.to_rfc3339(),
                     ],
                 )
@@ -260,6 +264,7 @@ impl PlaceService {
             address: place.address,
             day: place.day,
             visit_date: place.visit_date,
+            transport_from_previous: place.transport_from_previous,
             order_index: place.order_index,
             created_at: place.created_at,
             photos,
@@ -329,6 +334,12 @@ impl PlaceService {
                 }
                 if let Some(oi) = request.order_index {
                     c.execute("UPDATE places SET order_index = ?1 WHERE id = ?2", rusqlite::params![oi, id])?;
+                }
+                if request.transport_from_previous.is_some() {
+                    c.execute(
+                        "UPDATE places SET transport_from_previous = ?1 WHERE id = ?2",
+                        rusqlite::params![request.transport_from_previous, id],
+                    )?;
                 }
                 c.execute("UPDATE places SET updated_at = ?1 WHERE id = ?2", rusqlite::params![now, id])?;
                 Ok(())

@@ -18,6 +18,8 @@ pub struct Place {
     pub day: i32,
     /// When it was visited — instant + the zone it happened in.
     pub visit_date: Option<ZonedTime>,
+    /// How we got here from the previous place (transport mode name).
+    pub transport_from_previous: Option<String>,
     pub order_index: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -34,6 +36,8 @@ pub struct PlaceResponse {
     pub address: Option<String>,
     pub day: i32,
     pub visit_date: Option<ZonedTime>,
+    /// How we got here from the previous place (transport mode name).
+    pub transport_from_previous: Option<String>,
     pub order_index: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -51,6 +55,8 @@ pub struct PlaceWithPhotos {
     pub address: Option<String>,
     pub day: i32,
     pub visit_date: Option<ZonedTime>,
+    /// How we got here from the previous place (transport mode name).
+    pub transport_from_previous: Option<String>,
     pub order_index: i32,
     pub created_at: DateTime<Utc>,
     pub photos: Vec<crate::models::photo::PhotoResponse>,
@@ -70,6 +76,8 @@ pub struct CreatePlaceRequest {
     /// 1-based trip day. Defaults to 1.
     pub day: Option<i32>,
     pub visit_date: Option<crate::models::zoned::ZonedTimeInput>,
+    /// How we got here from the previous place (transport mode name).
+    pub transport_from_previous: Option<String>,
     pub order_index: Option<i32>,
 }
 
@@ -83,6 +91,8 @@ pub struct UpdatePlaceRequest {
     pub day: Option<i32>,
     /// Absent = leave unchanged; `null` = clear.
     pub visit_date: Option<crate::models::zoned::ZonedTimeInput>,
+    /// How we got here from the previous place (transport mode name).
+    pub transport_from_previous: Option<String>,
     pub order_index: Option<i32>,
 }
 
