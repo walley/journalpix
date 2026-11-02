@@ -19,6 +19,8 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.json.JSONObject
+import retrofit2.HttpException
 import java.io.File
 import java.lang.ref.WeakReference
 
@@ -28,6 +30,18 @@ object SyncManager {
 
     @Volatile
     private var appContextRef: WeakReference<Context>? = null
+
+    /** Extract the server's error message from an HttpException response body,
+     *  falling back to the status code if the body has no usable message. */
+    private fun serverError(e: HttpException): String {
+        val raw = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+        val bodyMsg = raw?.let {
+            runCatching { JSONObject(it).optString("error") }.getOrNull()
+                ?: runCatching { JSONObject(it).optString("message") }.getOrNull()
+        }
+        return if (!bodyMsg.isNullOrBlank()) "$bodyMsg (HTTP ${e.code()})"
+        else "HTTP ${e.code()}"
+    }
 
     fun triggerSync(context: Context?) {
         context?.let { ctx ->
@@ -186,7 +200,8 @@ object SyncManager {
                     OfflineStore.clearPending(id)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to sync item $id", e)
-                    errors.add("${e.message ?: e.javaClass.simpleName}")
+                    errors.add(if (e is HttpException) serverError(e)
+                    else "${e.message ?: e.javaClass.simpleName}")
                 }
             }
         }
@@ -212,7 +227,8 @@ object SyncManager {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to pull remote data from backend", e)
-            errors.add(e.message ?: "pull failed")
+            errors.add(if (e is HttpException) serverError(e)
+            else e.message ?: "pull failed")
         }
 
         if (errors.isNotEmpty()) {
