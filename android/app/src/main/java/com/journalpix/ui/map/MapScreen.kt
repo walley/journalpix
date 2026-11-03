@@ -77,6 +77,14 @@ fun MapScreen(
         )
     }
 
+    // Map tap-to-select: works regardless of addPlaceMode
+    LaunchedEffect(mapViewModel.mapSelectionPoint.value) {
+        val point = mapViewModel.mapSelectionPoint.value
+        if (point != null) {
+            Log.d(TAG_MAP, "Map selection updated: lat=${point.latitude}, lon=${point.longitude}")
+        }
+    }
+
     // Handle map tap in add-place mode
     if (addPlaceMode && mapViewModel.mapTapPoint.value != null) {
         val tapPoint = mapViewModel.mapTapPoint.value!!
@@ -195,8 +203,9 @@ fun MapScreen(
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false
                 ), onMapClick = { latLng ->
+                    Log.d(TAG_MAP, "Map clicked: lat=${latLng.latitude}, lon=${latLng.longitude}")
+                    mapViewModel.setMapSelectionPoint(latLng.latitude, latLng.longitude)
                     if (addPlaceMode && onPlaceAdded != null) {
-                        Log.d(TAG_MAP, "Map clicked: lat=${latLng.latitude}, lon=${latLng.longitude}")
                         mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
                     }
                 }
@@ -233,6 +242,34 @@ fun MapScreen(
                                 place = place,
                                 isExpanded = isExpanded,
                                 onToggle = { mapViewModel.toggleBubble(place.id) }
+                            )
+                        }
+                    }
+                }
+
+                // Selection marker at tapped point
+                mapViewModel.mapSelectionPoint.value?.let { point ->
+                    val markerState = rememberMarkerState(
+                        LatLng(point.latitude, point.longitude)
+                    )
+                    MarkerComposable(
+                        state = markerState,
+                        onClick = {
+                            Log.d(TAG_MAP, "Selection marker clicked: lat=${point.latitude}, lon=${point.longitude}")
+                            true
+                        }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color.Red, RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "?",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                     }
