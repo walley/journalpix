@@ -183,19 +183,19 @@ class PlaceViewModel : ViewModel() {
                 val placesResp = ApiService.apiClient.getPlaces("Bearer $token", tripId)
                 if (!placesResp.success || placesResp.data == null) {
                     errorMessage.value = placesResp.error ?: "Failed to load places"
-                    return@viewModelScope
+                    return@launch
                 }
                 val allPlaces = placesResp.data!!
                 val idx = allPlaces.indexOfFirst { it.id == placeId }
                 if (idx == -1) {
                     errorMessage.value = "Place not found in trip"
-                    return@viewModelScope
+                    return@launch
                 }
                 val newIdx = idx + direction
                 if (newIdx < 0 || newIdx >= allPlaces.size) {
                     // Already at edge, nothing to do
                     onSuccess()
-                    return@viewModelScope
+                    return@launch
                 }
 
                 // Swap order_index between current and adjacent
