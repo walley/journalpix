@@ -223,7 +223,8 @@ fun MapScreen(
                             state = markerState,
                             onClick = {
                                 mapViewModel.toggleBubble(place.id)
-                                mapViewModel.selectPlace(place)
+                                Log.i(TAG_MAP, "Marker clicked: placeId=${place.id}, navigating to place detail")
+                                navController.navigate("place/${place.id}?tripId=$tripId")
                                 true
                             }
                         ) {
@@ -262,13 +263,6 @@ fun MapScreen(
                 ) {
                     Text(error)
                 }
-            }
-
-            mapViewModel.selectedPlace.value?.let { place ->
-                PlaceDetailDialog(
-                    place = place,
-                    onDismiss = { mapViewModel.clearSelection() }
-                )
             }
 
             // Add place dialog
@@ -424,56 +418,3 @@ fun PlaceMarkerBubble(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PlaceDetailDialog(
-    place: MapPlace,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(place.name) },
-        text = {
-            Column {
-                place.description?.let { description ->
-                    Text(description)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                place.thumbnailUrl?.let { url ->
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(url)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Place image",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .height(200.dp)
-                    )
-                }
-
-                place.thumbnailBitmap?.let { bitmap ->
-                    Spacer(modifier = Modifier.height(16.dp))
-                    androidx.compose.foundation.Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Place image",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .height(200.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Lat: ${place.latitude}, Lon: ${place.longitude}")
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}

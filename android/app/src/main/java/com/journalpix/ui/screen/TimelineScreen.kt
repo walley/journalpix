@@ -598,13 +598,9 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             ?.flatMap { it.places }
             ?.find { it.id == place.id }
             ?: place
-        PlaceDetailSheet(
-            place = live,
-            photoViewModel = photoViewModel,
-            onDismiss = { selectedPlace = null },
-            onAddPhoto = { startAddPhoto(place.id) },
-            onReverseGeocode = { onReverseGeocode(it) }
-        )
+        Log.i(TAG_TIMELINE, "Opening place detail screen: placeId=${place.id}, name='${place.name}'")
+        navController.navigate("place/${place.id}?tripId=$effectiveTripId")
+        selectedPlace = null
     }
 
     if (showCreatePlaceDialog) {

@@ -21,6 +21,7 @@ import com.journalpix.ui.map.MapScreen
 import com.journalpix.ui.screen.AboutScreen
 import com.journalpix.ui.screen.AuthScreen
 import com.journalpix.ui.screen.HomeScreen
+import com.journalpix.ui.screen.PlaceDetailScreen
 import com.journalpix.ui.screen.TimelineScreen
 import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.viewmodel.AppSession
@@ -81,6 +82,15 @@ class MainActivity : ComponentActivity() {
                                     AppSession.pendingMapPlace.value = Triple(lat, lon, name)
                                     navController.popBackStack()
                                 }
+                            )
+                        }
+                        composable("place/{placeId}") { backStackEntry ->
+                            val placeId = backStackEntry.arguments?.getString("placeId") ?: ""
+                            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                            PlaceDetailScreen(
+                                navController,
+                                placeId = placeId,
+                                tripId = tripId
                             )
                         }
                         composable("about") { AboutScreen(navController) }
