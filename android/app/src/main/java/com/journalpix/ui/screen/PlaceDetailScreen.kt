@@ -475,7 +475,7 @@ fun PlaceDetailScreen(
                                     modifier = Modifier.size(32.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Map,
+                                        Icons.Default.LocationOn,
                                         contentDescription = "Select place on map",
                                         tint = MaterialTheme.colorScheme.primary
                                     )
