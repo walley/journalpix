@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Schedule
@@ -91,6 +92,9 @@ fun PlaceDetailScreen(
     var editMode by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
     var editAddress by remember { mutableStateOf("") }
+
+    // Delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // Initialize edit fields from current place
     LaunchedEffect(currentPlace) {
@@ -207,6 +211,14 @@ fun PlaceDetailScreen(
             // Refresh both photos and place so the UI reflects the deletion
             photoViewModel.getPhotosForPlace(token, placeId)
             placeViewModel.getPlace(token, placeId)
+        }
+    }
+
+    fun deletePlace() {
+        Log.w(TAG_PLACE_DETAIL, "Deleting whole place: placeId=$placeId")
+        placeViewModel.deletePlace(token, placeId) {
+            Log.i(TAG_PLACE_DETAIL, "Place deleted: placeId=$placeId")
+            navController.popBackStack()
         }
     }
 
@@ -335,12 +347,46 @@ fun PlaceDetailScreen(
                                 }
                             }
                         } else {
-                            // Read-only display
-                            Text(
-                                text = currentPlace.name,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            // Read-only display with edit and delete actions
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = currentPlace.name,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                // Pencil icon to enter edit mode
+                                IconButton(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Edit mode enabled for place $placeId")
+                                        editMode = true
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit place details",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                // Bin icon to delete whole place
+                                IconButton(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Delete place requested: placeId=$placeId")
+                                        showDeleteDialog = true
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete place",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
                             currentPlace.address?.takeIf { it.isNotBlank() }?.let { address ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -414,33 +460,25 @@ fun PlaceDetailScreen(
                                 }
                             }
                         }
-                        // Edit / Select on map actions
+                        // Select on map action
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (editMode) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            } else {
-                                Button(
-                                    onClick = {
-                                        Log.i(TAG_PLACE_DETAIL, "Edit mode enabled for place $placeId")
-                                        editMode = true
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Edit details")
-                                }
-                                Spacer(Modifier.width(8.dp))
-                            }
                             if (currentPlace.latitude != null && currentPlace.longitude != null || true) {
-                                Button(
+                                Spacer(modifier = Modifier.weight(1f))
+                                IconButton(
                                     onClick = {
                                         Log.i(TAG_PLACE_DETAIL, "Select on map for place $placeId")
                                         navController.navigate("map/$tripId?addPlaceMode=true&placeIdForUpdate=$placeId")
-                                    }
+                                    },
+                                    modifier = Modifier.size(32.dp)
                                 ) {
-                                    Text("Select on map")
+                                    Icon(
+                                        Icons.Default.Map,
+                                        contentDescription = "Select place on map",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
@@ -578,6 +616,36 @@ fun PlaceDetailScreen(
                 }
             }
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete place?") },
+            text = {
+                Text("This will delete \"${currentPlace?.name ?: ""}\" and all its photos. This cannot be undone.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        deletePlace()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
