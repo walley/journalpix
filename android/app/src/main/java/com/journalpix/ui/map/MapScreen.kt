@@ -26,6 +26,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.models.MapPlace
 import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.MapViewModel
 import de.afarber.openmapview.CameraPosition
 import de.afarber.openmapview.LatLng
@@ -175,6 +176,24 @@ fun MapScreen(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add place at location")
+                    }
+                }
+                // Apply & back button for place update mode
+                if (placeIdForUpdate.isNotBlank() && mapViewModel.mapSelectionPoint.value != null) {
+                    FloatingActionButton(
+                        onClick = {
+                            val point = mapViewModel.mapSelectionPoint.value!!
+                            Log.i(TAG_MAP, "Apply & back: placeId=$placeIdForUpdate lat=${point.latitude} lon=${point.longitude}")
+                            AppSession.pendingMapPlaceUpdate.value = Triple(
+                                point.latitude,
+                                point.longitude,
+                                mapViewModel.mapRoute.value?.tripTitle ?: ""
+                            )
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Done, contentDescription = "Apply location and go back")
                     }
                 }
             }
