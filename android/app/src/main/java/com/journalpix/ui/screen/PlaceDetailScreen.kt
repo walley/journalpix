@@ -1,8 +1,6 @@
 package com.journalpix.ui.screen
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -40,7 +38,6 @@ import coil.request.ImageRequest
 import com.journalpix.api.ApiService
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
-import com.journalpix.models.ZonedTime
 import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
@@ -82,8 +79,11 @@ fun PlaceDetailScreen(
     val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
     val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
 
-    var place by remember { mutableStateOf<PlaceWithPhotos?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    // Read directly from view-model state so the UI recomposes when data
+    // changes (e.g. after a photo delete refreshes the place).
+    val placeState = placeViewModel.currentPlace
+    val currentPlace = placeState.value
+    val isLoading = placeViewModel.isLoading.value || photoViewModel.isLoading.value
 
     // Load place + photos
     LaunchedEffect(placeId, token) {
@@ -92,12 +92,6 @@ fun PlaceDetailScreen(
         photoViewModel.getPhotosForPlace(token, placeId)
     }
 
-    // Observe place result
-    val placeState = placeViewModel.currentPlace
-    if (placeState.value != null) {
-        place = placeState.value
-        isLoading = false
-    }
     placeViewModel.errorMessage.value?.let { error ->
         Log.e(TAG_PLACE_DETAIL, "Place load error: $error")
     }
@@ -148,7 +142,9 @@ fun PlaceDetailScreen(
         Log.w(TAG_PLACE_DETAIL, "Deleting photo: photoId=$photoId from place=$placeId")
         photoViewModel.deletePhoto(token, photoId) {
             Log.i(TAG_PLACE_DETAIL, "Photo deleted: photoId=$photoId")
+            // Refresh both photos and place so the UI reflects the deletion
             photoViewModel.getPhotosForPlace(token, placeId)
+            placeViewModel.getPlace(token, placeId)
         }
     }
 
