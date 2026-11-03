@@ -134,16 +134,17 @@ fun PlaceDetailScreen(
             )) {
                 Log.i(TAG_PLACE_DETAIL, "Reverse geocode complete for map selection")
             }
-            // Read resolved address from reverse geocode result
-            LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
-                val addr = photoViewModel.resolvedAddresses["temp"]
-                if (addr != null && addr.isNotBlank()) {
-                    Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
-                    editAddress = addr
-                }
-                photoViewModel.resolvedAddresses.remove("temp")
-            }
         }
+    }
+
+    // Read resolved address from reverse geocode result (top-level composable scope)
+    LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
+        val addr = photoViewModel.resolvedAddresses["temp"]
+        if (addr != null && addr.isNotBlank()) {
+            Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
+            editAddress = addr
+        }
+        photoViewModel.resolvedAddresses.remove("temp")
     }
 
     // Load place + photos
