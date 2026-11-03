@@ -23,6 +23,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -191,7 +197,9 @@ fun PlaceDetailScreen(
         }
     ) { paddingValues ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(paddingValues)
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(paddingValues)
         ) {
             if (isLoading) {
                 Box(
@@ -206,8 +214,8 @@ fun PlaceDetailScreen(
                     // Place header
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                          .fillMaxWidth()
+                          .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = currentPlace.name,
@@ -298,15 +306,17 @@ fun PlaceDetailScreen(
                                 text = "Location",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(start = 16.dp, top = 8.dp).align(Alignment.Start)
+                                modifier = Modifier
+                                  .padding(start = 16.dp, top = 8.dp)
+                                  .align(Alignment.Start)
                             )
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .padding(horizontal = 16.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                  .fillMaxWidth()
+                                  .height(200.dp)
+                                  .padding(horizontal = 16.dp)
+                                  .clip(RoundedCornerShape(8.dp))
+                                  .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 OpenMap(
                                     modifier = Modifier.fillMaxSize(),
@@ -327,9 +337,11 @@ fun PlaceDetailScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(32.dp)
-                                                .background(Color(0xFF3B82F6), RoundedCornerShape(16.dp))
-                                                .clip(RoundedCornerShape(16.dp)),
+                                              .size(32.dp)
+                                              .background(
+                                                  Color(0xFF3B82F6), RoundedCornerShape(16.dp)
+                                              )
+                                              .clip(RoundedCornerShape(16.dp)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
@@ -347,8 +359,8 @@ fun PlaceDetailScreen(
                     // Photos section
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                          .fillMaxWidth()
+                          .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -382,7 +394,7 @@ fun PlaceDetailScreen(
                                     PhotoDetailItem(
                                         photo = photo,
                                         placeId = placeId,
-                                        onDelete = { deletePhoto(it.id) },
+                                        onDelete = { deletePhoto(photo.id) },
                                         onReverseGeocode = {
                                             photoViewModel.reverseGeocode(tripId, photo) {
                                                 photoViewModel.getPhotosForPlace(token, placeId)
@@ -402,7 +414,10 @@ fun PlaceDetailScreen(
             // Error snackbar
             photoViewModel.errorMessage.value?.let { error ->
                 Snackbar(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.BottomCenter),
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(16.dp)
+                      .align(Alignment.BottomCenter),
                     action = {
                         Button(onClick = { photoViewModel.errorMessage.value = null }) {
                             Text("Dismiss")
@@ -431,14 +446,14 @@ private fun PhotoDetailItem(
 ) {
     Column(
         modifier = Modifier
-            .size(110.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+          .size(110.dp)
+          .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black.copy(alpha = 0.1f))
+              .fillMaxSize()
+              .clip(RoundedCornerShape(8.dp))
+              .background(Color.Black.copy(alpha = 0.1f))
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -453,9 +468,9 @@ private fun PhotoDetailItem(
             IconButton(
                 onClick = { onDelete() },
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                  .align(Alignment.TopEnd)
+                  .padding(4.dp)
+                  .background(Color.White.copy(alpha = 0.85f), CircleShape)
             ) {
                 Icon(
                     Icons.Default.Delete,
@@ -488,7 +503,10 @@ private fun PhotoDetailItem(
                         modifier = Modifier.weight(1f)
                     )
                     if (isGeocoding) {
-                        CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5f)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(12.dp),
+                            strokeWidth = 2.dp
+                        )
                     } else {
                         IconButton(
                             onClick = onReverseGeocode,
@@ -520,18 +538,5 @@ private fun PhotoDetailItem(
                 }
             }
         }
-    }
-}
-
-/** Resolves a photo's image source for offline-first loading. */
-private fun photoImageUrl(photo: PhotoResponse): String {
-    val path = photo.thumbnailPath.ifBlank { photo.filePath }
-    return when {
-        path.startsWith("content://") ||
-        path.startsWith("file://") ||
-        path.startsWith("http://") ||
-        path.startsWith("https://") -> path
-        photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
-        else -> ApiService.uploadUrl(path)
     }
 }
