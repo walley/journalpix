@@ -96,6 +96,10 @@ fun PlaceDetailScreen(
     // Delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Map tap-to-select state
+    var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
+
     // Initialize edit fields from current place
     LaunchedEffect(currentPlace) {
         if (currentPlace != null) {
@@ -149,6 +153,66 @@ fun PlaceDetailScreen(
             editAddress = addr
         }
         photoViewModel.resolvedAddresses.remove("temp")
+    }
+
+    // Handle map tap selection - reverse geocode to get address
+    LaunchedEffect(mapSelection) {
+        val (lat, lon) = mapSelection ?: return@LaunchedEffect
+        Log.i(TAG_PLACE_DETAIL, "Map selected: lat=$lat, lon=$lon")
+        mapSelectionAddress = null
+        photoViewModel.reverseGeocode(tripId, PhotoResponse(
+            id = "temp_map_select",
+            placeId = placeId,
+            userId = "",
+            filePath = "",
+            thumbnailPath = "",
+            latitude = lat,
+            longitude = lon,
+            takenAt = null,
+            caption = null,
+            orderIndex = 0,
+            createdAt = ""
+        )) {
+            Log.i(TAG_PLACE_DETAIL, "Reverse geocode complete for map select")
+        }
+    }
+
+    // Read resolved address from map select reverse geocode
+    LaunchedEffect(photoViewModel.resolvedAddresses["temp_map_select"]) {
+        val addr = photoViewModel.resolvedAddresses["temp_map_select"]
+        if (addr != null && addr.isNotBlank()) {
+            Log.i(TAG_PLACE_DETAIL, "Reverse geocoded map address: $addr")
+            mapSelectionAddress = addr
+        }
+        photoViewModel.resolvedAddresses.remove("temp_map_select")
+    }
+
+    // Apply map selection to update place
+    fun applyMapSelection() {
+        val (lat, lon) = mapSelection ?: return
+        Log.i(TAG_PLACE_DETAIL, "Applying map selection: lat=$lat, lon=$lon, addr=$mapSelectionAddress")
+        placeViewModel.updatePlace(
+            token = token,
+            placeId = placeId,
+            request = UpdatePlaceRequest(
+                name = null,
+                description = null,
+                latitude = lat,
+                longitude = lon,
+                address = mapSelectionAddress.takeIf { it.isNotBlank() },
+                day = null,
+                visitDate = null,
+                orderIndex = null,
+                transportFromPrevious = null
+            ),
+            onSuccess = {
+                Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
+                mapSelection = null
+                mapSelectionAddress = null
+                placeViewModel.getPlace(token, placeId)
+                photoViewModel.getPhotosForPlace(token, placeId)
+            }
+        )
     }
 
     // Load place + photos
@@ -347,7 +411,7 @@ fun PlaceDetailScreen(
                                 }
                             }
                         } else {
-                            // Read-only display with edit and delete actions
+                            // Read-only display with edit action
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
@@ -372,39 +436,24 @@ fun PlaceDetailScreen(
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                // Bin icon to delete whole place
-                                IconButton(
-                                    onClick = {
-                                        Log.i(TAG_PLACE_DETAIL, "Delete place requested: placeId=$placeId")
-                                        showDeleteDialog = true
-                                    },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Delete place",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
                             }
-                            currentPlace.address?.takeIf { it.isNotBlank() }?.let { address ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Place,
-                                        contentDescription = "Address",
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = address,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                            // Address always shown, "unknown" if not set
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Place,
+                                    contentDescription = "Address",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = currentPlace.address ?: "unknown",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                             if (currentPlace.latitude != null && currentPlace.longitude != null) {
                                 Row(
@@ -516,7 +565,11 @@ fun PlaceDetailScreen(
                                     ),
                                     uiSettings = MapUiSettings(
                                         zoomControlsEnabled = false
-                                    )
+                                    ),
+                                    onMapClick = { latLng ->
+                                        Log.i(TAG_PLACE_DETAIL, "Map tapped: lat=${latLng.latitude}, lon=${latLng.longitude}")
+                                        mapSelection = Pair(latLng.latitude, latLng.longitude)
+                                    }
                                 ) {
                                     MarkerComposable(
                                         state = rememberMarkerState(
@@ -540,6 +593,28 @@ fun PlaceDetailScreen(
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    // Apply map selection button
+                    mapSelection?.let { (lat, lon) ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Selected: %.6f, %.6f".format(lat, lon),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = { applyMapSelection() },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                            ) {
+                                Text("Apply location")
                             }
                         }
                     }
@@ -594,8 +669,26 @@ fun PlaceDetailScreen(
                                     )
                                 }
                             }
+                        // Delete place button (red bin icon) at bottom of screen
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 24.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.errorContainer,
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete place",
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
+                }
                 }
             }
 
