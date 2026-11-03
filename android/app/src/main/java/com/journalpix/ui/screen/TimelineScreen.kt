@@ -67,7 +67,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.theme.JournalPixTheme
 
-private const val TAG_TIMELINE = "JournalPixTimeline"
+private const val TAG_TIMELINE = "JPXTimeline"
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

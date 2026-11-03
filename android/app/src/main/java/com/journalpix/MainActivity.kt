@@ -32,7 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.InputStream
 
-private const val TAG_MAIN = "JournalPixMain"
+private const val TAG_MAIN = "JPXMain"
 
 class MainActivity : ComponentActivity() {
     private lateinit var photoViewModel: PhotoViewModel

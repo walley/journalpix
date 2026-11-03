@@ -13,7 +13,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-private const val TAG_PLACE_VM = "JournalPixPlaceVM"
+private const val TAG_PLACE_VM = "JPXPlaceVM"
 
 class PlaceViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
