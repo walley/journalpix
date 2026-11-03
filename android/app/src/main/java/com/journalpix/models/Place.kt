@@ -112,3 +112,7 @@ data class PlaceCoordinates(
     val latitude: Double,
     val longitude: Double
 )
+
+data class ReorderPlacesRequest(
+    val placeIds: List<String>
+)
