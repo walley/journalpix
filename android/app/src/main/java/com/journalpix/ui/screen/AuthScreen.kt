@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.journalpix.BuildConfig
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
 
@@ -52,6 +53,12 @@ fun AuthScreen(navController: NavController) {
         )
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "JournalPix ${BuildConfig.VERSION_NAME}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Text(
             text = "Dev build: demo / demo works offline",
