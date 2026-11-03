@@ -148,7 +148,6 @@ fun PlaceDetailScreen(
         }
     }
 
-    val currentPlace = place
     if (currentPlace == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
