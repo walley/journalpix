@@ -178,22 +178,29 @@ fun MapScreen(
                         Icon(Icons.Default.Add, contentDescription = "Add place at location")
                     }
                 }
-                // Apply & back button for place update mode
-                if (placeIdForUpdate.isNotBlank() && mapViewModel.mapSelectionPoint.value != null) {
+                // Apply selected map coordinates
+                mapViewModel.mapSelectionPoint.value?.let { point ->
                     FloatingActionButton(
                         onClick = {
-                            val point = mapViewModel.mapSelectionPoint.value!!
-                            Log.i(TAG_MAP, "Apply & back: placeId=$placeIdForUpdate lat=${point.latitude} lon=${point.longitude}")
-                            AppSession.pendingMapPlaceUpdate.value = Triple(
-                                point.latitude,
-                                point.longitude,
-                                mapViewModel.mapRoute.value?.tripTitle ?: ""
-                            )
+                            Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}")
+                            if (placeIdForUpdate.isNotBlank()) {
+                                AppSession.pendingMapPlaceUpdate.value = Triple(
+                                    point.latitude,
+                                    point.longitude,
+                                    mapViewModel.mapRoute.value?.tripTitle ?: ""
+                                )
+                            } else {
+                                AppSession.pendingMapPlace.value = Triple(
+                                    point.latitude,
+                                    point.longitude,
+                                    ""
+                                )
+                            }
                             navController.popBackStack()
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Apply location and go back")
+                        Icon(Icons.Default.Check, contentDescription = "Apply selected location")
                     }
                 }
             }
