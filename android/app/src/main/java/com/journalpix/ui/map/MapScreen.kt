@@ -47,6 +47,7 @@ fun MapScreen(
     tripId: String = "",
     places: List<PlaceWithPhotos> = emptyList(),
     addPlaceMode: Boolean = false,
+    placeIdForUpdate: String = "",
     onPlaceAdded: ((Double, Double, String) -> Unit)? = null
 ) {
     val mapViewModel: MapViewModel = remember { MapViewModel() }
