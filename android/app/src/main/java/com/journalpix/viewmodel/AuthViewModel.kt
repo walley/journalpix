@@ -23,6 +23,9 @@ object AppSession {
     /** Place pending creation from map selection: lat, lon, name. */
     val pendingMapPlace = mutableStateOf<Triple<Double, Double, String>?>(null)
 
+    /** Place pending coordinate/address update from map selection: lat, lon, name. */
+    val pendingMapPlaceUpdate = mutableStateOf<Triple<Double, Double, String>?>(null)
+
     fun setUser(user: LoginResponse?) {
         currentUser.value = user
         isLoggedIn.value = user != null
@@ -35,6 +38,10 @@ object AppSession {
 
     fun clearPendingMapPlace() {
         pendingMapPlace.value = null
+    }
+
+    fun clearPendingMapPlaceUpdate() {
+        pendingMapPlaceUpdate.value = null
     }
 }
 

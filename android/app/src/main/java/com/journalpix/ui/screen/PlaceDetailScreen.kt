@@ -38,6 +38,8 @@ import coil.request.ImageRequest
 import com.journalpix.api.ApiService
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.models.UpdatePlaceRequest
+import com.journalpix.models.ZonedTimeInput
 import com.journalpix.ui.theme.JournalPixTheme
 import com.journalpix.viewmodel.AppSession
 import com.journalpix.viewmodel.AuthViewModel
@@ -84,6 +86,65 @@ fun PlaceDetailScreen(
     val placeState = placeViewModel.currentPlace
     val currentPlace = placeState.value
     val isLoading = placeViewModel.isLoading.value || photoViewModel.isLoading.value
+
+    // Edit mode for place name / address
+    var editMode by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf("") }
+    var editAddress by remember { mutableStateOf("") }
+
+    // Initialize edit fields from current place
+    LaunchedEffect(currentPlace) {
+        if (currentPlace != null) {
+            editName = currentPlace.name
+            editAddress = currentPlace.address ?: ""
+        }
+    }
+
+    // Handle map selection result for place update
+    LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
+        val pending = AppSession.pendingMapPlaceUpdate.value
+        if (pending != null) {
+            val (lat, lon, name) = pending
+            Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name'")
+            AppSession.clearPendingMapPlaceUpdate()
+            editName = if (name.isNotBlank()) name else editName
+            editAddress = "" // will be filled by reverse geocode below
+            if (currentPlace != null) {
+                val updatedPlace = currentPlace.copy(
+                    latitude = lat,
+                    longitude = lon
+                )
+                // We can't easily update currentPlace since it's a val from state,
+                // but we trigger a place refresh and set edit fields
+                editName = if (name.isNotBlank()) name else currentPlace.name
+            }
+            // Reverse geocode to get address
+            photoViewModel.reverseGeocode(tripId, PhotoResponse(
+                id = "temp",
+                placeId = placeId,
+                userId = "",
+                filePath = "",
+                thumbnailPath = "",
+                latitude = lat,
+                longitude = lon,
+                takenAt = null,
+                caption = null,
+                orderIndex = 0,
+                createdAt = ""
+            )) {
+                Log.i(TAG_PLACE_DETAIL, "Reverse geocode complete for map selection")
+            }
+            // Read resolved address from reverse geocode result
+            LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
+                val addr = photoViewModel.resolvedAddresses["temp"]
+                if (addr != null && addr.isNotBlank()) {
+                    Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
+                    editAddress = addr
+                }
+                photoViewModel.resolvedAddresses.remove("temp")
+            }
+        }
+    }
 
     // Load place + photos
     LaunchedEffect(placeId, token) {
@@ -212,81 +273,174 @@ fun PlaceDetailScreen(
                           .fillMaxWidth()
                           .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text(
-                            text = currentPlace.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        currentPlace.address?.takeIf { it.isNotBlank() }?.let { address ->
+                        if (editMode) {
+                            // Editable name and address fields
+                            OutlinedTextField(
+                                value = editName,
+                                onValueChange = { editName = it },
+                                label = { Text("Place name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = editAddress,
+                                onValueChange = { editAddress = it },
+                                label = { Text("Address") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(16.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                horizontalArrangement = Arrangement.End
                             ) {
-                                Icon(
-                                    Icons.Default.Place,
-                                    contentDescription = "Address",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = address,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                TextButton(
+                                    onClick = {
+                                        editName = currentPlace?.name ?: ""
+                                        editAddress = currentPlace?.address ?: ""
+                                        editMode = false
+                                    }
+                                ) { Text("Cancel") }
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Saving place updates: name='$editName', address='$editAddress', lat=${currentPlace?.latitude}, lon=${currentPlace?.longitude}")
+                                        placeViewModel.updatePlace(
+                                            token = token,
+                                            placeId = placeId,
+                                            request = UpdatePlaceRequest(
+                                                name = editName.takeIf { it.isNotBlank() },
+                                                description = null,
+                                                latitude = currentPlace.latitude,
+                                                longitude = currentPlace.longitude,
+                                                address = editAddress.takeIf { it.isNotBlank() }.takeUnless { it == "" },
+                                                day = null,
+                                                visitDate = null,
+                                                orderIndex = null,
+                                                transportFromPrevious = null
+                                            ),
+                                            onSuccess = {
+                                                Log.i(TAG_PLACE_DETAIL, "Place updated successfully")
+                                                editMode = false
+                                                placeViewModel.getPlace(token, placeId)
+                                                photoViewModel.getPhotosForPlace(token, placeId)
+                                            }
+                                        )
+                                    },
+                                    enabled = editName.isNotBlank()
+                                ) {
+                                    Text("Save")
+                                }
+                            }
+                        } else {
+                            // Read-only display
+                            Text(
+                                text = currentPlace.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            currentPlace.address?.takeIf { it.isNotBlank() }?.let { address ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Place,
+                                        contentDescription = "Address",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = address,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            if (currentPlace.latitude != null && currentPlace.longitude != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        contentDescription = "Coordinates",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = "Lat: %.6f, Lon: %.6f".format(
+                                            currentPlace.latitude!!,
+                                            currentPlace.longitude!!
+                                        ),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            visitDateText?.let {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        contentDescription = "Visit time",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = it,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            if (currentPlace.transportFromPrevious != null && currentPlace.transportFromPrevious.isNotBlank()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Transport: ${currentPlace.transportFromPrevious}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
-                        if (currentPlace.latitude != null && currentPlace.longitude != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Schedule,
-                                    contentDescription = "Coordinates",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = "Lat: %.6f, Lon: %.6f".format(
-                                        currentPlace.latitude!!,
-                                        currentPlace.longitude!!
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        // Edit / Select on map actions
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (editMode) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            } else {
+                                Button(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Edit mode enabled for place $placeId")
+                                        editMode = true
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Edit details")
+                                }
+                                Spacer(Modifier.width(8.dp))
                             }
-                        }
-                        visitDateText?.let {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Schedule,
-                                    contentDescription = "Visit time",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        if (currentPlace.transportFromPrevious != null && currentPlace.transportFromPrevious.isNotBlank()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Transport: ${currentPlace.transportFromPrevious}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            if (currentPlace.latitude != null && currentPlace.longitude != null || true) {
+                                Button(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Select on map for place $placeId")
+                                        navController.navigate("map/$tripId?addPlaceMode=true&placeIdForUpdate=$placeId")
+                                    }
+                                ) {
+                                    Text("Select on map")
+                                }
                             }
                         }
                     }

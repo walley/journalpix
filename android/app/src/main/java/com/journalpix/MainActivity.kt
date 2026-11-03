@@ -68,18 +68,25 @@ class MainActivity : ComponentActivity() {
                         composable(
                             "map/{tripId}",
                             arguments = listOf(
-                                navArgument("addPlaceMode") { defaultValue = false }
+                                navArgument("addPlaceMode") { defaultValue = false },
+                                navArgument("placeIdForUpdate") { defaultValue = "" }
                             )
                         ) { backStackEntry ->
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             val addPlaceMode = backStackEntry.arguments?.getBoolean("addPlaceMode") ?: false
+                            val placeIdForUpdate = backStackEntry.arguments?.getString("placeIdForUpdate") ?: ""
                             MapScreen(
                                 navController,
                                 tripId = tripId,
                                 addPlaceMode = addPlaceMode,
+                                placeIdForUpdate = placeIdForUpdate,
                                 onPlaceAdded = { lat, lon, name ->
-                                    Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name'")
-                                    AppSession.pendingMapPlace.value = Triple(lat, lon, name)
+                                    Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name', placeIdForUpdate=$placeIdForUpdate")
+                                    if (placeIdForUpdate.isNotBlank()) {
+                                        AppSession.pendingMapPlaceUpdate.value = Triple(lat, lon, name)
+                                    } else {
+                                        AppSession.pendingMapPlace.value = Triple(lat, lon, name)
+                                    }
                                     navController.popBackStack()
                                 }
                             )
