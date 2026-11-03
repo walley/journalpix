@@ -116,17 +116,28 @@ fun PlaceDetailScreen(
             val (lat, lon, name) = pending
             Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name'")
             AppSession.clearPendingMapPlaceUpdate()
-            editName = if (name.isNotBlank()) name else editName
-            editAddress = "" // will be filled by reverse geocode below
-            if (currentPlace != null) {
-                val updatedPlace = currentPlace.copy(
+            // Auto-apply the map selection to the place
+            placeViewModel.updatePlace(
+                token = token,
+                placeId = placeId,
+                request = UpdatePlaceRequest(
+                    name = if (name.isNotBlank()) name else null,
+                    description = null,
                     latitude = lat,
-                    longitude = lon
-                )
-                // We can't easily update currentPlace since it's a val from state,
-                // but we trigger a place refresh and set edit fields
-                editName = if (name.isNotBlank()) name else currentPlace.name
-            }
+                    longitude = lon,
+                    address = null,
+                    day = null,
+                    visitDate = null,
+                    orderIndex = null,
+                    transportFromPrevious = null
+                ),
+                onSuccess = {
+                    Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
+                    editMode = false
+                    placeViewModel.getPlace(token, placeId)
+                    photoViewModel.getPhotosForPlace(token, placeId)
+                }
+            )
             // Reverse geocode to get address
             photoViewModel.reverseGeocode(tripId, PhotoResponse(
                 id = "temp",
