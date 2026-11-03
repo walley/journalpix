@@ -89,9 +89,6 @@ fun PlaceDetailScreen(
     val currentPlace = placeState.value
     val isLoading = placeViewModel.isLoading.value || photoViewModel.isLoading.value
 
-    // Force recomposition when place data is refreshed (e.g. after map selection update)
-    var placeRefreshKey by remember { mutableStateOf(0) }
-
     // Edit mode for place name / address
     var editMode by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
@@ -222,7 +219,6 @@ fun PlaceDetailScreen(
             ),
             onSuccess = {
                 Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
-                placeRefreshKey += 1
                 mapSelection = null
                 mapSelectionAddress = null
                 placeViewModel.getPlace(token, placeId)
@@ -360,7 +356,6 @@ fun PlaceDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    key(placeRefreshKey)
                     // Place header
                     Column(
                         modifier = Modifier
