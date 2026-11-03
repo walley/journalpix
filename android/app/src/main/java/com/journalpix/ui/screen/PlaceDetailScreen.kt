@@ -613,7 +613,9 @@ fun PlaceDetailScreen(
                             Spacer(Modifier.height(8.dp))
                             Button(
                                 onClick = { applyMapSelection() },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .padding(horizontal = 16.dp)
                             ) {
                                 Text("Apply location")
                             }
@@ -624,6 +626,7 @@ fun PlaceDetailScreen(
                     Column(
                         modifier = Modifier
                           .fillMaxWidth()
+                          .weight(1f)
                           .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Row(
@@ -647,7 +650,9 @@ fun PlaceDetailScreen(
                         } else {
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(3),
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -670,17 +675,17 @@ fun PlaceDetailScreen(
                                     )
                                 }
                             }
+                        }
+                        Spacer(Modifier.height(8.dp))
                         // Delete place button (red bin icon) at bottom of screen
-                        Spacer(modifier = Modifier.weight(1f))
                         IconButton(
                             onClick = { showDeleteDialog = true },
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.errorContainer,
-                                    CircleShape
-                                )
+                              .align(Alignment.CenterHorizontally)
+                              .padding(bottom = 24.dp)
+                              .background(
+                                  MaterialTheme.colorScheme.errorContainer, CircleShape
+                              )
                         ) {
                             Icon(
                                 Icons.Default.Delete,
@@ -689,7 +694,6 @@ fun PlaceDetailScreen(
                             )
                         }
                     }
-                }
                 }
             }
 
