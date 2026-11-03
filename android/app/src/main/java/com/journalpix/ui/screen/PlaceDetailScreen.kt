@@ -200,7 +200,7 @@ fun PlaceDetailScreen(
                 description = null,
                 latitude = lat,
                 longitude = lon,
-                address = mapSelectionAddress.takeIf { it.isNotBlank() },
+                address = mapSelectionAddress.takeIf { it?.isNotBlank() == true },
                 day = null,
                 visitDate = null,
                 orderIndex = null,
