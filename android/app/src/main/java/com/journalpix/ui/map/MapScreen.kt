@@ -193,7 +193,7 @@ fun MapScreen(
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.Default.Done, contentDescription = "Apply location and go back")
+                        Icon(Icons.Default.Check, contentDescription = "Apply location and go back")
                     }
                 }
             }
