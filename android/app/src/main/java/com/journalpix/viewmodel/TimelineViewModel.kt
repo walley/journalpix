@@ -3,6 +3,7 @@ package com.journalpix.viewmodel
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.TimelineItem
 import com.journalpix.models.TransportMode
