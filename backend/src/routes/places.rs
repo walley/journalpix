@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder, ResponseError};
-use crate::models::place::{CreatePlaceRequest, UpdatePlaceRequest};
+use crate::models::place::{CreatePlaceRequest, ReorderPlacesRequest, UpdatePlaceRequest};
 use crate::models::zoned::RenderInZone;
 use crate::config::Config;
 use crate::services::place::PlaceService;
@@ -16,6 +16,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     // support), so these must be plain routes with full paths.
     cfg.route("/trips/{trip_id}/places", web::get().to(get_places))
         .route("/trips/{trip_id}/places", web::post().to(create_place))
+        .route("/trips/{trip_id}/places/reorder", web::post().to(reorder_places))
         .route("/places/{place_id}", web::get().to(get_place))
         .route("/places/{place_id}", web::put().to(update_place))
         .route("/places/{place_id}", web::delete().to(delete_place));
@@ -201,6 +202,44 @@ pub async fn delete_place(
         }
         Err(e) => {
             log::warn!("Place delete user_id={} place_id={}: failed ({})", user_id, *place_id, e);
+            e.error_response()
+        }
+    }
+}
+
+pub async fn reorder_places(
+    req: actix_web::HttpRequest,
+    auth_service: web::Data<AuthService>,
+    trip_id: web::Path<Uuid>,
+    request: web::Json<ReorderPlacesRequest>,
+    db_pool: web::Data<Arc<DatabaseConnection>>,
+) -> impl Responder {
+    let user_id = match auth_user_id(&req, &auth_service) {
+        Ok(id) => id,
+        Err(e) => return e.error_response(),
+    };
+
+    let trip_service = TripService::new(db_pool.get_ref().clone());
+
+    if let Err(e) = require_owner(trip_service.trip_owner(*trip_id).await, user_id) {
+        log::warn!("Place reorder user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
+        return e.error_response();
+    }
+
+    let place_service = PlaceService::new(db_pool.get_ref().clone());
+
+    match place_service.reorder_places(*trip_id, request.place_ids.clone()).await {
+        Ok(response) => {
+            log::info!(
+                "Place reorder user_id={} trip_id={}: success ({} places)",
+                user_id,
+                *trip_id,
+                request.place_ids.len()
+            );
+            HttpResponse::Ok().json(response)
+        }
+        Err(e) => {
+            log::warn!("Place reorder user_id={} trip_id={}: failed ({})", user_id, *trip_id, e);
             e.error_response()
         }
     }

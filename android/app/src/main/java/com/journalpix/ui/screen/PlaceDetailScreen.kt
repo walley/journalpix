@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Schedule
@@ -446,6 +448,56 @@ fun PlaceDetailScreen(
                                         Icons.Default.Edit,
                                         contentDescription = "Edit place details",
                                         tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                // Move up icon
+                                IconButton(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Move place up: placeId=$placeId")
+                                        placeViewModel.movePlaceUp(token, tripId, placeId) {
+                                            Log.i(TAG_PLACE_DETAIL, "Place moved up: placeId=$placeId")
+                                            placeViewModel.getPlace(token, placeId)
+                                            photoViewModel.getPhotosForPlace(token, placeId)
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ArrowDropUp,
+                                        contentDescription = "Move place up",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                // Move down icon
+                                IconButton(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Move place down: placeId=$placeId")
+                                        placeViewModel.movePlaceDown(token, tripId, placeId) {
+                                            Log.i(TAG_PLACE_DETAIL, "Place moved down: placeId=$placeId")
+                                            placeViewModel.getPlace(token, placeId)
+                                            photoViewModel.getPhotosForPlace(token, placeId)
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ArrowDropDown,
+                                        contentDescription = "Move place down",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                // Bin icon to delete whole place
+                                IconButton(
+                                    onClick = {
+                                        Log.i(TAG_PLACE_DETAIL, "Delete place requested: placeId=$placeId")
+                                        showDeleteDialog = true
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete place",
+                                        tint = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }

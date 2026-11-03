@@ -122,6 +122,13 @@ interface ApiClient {
         @Path("photoId") photoId: String
     ): ApiResponse<String>
     
+    @POST("trips/{tripId}/places/reorder")
+    suspend fun reorderPlaces(
+        @Header("Authorization") token: String,
+        @Path("tripId") tripId: String,
+        @Body request: ReorderPlacesRequest
+    ): ApiResponse<List<PlaceResponse>>
+    
     // Timeline
     @GET("trips/{tripId}/timeline")
     suspend fun getTimeline(

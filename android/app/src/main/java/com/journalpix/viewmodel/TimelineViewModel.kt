@@ -74,6 +74,22 @@ class TimelineViewModel : ViewModel() {
         onSuccess()
     }
 
+    fun reorderPlaces(token: String, tripId: String, placeIds: List<String>, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = ApiService.apiClient.reorderPlaces("Bearer $token", tripId, com.journalpix.models.ReorderPlacesRequest(placeIds))
+                if (response.success) {
+                    getTimeline(token, tripId)
+                    onSuccess()
+                } else {
+                    errorMessage.value = response.error ?: "Failed to reorder places"
+                }
+            } catch (e: Exception) {
+                errorMessage.value = "Network error: ${e.message}"
+            }
+        }
+    }
+
     fun getTimelineItems(): List<TimelineItem> {
         return timeline.value?.timeline ?: emptyList()
     }

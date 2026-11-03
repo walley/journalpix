@@ -102,6 +102,11 @@ pub struct PlaceCoordinates {
     pub longitude: f64,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct ReorderPlacesRequest {
+    pub place_ids: Vec<Uuid>,
+}
+
 impl RenderInZone for PlaceResponse {
     fn render_in_zone(&mut self, tz: Tz) {
         self.visit_date.render_in_zone(tz);

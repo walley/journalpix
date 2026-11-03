@@ -166,4 +166,66 @@ class PlaceViewModel : ViewModel() {
             }
         }
     }
+
+    fun movePlaceUp(token: String, tripId: String, placeId: String, onSuccess: () -> Unit) {
+        movePlace(token, tripId, placeId, -1, onSuccess)
+    }
+
+    fun movePlaceDown(token: String, tripId: String, placeId: String, onSuccess: () -> Unit) {
+        movePlace(token, tripId, placeId, 1, onSuccess)
+    }
+
+    private fun movePlace(token: String, tripId: String, placeId: String, direction: Int, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading.value = true
+            try {
+                // Get all places for the trip to find current index and adjacent
+                val placesResp = ApiService.apiClient.getPlaces("Bearer $token", tripId)
+                if (!placesResp.success || placesResp.data == null) {
+                    errorMessage.value = placesResp.error ?: "Failed to load places"
+                    return@viewModelScope
+                }
+                val allPlaces = placesResp.data!!
+                val idx = allPlaces.indexOfFirst { it.id == placeId }
+                if (idx == -1) {
+                    errorMessage.value = "Place not found in trip"
+                    return@viewModelScope
+                }
+                val newIdx = idx + direction
+                if (newIdx < 0 || newIdx >= allPlaces.size) {
+                    // Already at edge, nothing to do
+                    onSuccess()
+                    return@viewModelScope
+                }
+
+                // Swap order_index between current and adjacent
+                val currentPlace = allPlaces[idx]
+                val adjacentPlace = allPlaces[newIdx]
+
+                // Build new order: swap positions
+                val newOrder = allPlaces.toMutableList()
+                newOrder[idx] = adjacentPlace
+                newOrder[newIdx] = currentPlace
+
+                val reorderResp = ApiService.apiClient.reorderPlaces(
+                    "Bearer $token",
+                    tripId,
+                    com.journalpix.models.ReorderPlacesRequest(newOrder.map { it.id })
+                )
+
+                if (reorderResp.success) {
+                    Log.i(TAG_PLACE_VM, "Move place $placeId direction=$direction: success")
+                    onSuccess()
+                } else {
+                    Log.e(TAG_PLACE_VM, "Move place $placeId direction=$direction: failed ${reorderResp.error}")
+                    errorMessage.value = reorderResp.error ?: "Failed to move place"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG_PLACE_VM, "Move place $placeId direction=$direction: exception ${e.message}", e)
+                errorMessage.value = "Network error: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
 }

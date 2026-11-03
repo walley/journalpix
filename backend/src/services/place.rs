@@ -360,4 +360,38 @@ impl PlaceService {
         }
         Ok(ApiResponse::message("Place deleted successfully".into()))
     }
+
+    pub async fn reorder_places(
+        &self,
+        trip_id: Uuid,
+        place_ids: Vec<Uuid>,
+    ) -> Result<ApiResponse<Vec<PlaceResponse>>, ApiError> {
+        // Verify all places exist and belong to this trip
+        for (idx, place_id) in place_ids.iter().enumerate() {
+            let owner = self
+                .db_pool
+                .with_conn(|c| {
+                    c.query_row(
+                        "SELECT t.user_id FROM places p JOIN trips t ON t.id = p.trip_id
+                         WHERE p.id = ?1 AND t.id = ?2",
+                        [place_id.to_string(), trip_id.to_string()],
+                        |r| get_uuid(r, 0),
+                    )
+                })
+                .map_err(|_| ApiError::NotFound(format!("Place {} not found in trip", place_id)))?;
+            let _ = owner;
+
+            self.db_pool
+                .with_conn(|c| {
+                    c.execute(
+                        "UPDATE places SET order_index = ?1 WHERE id = ?2",
+                        rusqlite::params![idx as i32, place_id.to_string()],
+                    )
+                })
+                .map_err(db_err)?;
+        }
+
+        self.get_places(trip_id).await
+    }
+}
 }

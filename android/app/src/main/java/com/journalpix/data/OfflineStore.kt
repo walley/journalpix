@@ -341,7 +341,7 @@ object OfflineStore {
 
         if (beforePlaces.isNotEmpty()) {
             val ordered = beforePlaces.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                compareBy({ placeSortKey(it) }, { it.orderIndex })
             )
             items.add(TimelineItem(day = 0, date = BEFORE_KEY, places = ordered))
         }
@@ -368,7 +368,7 @@ object OfflineStore {
                 val dayNum = java.time.temporal.ChronoUnit.DAYS.between(start!!, curr).toInt() + 1
                 val list = grouped[dayNum].orEmpty()
                   .sortedWith(
-                      compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                      compareBy({ placeSortKey(it) }, { it.orderIndex })
                   )
                 items.add(TimelineItem(day = dayNum, date = dateStr, places = list))
                 curr = curr.plusDays(1)
@@ -377,7 +377,7 @@ object OfflineStore {
             .sortedBy { it.key }
             .forEach { (day, list) ->
               val ordered = list.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                compareBy({ placeSortKey(it) }, { it.orderIndex })
               )
               items.add(TimelineItem(day = day, date = null, places = ordered))
             }
@@ -385,7 +385,7 @@ object OfflineStore {
             grouped.entries.sortedBy { it.key }
               .forEach { (day, list) ->
                   val ordered = list.sortedWith(
-                      compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                      compareBy({ placeSortKey(it) }, { it.orderIndex })
                   )
                   items.add(TimelineItem(day = day, date = null, places = ordered))
               }
@@ -393,7 +393,7 @@ object OfflineStore {
 
         if (afterPlaces.isNotEmpty()) {
             val ordered = afterPlaces.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex }, { it.name })
+                compareBy({ placeSortKey(it) }, { it.orderIndex })
             )
             items.add(TimelineItem(day = -1, date = AFTER_KEY, places = ordered))
         }
