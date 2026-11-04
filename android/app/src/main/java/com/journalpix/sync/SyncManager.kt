@@ -244,12 +244,23 @@ object SyncManager {
             val tripsResponse = ApiService.apiClient.getTrips(bearerToken)
             val tripsData = tripsResponse.data
             if (tripsResponse.success && tripsData != null) {
+                Log.d(TAG, "Pull trips OK: ${tripsData.size} trips")
                 for (trip in tripsData) {
-                    val timelineResponse = ApiService.apiClient.getTimeline(bearerToken, trip.id)
-                    val timelineData = timelineResponse.data
-                    if (timelineResponse.success && timelineData != null) {
-                        OfflineStore.mergeBackendTimeline(timelineData)
-                        Log.d(TAG, "Pulled and merged timeline for trip: ${trip.id}")
+                    try {
+                        val timelineResponse = ApiService.apiClient.getTimeline(bearerToken, trip.id)
+                        val timelineData = timelineResponse.data
+                        if (timelineResponse.success && timelineData != null) {
+                            OfflineStore.mergeBackendTimeline(timelineData)
+                            Log.d(TAG, "Pulled and merged timeline for trip: ${trip.id} (${timelineData.timeline.size} days)")
+                        } else {
+                            val msg = timelineResponse.error ?: "timeline pull failed (success=false)"
+                            Log.e(TAG, "Timeline pull failed for trip ${trip.id}: $msg")
+                            errors.add("Timeline ${trip.id}: $msg")
+                        }
+                    } catch (e: Exception) {
+                        val msg = if (e is HttpException) serverError(e) else e.message ?: e.javaClass.simpleName
+                        Log.e(TAG, "Timeline pull exception for trip ${trip.id}: $msg", e)
+                        errors.add("Timeline ${trip.id}: $msg")
                     }
                 }
             } else if (!tripsResponse.success) {
@@ -258,14 +269,16 @@ object SyncManager {
                 Log.e(TAG, "Pull trips failed: $msg")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to pull remote data from backend", e)
-            errors.add(if (e is HttpException) serverError(e)
-            else e.message ?: "pull failed")
+            val msg = if (e is HttpException) serverError(e) else e.message ?: "pull failed"
+            Log.e(TAG, "Failed to pull remote data from backend: $msg", e)
+            errors.add(msg)
         }
 
         Log.d(TAG, "Sync complete, errors=${errors.size}")
+        errors.forEachIndexed { i, err -> Log.e(TAG, "Sync error[$i]: $err") }
         if (errors.isNotEmpty()) {
             val summary = errors.distinct().take(3).joinToString(" · ")
+            Log.e(TAG, "Showing sync failure toast: $summary")
             toast("Sync failed: $summary")
         }
     }
