@@ -23,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -44,9 +46,11 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
+import com.journalpix.models.ReorderPlacesRequest
 import com.journalpix.models.TransportMode
 import com.journalpix.models.ZonedTime
 import com.journalpix.models.ZonedTimeInput
@@ -69,7 +73,7 @@ import com.journalpix.ui.theme.JournalPixTheme
 
 private const val TAG_TIMELINE = "JPXTimeline"
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TimelineScreen(navController: NavController, tripId: String) {
     val context = LocalContext.current
@@ -107,7 +111,6 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: Exception) { }
-
             photoViewModel.addPhotoOffline(context, placeId, uri) {
                 refresh()
                 selectedPlace = timelineViewModel.timeline.value
@@ -340,16 +343,58 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                             place = place,
                                             onEdit = { editTransportPlaceId = place.id })
                                     }
-                                    PlaceTimelineRow(
-                                        number = placeIndex + 1,
-                                        place = place,
-                                        isLast = placeIndex == dayItem.places.lastIndex,
-                                        onPlaceClick = { selectedPlace = place },
-                                        onAddPhoto = { startAddPhoto(place.id) },
-                                        resolvedAddresses = photoViewModel.resolvedAddresses,
-                                        geocodeLoading = photoViewModel.geocodeLoadingIds,
-                                        onReverseGeocode = { onReverseGeocode(it) })
-                                }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        PlaceTimelineRow(
+                                            number = placeIndex + 1,
+                                            place = place,
+                                            isLast = placeIndex == dayItem.places.lastIndex,
+                                            onPlaceClick = { selectedPlace = place },
+                                            onAddPhoto = { startAddPhoto(place.id) },
+                                            resolvedAddresses = photoViewModel.resolvedAddresses,
+                                            geocodeLoading = photoViewModel.geocodeLoadingIds,
+                                            onReverseGeocode = { onReverseGeocode(it) })
+                                        Column {
+                                            if (placeIndex > 0) {
+                                                IconButton(
+                                                    onClick = {
+                                                        Log.i(TAG_TIMELINE, "Move place up: placeId=${place.id}")
+                                                        placeViewModel.movePlaceUp(token, effectiveTripId, place.id) {
+                                                            Log.i(TAG_TIMELINE, "Place moved up: placeId=${place.id}")
+                                                            refresh()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.ArrowDropUp,
+                                                        contentDescription = "Move place up",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
+                                            if (placeIndex < dayItem.places.lastIndex) {
+                                                IconButton(
+                                                    onClick = {
+                                                        Log.i(TAG_TIMELINE, "Move place down: placeId=${place.id}")
+                                                        placeViewModel.movePlaceDown(token, effectiveTripId, place.id) {
+                                                            Log.i(TAG_TIMELINE, "Place moved down: placeId=${place.id}")
+                                                            refresh()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.ArrowDropDown,
+                                                        contentDescription = "Move place down",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 if (!isBeforeAfter) {
                                     item(key = "add-place-$dayKey") {
                                         TextButton(
@@ -391,79 +436,79 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         }
                     }
                 }
-            }
 
-            if (isRefreshing) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .align(Alignment.TopCenter)
-                )
+                if (isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .align(Alignment.TopCenter)
+                    )
+                }
             }
         }
-    }
 
-    if (showEditTitleDialog && timeline != null) {
-        var titleText by remember(timeline.trip.title) {
-            mutableStateOf(timeline.trip.title)
-        }
-        AlertDialog(
-            onDismissRequest = { showEditTitleDialog = false },
-            title = { Text("Trip name") },
-            text = {
-                OutlinedTextField(
-                    value = titleText,
-                    onValueChange = { titleText = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (titleText.isNotBlank()) {
-                        timelineViewModel.updateTripTitle(effectiveTripId, titleText.trim())
-                        showEditTitleDialog = false
-                    }
-                }) { Text("Save") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditTitleDialog = false }) { Text("Cancel") }
+        if (showEditTitleDialog && timeline != null) {
+            var titleText by remember(timeline.trip.title) {
+                mutableStateOf(timeline.trip.title)
             }
-        )
-    }
+            AlertDialog(
+                onDismissRequest = { showEditTitleDialog = false },
+                title = { Text("Trip name") },
+                text = {
+                    OutlinedTextField(
+                        value = titleText,
+                        onValueChange = { titleText = it },
+                        label = { Text("Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        if (titleText.isNotBlank()) {
+                            timelineViewModel.updateTripTitle(effectiveTripId, titleText.trim())
+                            showEditTitleDialog = false
+                        }
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditTitleDialog = false }) { Text("Cancel") }
+                }
+            )
+        }
 
-    editTransportPlaceId?.let { placeId ->
-        val current = timeline?.timeline
-            ?.flatMap { it.places }
-            ?.find { it.id == placeId }
-        val selected = TransportMode.fromStored(current?.transportFromPrevious)
-        AlertDialog(
-            onDismissRequest = { editTransportPlaceId = null },
-            title = { Text("How did you get here?") },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    TransportMode.entries.forEach { mode ->
-                        val isSelected = selected == mode
-                        Row(
-                            modifier = Modifier
-                              .fillMaxWidth()
-                              .clickable {
-                                  timelineViewModel.setTransport(placeId, mode, effectiveTripId)
-                                  editTransportPlaceId = null
-                              }
-                              .padding(vertical = 10.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(mode.emoji, style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                mode.label,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface
-                            )
+        editTransportPlaceId?.let { placeId ->
+            val current = timeline?.timeline
+                ?.flatMap { it.places }
+                ?.find { it.id == placeId }
+            val selected = TransportMode.fromStored(current?.transportFromPrevious)
+            AlertDialog(
+                onDismissRequest = { editTransportPlaceId = null },
+                title = { Text("How did you get here?") },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        TransportMode.entries.forEach { mode ->
+                            val isSelected = selected == mode
+                            Row(
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .clickable {
+                                      timelineViewModel.setTransport(placeId, mode, effectiveTripId)
+                                      editTransportPlaceId = null
+                                  }
+                                  .padding(vertical = 10.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(mode.emoji, style = MaterialTheme.typography.titleMedium)
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    mode.label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                     TextButton(
