@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.api.ApiService
@@ -891,5 +893,17 @@ private fun PhotoViewerScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlaceDetailScreenPreview() {
+    JournalPixTheme {
+        PlaceDetailScreen(
+            navController = rememberNavController(),
+            placeId = "demo-place-1",
+            tripId = "demo-trip-1"
+        )
     }
 }
