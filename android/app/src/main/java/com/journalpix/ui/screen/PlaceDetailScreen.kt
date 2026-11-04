@@ -112,11 +112,12 @@ fun PlaceDetailScreen(
 
     LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
         val pending = AppSession.pendingMapPlaceUpdate.value
-        Log.i(TAG_PLACE_DETAIL, "pendingMapPlaceUpdate effect fired: pending=$pending, currentPlace lat=${currentPlace?.latitude} lon=${currentPlace?.longitude}")
+        Log.i(TAG_PLACE_DETAIL, "pendingMapPlaceUpdate effect fired: pending=$pending, placeId=$placeId, currentPlace lat=${currentPlace?.latitude} lon=${currentPlace?.longitude}")
         if (pending != null) {
             val (lat, lon, name) = pending
-            Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name'")
+            Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name' for placeId=$placeId")
             AppSession.clearPendingMapPlaceUpdate()
+            AppSession.mapEditPlaceId.value = null
             editMode = true
             editName = if (name.isNotBlank()) name else currentPlace?.name ?: ""
             editAddress = ""
@@ -463,8 +464,9 @@ fun PlaceDetailScreen(
                                 Spacer(modifier = Modifier.weight(1f))
                                 IconButton(
                                     onClick = {
-                                        Log.i(TAG_PLACE_DETAIL, "Select on map for place $placeId")
-                                        navController.navigate("map/$tripId?addPlaceMode=true&placeIdForUpdate=$placeId")
+                                        Log.i(TAG_PLACE_DETAIL, "Select on map for place $placeId, tripId='$tripId'")
+                                        AppSession.mapEditPlaceId.value = placeId
+                                        navController.navigate("map/${tripId.ifBlank { "demo-trip-1" }}?addPlaceMode=true")
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {

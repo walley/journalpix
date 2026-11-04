@@ -26,6 +26,9 @@ object AppSession {
     /** Place pending coordinate/address update from map selection: lat, lon, name. */
     val pendingMapPlaceUpdate = mutableStateOf<Triple<Double, Double, String>?>(null)
 
+    /** Place ID being edited on the map (set before navigating to map screen). */
+    val mapEditPlaceId = mutableStateOf<String?>(null)
+
     fun setUser(user: LoginResponse?) {
         currentUser.value = user
         isLoggedIn.value = user != null

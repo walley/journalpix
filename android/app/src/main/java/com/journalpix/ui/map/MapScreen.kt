@@ -183,13 +183,15 @@ fun MapScreen(
                 mapViewModel.mapSelectionPoint.value?.let { point ->
                     FloatingActionButton(
                         onClick = {
-                            Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, placeIdForUpdate='$placeIdForUpdate'")
-                            if (placeIdForUpdate.isNotBlank()) {
+                            val editPlaceId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
+                            Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, placeIdForUpdate='$placeIdForUpdate', mapEditPlaceId='${AppSession.mapEditPlaceId.value}', resolved='$editPlaceId'")
+                            if (editPlaceId.isNotBlank()) {
                                 AppSession.pendingMapPlaceUpdate.value = Triple(
                                     point.latitude,
                                     point.longitude,
                                     mapViewModel.mapRoute.value?.tripTitle ?: ""
                                 )
+                                AppSession.mapEditPlaceId.value = null
                             } else {
                                 AppSession.pendingMapPlace.value = Triple(
                                     point.latitude,
