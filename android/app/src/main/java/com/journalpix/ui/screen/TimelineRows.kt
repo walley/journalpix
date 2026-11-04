@@ -48,7 +48,9 @@ fun PlaceTimelineRow(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(36.dp)
+            modifier = Modifier
+                .width(36.dp)
+                .fillMaxHeight()
         ) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -63,15 +65,22 @@ fun PlaceTimelineRow(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            // Drag handle under the number
-            dragHandle?.invoke()
-            if (!isLast) {
-                Box(
-                    modifier = Modifier
-                      .width(2.dp)
-                      .weight(1f)
-                      .background(lineColor)
-                )
+            // Drag handle vertically centered in remaining space
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                dragHandle?.invoke()
+                if (!isLast) {
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .fillMaxHeight()
+                            .background(lineColor)
+                    )
+                }
             }
         }
         Card(
