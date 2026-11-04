@@ -91,7 +91,12 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        composable("place/{placeId}") { backStackEntry ->
+                        composable(
+                            "place/{placeId}",
+                            arguments = listOf(
+                                navArgument("tripId") { defaultValue = "" }
+                            )
+                        ) { backStackEntry ->
                             val placeId = backStackEntry.arguments?.getString("placeId") ?: ""
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             PlaceDetailScreen(
