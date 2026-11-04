@@ -418,7 +418,7 @@ fun PlaceDetailScreen(
                                                 currentPlace.longitude!!
                                             )
                                         } else {
-                                            "unknown"
+                                            "latlon unknown"
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant

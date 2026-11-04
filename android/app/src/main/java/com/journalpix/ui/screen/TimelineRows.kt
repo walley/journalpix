@@ -44,6 +44,7 @@ fun PlaceTimelineRow(
     Row(
         modifier = modifier
           .fillMaxWidth()
+          .safeDrawingPadding()
           .padding(start = 12.dp, end = 12.dp)
     ) {
         Box(
@@ -89,7 +90,7 @@ fun PlaceTimelineRow(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                ) {
+                ) {Text("x", color = MaterialTheme.colorScheme.onSurface);
                     dragHandle?.invoke()
                 }
             }
