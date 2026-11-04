@@ -226,6 +226,7 @@ object OfflineStore {
         val found = findPlace(placeId)?.first ?: return null
         val photos = photosByPlace[placeId].orEmpty()
             .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
+        android.util.Log.i("OfflineStore", "findPlaceWithPhotos: placeId=$placeId, photos=${photos.size}, paths=${photos.map { it.filePath }}")
         return found.copy(photos = photos)
     }
 

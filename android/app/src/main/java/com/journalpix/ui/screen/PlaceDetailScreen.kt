@@ -137,8 +137,7 @@ fun PlaceDetailScreen(
                     Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
                     placeRefreshKey += 1
                     editMode = false
-                    placeViewModel.getPlace(token, placeId)
-                    photoViewModel.getPhotosForPlace(token, placeId)
+                    placeViewModel.refreshLocalPlace(placeId)
                 }
             )
             photoViewModel.reverseGeocode(tripId, PhotoResponse(

@@ -317,6 +317,8 @@ fun photoImageUrl(photo: PhotoResponse): String {
         path.startsWith("file://") ||
         path.startsWith("http://") ||
         path.startsWith("https://") -> path
+        // Absolute filesystem path (e.g. /storage/emulated/0/...) — use as file:// URI
+        path.startsWith("/") -> "file://$path"
         photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
         else -> ApiService.uploadUrl(path)
     }
