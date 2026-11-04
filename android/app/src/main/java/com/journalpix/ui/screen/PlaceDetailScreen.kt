@@ -764,6 +764,14 @@ private fun PhotoDetailItem(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(photoImageUrl(photo))
                     .crossfade(true)
+                    .listener(
+                        onError = { _, result ->
+                            Log.e("PhotoDetailItem", "Image load ERROR: ${result.throwable.message}", result.throwable)
+                        },
+                        onSuccess = { _, result ->
+                            Log.i("PhotoDetailItem", "Image load OK: ${photoImageUrl(photo)}")
+                        }
+                    )
                     .build(),
                 contentDescription = photo.caption ?: "Photo",
                 contentScale = ContentScale.Crop,
