@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -291,7 +293,9 @@ fun PlaceDetailScreen(
             } else {
                 key(placeRefreshKey) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Column(
@@ -617,7 +621,6 @@ fun PlaceDetailScreen(
                             Column(
                                 modifier = Modifier
                                   .fillMaxWidth()
-                                  .weight(1f)
                                   .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Row(
@@ -643,9 +646,10 @@ fun PlaceDetailScreen(
                                         columns = GridCells.Fixed(3),
                                         modifier = Modifier
                                           .fillMaxWidth()
-                                          .weight(1f),
+                                          .height(220.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        userScrollEnabled = false
                                     ) {
                                         items(
                                             items = currentPlace.photos,
