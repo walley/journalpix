@@ -9,6 +9,12 @@ import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -68,6 +74,93 @@ import de.afarber.openmapview.compose.rememberMarkerState
 import java.time.ZoneId
 
 private const val TAG_PLACE_DETAIL = "JPXPlaceDetail"
+
+/** Shimmer skeleton box that animates while content is loading. */
+@Composable
+private fun SkeletonBox(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(8.dp)
+) {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmerAlpha"
+    )
+    Box(
+        modifier = modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = alpha),
+                shape
+            )
+    )
+}
+
+/** Full skeleton layout shown while place data is loading (also renders in @Preview). */
+@Composable
+private fun PlaceDetailSkeleton() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Title skeleton
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .height(32.dp)
+        )
+        // Address row skeleton
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(20.dp)
+        )
+        // Lat/lon row skeleton
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .height(20.dp)
+        )
+        // Map skeleton
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            shape = RoundedCornerShape(12.dp)
+        )
+        // Photos header skeleton
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth(0.4f)
+                .height(24.dp)
+        )
+        // Photos grid skeleton
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            userScrollEnabled = false
+        ) {
+            items(6) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(68.dp)
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -287,10 +380,7 @@ fun PlaceDetailScreen(
               .padding(paddingValues)
         ) {
             if (isLoading) {
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+                PlaceDetailSkeleton()
             } else {
                 key(placeRefreshKey) {
                     Column(
