@@ -35,12 +35,14 @@ fun PlaceTimelineRow(
     onAddPhoto: () -> Unit,
     resolvedAddresses: Map<String, String>,
     geocodeLoading: Map<String, Boolean>,
-    onReverseGeocode: (PhotoResponse) -> Unit
+    onReverseGeocode: (PhotoResponse) -> Unit,
+    modifier: Modifier = Modifier,
+    dragHandle: (@Composable () -> Unit)? = null
 ) {
     val lineColor = MaterialTheme.colorScheme.outlineVariant
 
     Row(
-        modifier = Modifier
+        modifier = modifier
           .fillMaxWidth()
           .padding(start = 12.dp, end = 12.dp)
     ) {
@@ -61,6 +63,8 @@ fun PlaceTimelineRow(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
+            // Drag handle under the number
+            dragHandle?.invoke()
             if (!isLast) {
                 Box(
                     modifier = Modifier

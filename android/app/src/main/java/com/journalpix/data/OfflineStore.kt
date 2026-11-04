@@ -347,7 +347,7 @@ object OfflineStore {
 
         if (beforePlaces.isNotEmpty()) {
             val ordered = beforePlaces.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex })
+                compareBy({ it.orderIndex }, { placeSortKey(it) })
             )
             items.add(TimelineItem(day = 0, date = BEFORE_KEY, places = ordered))
         }
@@ -374,7 +374,7 @@ object OfflineStore {
                 val dayNum = java.time.temporal.ChronoUnit.DAYS.between(start!!, curr).toInt() + 1
                 val list = grouped[dayNum].orEmpty()
                   .sortedWith(
-                      compareBy({ placeSortKey(it) }, { it.orderIndex })
+                      compareBy({ it.orderIndex }, { placeSortKey(it) })
                   )
                 items.add(TimelineItem(day = dayNum, date = dateStr, places = list))
                 curr = curr.plusDays(1)
@@ -383,7 +383,7 @@ object OfflineStore {
             .sortedBy { it.key }
             .forEach { (day, list) ->
               val ordered = list.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex })
+                compareBy({ it.orderIndex }, { placeSortKey(it) })
               )
               items.add(TimelineItem(day = day, date = null, places = ordered))
             }
@@ -391,7 +391,7 @@ object OfflineStore {
             grouped.entries.sortedBy { it.key }
               .forEach { (day, list) ->
                   val ordered = list.sortedWith(
-                      compareBy({ placeSortKey(it) }, { it.orderIndex })
+                      compareBy({ it.orderIndex }, { placeSortKey(it) })
                   )
                   items.add(TimelineItem(day = day, date = null, places = ordered))
               }
@@ -399,7 +399,7 @@ object OfflineStore {
 
         if (afterPlaces.isNotEmpty()) {
             val ordered = afterPlaces.sortedWith(
-                compareBy({ placeSortKey(it) }, { it.orderIndex })
+                compareBy({ it.orderIndex }, { placeSortKey(it) })
             )
             items.add(TimelineItem(day = -1, date = AFTER_KEY, places = ordered))
         }
@@ -451,6 +451,31 @@ object OfflineStore {
                 markPending(placeId)
             }
         }
+    }
+
+    /** Reorder places within a trip by assigning new orderIndex values based on the given ID order. */
+    fun reorderPlaces(tripId: String, orderedPlaceIds: List<String>) {
+        val list = placesByTrip.getOrPut(tripId) { mutableListOf() }
+        val before = list.associate { it.id to it.orderIndex }
+        orderedPlaceIds.forEachIndexed { index, id ->
+            val idx = list.indexOfFirst { it.id == id }
+            if (idx >= 0) {
+                list[idx] = list[idx].copy(orderIndex = index)
+            } else {
+                android.util.Log.e("OfflineStore", "reorderPlaces: place id $id not found in trip $tripId")
+            }
+        }
+        // Verify the swap actually took effect
+        val after = list.associate { it.id to it.orderIndex }
+        orderedPlaceIds.forEachIndexed { index, id ->
+            val actual = after[id]
+            if (actual != index) {
+                android.util.Log.e("OfflineStore", "reorderPlaces VERIFY FAILED: place $id expected orderIndex=$index but got $actual (was ${before[id]})")
+            }
+        }
+        android.util.Log.i("OfflineStore", "reorderPlaces: applied order ${orderedPlaceIds.map { "$it=${after[it]}" }}")
+        // Persist
+        list.forEach { markPending(it.id) }
     }
 
     /** Add a photo without assigning it to any place (unassigned). */

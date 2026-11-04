@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
@@ -26,6 +27,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -84,6 +87,10 @@ fun PlaceDetailScreen(
     var editAddress by remember { mutableStateOf("") }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    var showImageViewer by remember { mutableStateOf(false) }
+    var currentImageUrl by remember { mutableStateOf("") }
+    var currentCaption by remember { mutableStateOf("") }
 
     var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
@@ -651,7 +658,12 @@ fun PlaceDetailScreen(
                                                 },
                                                 resolvedAddress = photoViewModel.resolvedAddresses[photo.id] ?: currentPlace.address,
                                                 isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
-                                                geocodeError = photoViewModel.geocodeErrors[photo.id]
+                                                geocodeError = photoViewModel.geocodeErrors[photo.id],
+                                                onImageClick = {
+                                                    currentImageUrl = photoImageUrl(photo)
+                                                    currentCaption = photo.caption ?: "Photo"
+                                                    showImageViewer = true
+                                                }
                                             )
                                         }
                                     }
@@ -726,7 +738,8 @@ private fun PhotoDetailItem(
     onReverseGeocode: () -> Unit,
     resolvedAddress: String? = null,
     isGeocoding: Boolean = false,
-    geocodeError: String? = null
+    geocodeError: String? = null,
+    onImageClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -747,11 +760,7 @@ private fun PhotoDetailItem(
                 contentDescription = photo.caption ?: "Photo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
-                    .clickable {
-                        currentImageUrl = photoImageUrl(photo)
-                        currentCaption = photo.caption ?: "Photo"
-                        showImageViewer = true
-                    }
+                    .clickable { onImageClick() }
             )
             IconButton(
                 onClick = { onDelete() },
@@ -835,9 +844,6 @@ private fun PhotoViewerScreen(
     caption: String,
     onDismiss: () -> Unit
 ) {
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -864,34 +870,7 @@ private fun PhotoViewerScreen(
                     .build(),
                 contentDescription = caption,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = scale.value
-                        scaleY = scale.value
-                        translationX = offset.value.x
-                        translationY = offset.value.y
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = { offset ->
-                                scale.value = if (scale.value == 1f) 2f else 1f
-                                offset.value = Offset.Zero
-                            },
-                            onDoubleTap = { offset ->
-                                scale.value = if (scale.value == 1f) 2f else 1f
-                                offset.value = Offset.Zero
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                offset.value = Offset(
-                                    offset.value.x + dragAmount.x,
-                                    offset.value.y + dragAmount.y
-                                )
-                                scale.value = 2f
-                            }
-                        )
-                    }
+                modifier = Modifier.fillMaxSize()
             )
 
             caption?.let { cap ->
@@ -912,17 +891,5 @@ private fun PhotoViewerScreen(
                 }
             }
         }
-    }
-}
-
-private fun photoImageUrl(photo: PhotoResponse): String {
-    val path = photo.thumbnailPath.ifBlank { photo.filePath }
-    return when {
-        path.startsWith("content://") ||
-        path.startsWith("file://") ||
-        path.startsWith("http://") ||
-        path.startsWith("https://") -> path
-        photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
-        else -> ApiService.uploadUrl(path)
     }
 }

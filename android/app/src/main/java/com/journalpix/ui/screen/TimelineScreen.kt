@@ -13,9 +13,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,9 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -40,6 +46,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +82,7 @@ import com.journalpix.ui.theme.JournalPixTheme
 
 private const val TAG_TIMELINE = "JPXTimeline"
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(navController: NavController, tripId: String) {
     val context = LocalContext.current
@@ -95,11 +102,47 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     var uploadTargetPlaceId by remember { mutableStateOf<String?>(null) }
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
+    // Drag-and-drop state for reordering places within a day
+    var draggedPlaceId by remember { mutableStateOf<String?>(null) }
+    var dragOffsetY by remember { mutableStateOf(0f) }
+    var hoverTargetIndex by remember { mutableStateOf<Int?>(null) }
+
     val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
     val effectiveTripId = tripId.ifBlank { "demo-trip-1" }
 
     fun refresh() {
         timelineViewModel.refreshOffline(effectiveTripId)
+    }
+
+    fun reorderDayPlaces(dayPlaces: List<PlaceWithPhotos>, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= dayPlaces.size || toIndex >= dayPlaces.size) {
+            Log.w(TAG_TIMELINE, "reorderDayPlaces: invalid indices from=$fromIndex to=$toIndex size=${dayPlaces.size}")
+            return
+        }
+        // Swap the two places
+        val newOrder = dayPlaces.toMutableList()
+        val dragged = newOrder[fromIndex]
+        val target = newOrder[toIndex]
+        newOrder[fromIndex] = target
+        newOrder[toIndex] = dragged
+        Log.i(TAG_TIMELINE, "reorderDayPlaces: swapping '${dragged.name}'(idx=$fromIndex) with '${target.name}'(idx=$toIndex)")
+        // Verify swap in the list before sending
+        val verifyDragged = newOrder[toIndex]
+        val verifyTarget = newOrder[fromIndex]
+        if (verifyDragged.id != dragged.id || verifyTarget.id != target.id) {
+            Log.e(TAG_TIMELINE, "reorderDayPlaces: SWAP VERIFICATION FAILED in local list!")
+        }
+        placeViewModel.reorderPlaces(token, effectiveTripId, newOrder.map { it.id }) {
+            refresh()
+            // Verify after refresh - log all day orders
+            val allDays = timelineViewModel.timeline.value?.timeline?.map { day ->
+                "day${day.day}: ${day.places.map { it.name }}\""
+            }
+            Log.i(TAG_TIMELINE, "reorderDayPlaces: after refresh, timeline order = $allDays")
+            if (timelineViewModel.timeline.value?.timeline?.flatMap { it.places }?.map { it.id } != newOrder.map { it.id }) {
+                // Note: full trip order may include other days, just log for inspection
+            }
+        }
     }
 
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -248,7 +291,6 @@ fun TimelineScreen(navController: NavController, tripId: String) {
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.align(Alignment.BottomEnd),
                 horizontalAlignment = Alignment.End
             ) {
                 FloatingActionButton(
@@ -436,8 +478,21 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                             place = place,
                                             onEdit = { editTransportPlaceId = place.id })
                                     }
+                                    val isDragging = draggedPlaceId == place.id
+                                    val isHoverTarget = hoverTargetIndex == placeIndex && draggedPlaceId != null && !isDragging
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .zIndex(if (isDragging) 1f else 0f)
+                                            .background(
+                                                if (isHoverTarget) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                                else Color.Transparent,
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .graphicsLayer {
+                                                alpha = if (isDragging) 0.85f else 1f
+                                                translationY = if (isDragging) dragOffsetY else 0f
+                                            },
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         PlaceTimelineRow(
@@ -448,46 +503,60 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                             onAddPhoto = { startAddPhoto(place.id) },
                                             resolvedAddresses = photoViewModel.resolvedAddresses,
                                             geocodeLoading = photoViewModel.geocodeLoadingIds,
-                                            onReverseGeocode = { onReverseGeocode(it) })
-                                        Column {
-                                            if (placeIndex > 0) {
-                                                IconButton(
-                                                    onClick = {
-                                                        Log.i(TAG_TIMELINE, "Move place up: placeId=${place.id}")
-                                                        placeViewModel.movePlaceUp(token, effectiveTripId, place.id) {
-                                                            Log.i(TAG_TIMELINE, "Place moved up: placeId=${place.id}")
-                                                            refresh()
+                                            onReverseGeocode = { onReverseGeocode(it) },
+                                            modifier = Modifier.weight(1f),
+                                            dragHandle = {
+                                                Icon(
+                                                    Icons.Default.DragHandle,
+                                                    contentDescription = "Drag to reorder",
+                                                    tint = if (isDragging) MaterialTheme.colorScheme.primary
+                                                           else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier
+                                                        .size(24.dp)
+                                                        .pointerInput(place.id) {
+                                                            detectDragGesturesAfterLongPress(
+                                                                onDragStart = {
+                                                                    draggedPlaceId = place.id
+                                                                    dragOffsetY = 0f
+                                                                    hoverTargetIndex = null
+                                                                },
+                                                                onDragEnd = {
+                                                                    val fromIdx = dayItem.places.indexOfFirst { it.id == place.id }
+                                                                    val toIdx = hoverTargetIndex ?: run {
+                                                                        val rowHeightPx = 72.dp.toPx()
+                                                                        (fromIdx + (dragOffsetY / rowHeightPx).toInt())
+                                                                            .coerceIn(0, dayItem.places.lastIndex)
+                                                                    }
+                                                                    draggedPlaceId = null
+                                                                    dragOffsetY = 0f
+                                                                    hoverTargetIndex = null
+                                                                    if (fromIdx != toIdx && fromIdx >= 0 && toIdx >= 0) {
+                                                                        reorderDayPlaces(dayItem.places, fromIdx, toIdx)
+                                                                    }
+                                                                },
+                                                                onDragCancel = {
+                                                                    draggedPlaceId = null
+                                                                    dragOffsetY = 0f
+                                                                    hoverTargetIndex = null
+                                                                },
+                                                                onDrag = { change, dragAmount ->
+                                                                    change.consume()
+                                                                    dragOffsetY += dragAmount.y
+                                                                    val rowHeightPx = 72.dp.toPx()
+                                                                    val fromIdx = dayItem.places.indexOfFirst { it.id == place.id }
+                                                                    if (fromIdx >= 0) {
+                                                                        val hoverIdx = (fromIdx + (dragOffsetY / rowHeightPx).toInt())
+                                                                            .coerceIn(0, dayItem.places.lastIndex)
+                                                                        hoverTargetIndex = hoverIdx
+                                                                    }
+                                                                }
+                                                            )
                                                         }
-                                                    },
-                                                    modifier = Modifier.size(32.dp)
-                                                ) {
-                                                    Icon(
-                                                        Icons.Default.ArrowDropUp,
-                                                        contentDescription = "Move place up",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
+                                                )
                                             }
-                                            if (placeIndex < dayItem.places.lastIndex) {
-                                                IconButton(
-                                                    onClick = {
-                                                        Log.i(TAG_TIMELINE, "Move place down: placeId=${place.id}")
-                                                        placeViewModel.movePlaceDown(token, effectiveTripId, place.id) {
-                                                            Log.i(TAG_TIMELINE, "Place moved down: placeId=${place.id}")
-                                                            refresh()
-                                                        }
-                                                    },
-                                                    modifier = Modifier.size(32.dp)
-                                                ) {
-                                                    Icon(
-                                                        Icons.Default.ArrowDropDown,
-                                                        contentDescription = "Move place down",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
-                                            }
-                                        }
+                                        )
                                     }
+                                }
                                 if (!isBeforeAfter) {
                                     item(key = "add-place-$dayKey") {
                                         TextButton(
@@ -603,22 +672,23 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                                 )
                             }
                         }
+                        TextButton(
+                            onClick = {
+                                timelineViewModel.setTransport(placeId, null, effectiveTripId)
+                                editTransportPlaceId = null
+                            },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) { Text("Clear") }
                     }
-                    TextButton(
-                        onClick = {
-                            timelineViewModel.setTransport(placeId, null, effectiveTripId)
-                            editTransportPlaceId = null
-                        },
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) { Text("Clear") }
+                },
+                confirmButton = {
+                    TextButton(onClick = { editTransportPlaceId = null }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { editTransportPlaceId = null }) { Text("Cancel") }
                 }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { editTransportPlaceId = null }) { Text("Cancel") }
-            }
-        )
-    }
+            )
+        }
 
     fun showDatePicker(initialDateStr: String, onDateSelected: (LocalDate) -> Unit) {
         val cal = Calendar.getInstance()
@@ -902,6 +972,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
             }
         )
     }
+    }
 }
 
 @Composable
@@ -1043,20 +1114,5 @@ fun DayHeaderPreview() {
             photoCount = 12,
             expanded = true, onToggle = {}, onAddPhoto = {}
         )
-    }
-}
-
-/**
- * Resolves a photo's image source for offline-first loading.
- */
-private fun photoImageUrl(photo: PhotoResponse): String {
-    val path = photo.thumbnailPath.ifBlank { photo.filePath }
-    return when {
-        path.startsWith("content://") ||
-        path.startsWith("file://") ||
-        path.startsWith("http://") ||
-        path.startsWith("https://") -> path
-        photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
-        else -> ApiService.uploadUrl(path)
     }
 }

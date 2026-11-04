@@ -8,6 +8,7 @@ import com.journalpix.data.OfflineStore
 import com.journalpix.models.*
 import com.journalpix.models.ZonedTime
 import kotlinx.coroutines.launch
+import android.content.Context
 import android.util.Log
 import java.time.Instant
 import java.time.LocalDateTime
@@ -230,6 +231,29 @@ class PlaceViewModel : ViewModel() {
                 errorMessage.value = "Network error: ${e.message}"
             } finally {
                 isLoading.value = false
+            }
+        }
+    }
+
+    fun reorderPlaces(token: String, tripId: String, placeIds: List<String>, onSuccess: () -> Unit) {
+        // Update local store immediately for instant UI feedback
+        OfflineStore.reorderPlaces(tripId, placeIds)
+        onSuccess()
+        // Sync with backend in background
+        viewModelScope.launch {
+            try {
+                val resp = ApiService.apiClient.reorderPlaces(
+                    "Bearer $token",
+                    tripId,
+                    com.journalpix.models.ReorderPlacesRequest(placeIds)
+                )
+                if (resp.success) {
+                    Log.i(TAG_PLACE_VM, "reorderPlaces: backend sync success with ${placeIds.size} places")
+                } else {
+                    Log.e(TAG_PLACE_VM, "reorderPlaces: backend sync failed ${resp.error}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG_PLACE_VM, "reorderPlaces: backend sync exception ${e.message}", e)
             }
         }
     }
