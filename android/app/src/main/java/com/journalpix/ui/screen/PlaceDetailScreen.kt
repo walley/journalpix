@@ -84,7 +84,8 @@ fun PlaceDetailScreen(
 
     val placeState = placeViewModel.currentPlace
     val currentPlace = placeState.value
-    val isLoading = placeViewModel.isLoading.value || photoViewModel.isLoading.value
+    // Only show full-screen spinner when we have no data yet
+    val isLoading = (placeViewModel.isLoading.value || photoViewModel.isLoading.value) && currentPlace == null
 
     var editMode by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
@@ -263,7 +264,7 @@ fun PlaceDetailScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(currentPlace.name) },
+                title = { Text(currentPlace?.name ?: "Place") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
