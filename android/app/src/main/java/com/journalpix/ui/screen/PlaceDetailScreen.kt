@@ -75,37 +75,25 @@ fun PlaceDetailScreen(
     val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
     val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
 
-    // Read directly from view-model state so the UI recomposes when data changes
     val placeState = placeViewModel.currentPlace
     val currentPlace = placeState.value
     val isLoading = placeViewModel.isLoading.value || photoViewModel.isLoading.value
 
-    // Edit mode for place name / address
     var editMode by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
     var editAddress by remember { mutableStateOf("") }
 
-    // Delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Image viewer state
-    var showImageViewer by remember { mutableStateOf(false) }
-    var currentImageUrl by remember { mutableStateOf("") }
-    var currentCaption by remember { mutableStateOf("") }
-
-    // Map tap-to-select state
     var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
 
-    // Force recomposition when place data changes (e.g. after map selection update)
     var placeRefreshKey by remember { mutableStateOf(0) }
 
-    // Re-read currentPlace whenever placeState changes
     LaunchedEffect(placeState.value) {
         placeRefreshKey += 1
     }
 
-    // Initialize edit fields from current place
     LaunchedEffect(currentPlace) {
         if (currentPlace != null) {
             editName = currentPlace.name
@@ -113,7 +101,6 @@ fun PlaceDetailScreen(
         }
     }
 
-    // Handle map selection result for place update
     LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
         val pending = AppSession.pendingMapPlaceUpdate.value
         if (pending != null) {
@@ -123,7 +110,6 @@ fun PlaceDetailScreen(
             editMode = true
             editName = if (name.isNotBlank()) name else currentPlace?.name ?: ""
             editAddress = ""
-            // Auto-apply the map selection to the place
             placeViewModel.updatePlace(
                 token = token,
                 placeId = placeId,
@@ -146,7 +132,6 @@ fun PlaceDetailScreen(
                     photoViewModel.getPhotosForPlace(token, placeId)
                 }
             )
-            // Reverse geocode to get address
             photoViewModel.reverseGeocode(tripId, PhotoResponse(
                 id = "temp",
                 placeId = placeId,
@@ -165,7 +150,6 @@ fun PlaceDetailScreen(
         }
     }
 
-    // Read resolved address from reverse geocode result (top-level composable scope)
     LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
         val addr = photoViewModel.resolvedAddresses["temp"]
         if (addr != null && addr.isNotBlank()) {
@@ -175,7 +159,6 @@ fun PlaceDetailScreen(
         photoViewModel.resolvedAddresses.remove("temp")
     }
 
-    // Load place + photos
     LaunchedEffect(placeId, token) {
         Log.i(TAG_PLACE_DETAIL, "Loading place: placeId=$placeId, tripId=$tripId")
         placeViewModel.getPlace(token, placeId)
@@ -186,7 +169,6 @@ fun PlaceDetailScreen(
         Log.e(TAG_PLACE_DETAIL, "Place load error: $error")
     }
 
-    // Photo picker launcher
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -252,11 +234,9 @@ fun PlaceDetailScreen(
         return
     }
 
-    // Visit time
     val visitLabel = currentPlace.visitLabel()
     val visitDateText = if (visitLabel != null) "Visit: $visitLabel" else null
 
-    // Minimap camera state
     val mapCameraState = rememberCameraPositionState {
         position = if (currentPlace.latitude != null && currentPlace.longitude != null) {
             CameraPosition(
@@ -304,14 +284,12 @@ fun PlaceDetailScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Place header
                         Column(
                             modifier = Modifier
                               .fillMaxWidth()
                               .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             if (editMode) {
-                                // Editable name and address fields
                                 OutlinedTextField(
                                     value = editName,
                                     onValueChange = { editName = it },
@@ -372,7 +350,6 @@ fun PlaceDetailScreen(
                                     }
                                 }
                             } else {
-                                // Read-only display with edit action
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
@@ -383,7 +360,6 @@ fun PlaceDetailScreen(
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    // Pencil icon to enter edit mode
                                     IconButton(
                                         onClick = {
                                             Log.i(TAG_PLACE_DETAIL, "Edit mode enabled for place $placeId")
@@ -398,7 +374,6 @@ fun PlaceDetailScreen(
                                         )
                                     }
                                 }
-                                // Address always shown, "unknown" if not set
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
@@ -416,7 +391,6 @@ fun PlaceDetailScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                // Location (lat/lon) always shown, "unknown" if not set
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
@@ -473,7 +447,6 @@ fun PlaceDetailScreen(
                                     }
                                 }
                             }
-                            // Select on map action
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
@@ -495,7 +468,6 @@ fun PlaceDetailScreen(
                             }
                         }
 
-                        // Minimap
                         if (currentPlace.latitude != null && currentPlace.longitude != null) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
@@ -556,7 +528,6 @@ fun PlaceDetailScreen(
                                         }
                                     }
 
-                                    // Selection marker at tapped point
                                     mapSelection?.let { point ->
                                         val markerState = rememberMarkerState(
                                             LatLng(point.first, point.second)
@@ -585,180 +556,168 @@ fun PlaceDetailScreen(
                                     }
                                 }
                             }
-                        }
 
-                        // Apply map selection button
-                        mapSelection?.let { (lat, lon) ->
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Selected: %.6f, %.6f".format(lat, lon),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Button(
-                                    onClick = {
-                                        Log.i(TAG_PLACE_DETAIL, "Applying map selection: lat=$lat, lon=$lon")
-                                        placeViewModel.updatePlace(
-                                            token = token,
-                                            placeId = placeId,
-                                            request = UpdatePlaceRequest(
-                                                name = null,
-                                                description = null,
-                                                latitude = lat,
-                                                longitude = lon,
-                                                address = mapSelectionAddress.takeIf { it?.isNotBlank() == true },
-                                                day = null,
-                                                visitDate = null,
-                                                orderIndex = null,
-                                                transportFromPrevious = null
-                                            ),
-                                            onSuccess = {
-                                                Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
-                                                placeRefreshKey += 1
-                                                mapSelection = null
-                                                mapSelectionAddress = null
-                                                placeViewModel.getPlace(token, placeId)
-                                                photoViewModel.getPhotosForPlace(token, placeId)
-                                            }
-                                        )
-                                    },
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                            mapSelection?.let { (lat, lon) ->
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text("Apply location")
-                                }
-                            }
-                        }
-
-                        // Photos section
-                        Column(
-                            modifier = Modifier
-                              .fillMaxWidth()
-                              .weight(1f)
-                              .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Photos (${currentPlace.photos.size})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (currentPlace.photos.isEmpty()) {
-                                Text(
-                                    text = "No photos yet",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                            } else {
-                                LazyVerticalGrid(
-                                    columns = GridCells.Fixed(3),
-                                    modifier = Modifier
-                                      .fillMaxWidth()
-                                      .weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(
-                                        items = currentPlace.photos,
-                                        key = { it.id }
-                                    ) { photo ->
-                                        PhotoDetailItem(
-                                            photo = photo,
-                                            placeId = placeId,
-                                            onDelete = { deletePhoto(photo.id) },
-                                            onReverseGeocode = {
-                                                photoViewModel.reverseGeocode(tripId, photo) {
+                                    Text(
+                                        text = "Selected: %.6f, %.6f".format(lat, lon),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Button(
+                                        onClick = {
+                                            Log.i(TAG_PLACE_DETAIL, "Applying map selection: lat=$lat, lon=$lon")
+                                            placeViewModel.updatePlace(
+                                                token = token,
+                                                placeId = placeId,
+                                                request = UpdatePlaceRequest(
+                                                    name = null,
+                                                    description = null,
+                                                    latitude = lat,
+                                                    longitude = lon,
+                                                    address = mapSelectionAddress.takeIf { it?.isNotBlank() == true },
+                                                    day = null,
+                                                    visitDate = null,
+                                                    orderIndex = null,
+                                                    transportFromPrevious = null
+                                                ),
+                                                onSuccess = {
+                                                    Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
+                                                    placeRefreshKey += 1
+                                                    mapSelection = null
+                                                    mapSelectionAddress = null
+                                                    placeViewModel.getPlace(token, placeId)
                                                     photoViewModel.getPhotosForPlace(token, placeId)
                                                 }
-                                            },
-                                            resolvedAddress = photoViewModel.resolvedAddresses[photo.id] ?: currentPlace.address,
-                                            isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
-                                            geocodeError = photoViewModel.geocodeErrors[photo.id]
-                                        )
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                    ) {
+                                        Text("Apply location")
                                     }
                                 }
-                                Spacer(Modifier.height(8.dp))
-                                IconButton(
-                                    onClick = { showDeleteDialog = true },
-                                    modifier = Modifier
-                                      .align(Alignment.CenterHorizontally)
-                                      .padding(bottom = 24.dp, top = 0.dp, start = 0.dp, end = 0.dp)
-                                      .background(
-                                          MaterialTheme.colorScheme.errorContainer, CircleShape
-                                      )
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete place",
-                            tint = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
+                            }
 
-            // Error snackbar
-            photoViewModel.errorMessage.value?.let { error ->
-                Snackbar(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .padding(16.dp)
-                      .align(Alignment.BottomCenter),
-                    action = {
-                        Button(onClick = { photoViewModel.errorMessage.value = null }) {
-                            Text("Dismiss")
+                            Column(
+                                modifier = Modifier
+                                  .fillMaxWidth()
+                                  .weight(1f)
+                                  .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Photos (${currentPlace.photos.size})",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (currentPlace.photos.isEmpty()) {
+                                    Text(
+                                        text = "No photos yet",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                } else {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(3),
+                                        modifier = Modifier
+                                          .fillMaxWidth()
+                                          .weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        items(
+                                            items = currentPlace.photos,
+                                            key = { it.id }
+                                        ) { photo ->
+                                            PhotoDetailItem(
+                                                photo = photo,
+                                                placeId = placeId,
+                                                onDelete = { deletePhoto(photo.id) },
+                                                onReverseGeocode = {
+                                                    photoViewModel.reverseGeocode(tripId, photo) {
+                                                        photoViewModel.getPhotosForPlace(token, placeId)
+                                                    }
+                                                },
+                                                resolvedAddress = photoViewModel.resolvedAddresses[photo.id] ?: currentPlace.address,
+                                                isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
+                                                geocodeError = photoViewModel.geocodeErrors[photo.id]
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                ) {
-                    Text(error)
+                }
+
+                photoViewModel.errorMessage.value?.let { error ->
+                    Snackbar(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .padding(16.dp)
+                          .align(Alignment.BottomCenter),
+                        action = {
+                            Button(onClick = { photoViewModel.errorMessage.value = null }) {
+                                Text("Dismiss")
+                            }
+                        }
+                    ) {
+                        Text(error)
+                    }
                 }
             }
         }
-    }
 
-    // Delete confirmation dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete place?") },
-            text = {
-                Text("This will delete \"${currentPlace?.name ?: ""}\" and all its photos. This cannot be undone.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        deletePlace()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                ) {
-                    Text("Delete")
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete place?") },
+                text = {
+                    Text("This will delete \"${currentPlace?.name ?: ""}\" and all its photos. This cannot be undone.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDeleteDialog = false
+                            deletePlace()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
+            )
+        }
+
+        if (showImageViewer) {
+            PhotoViewerScreen(
+                imageUrl = currentImageUrl,
+                caption = currentCaption,
+                onDismiss = { showImageViewer = false }
+            )
+        }
     }
 }
 
-/**
- * Single photo item inside the place detail grid: image, delete icon, info.
- */
 @Composable
 private fun PhotoDetailItem(
     photo: PhotoResponse,
@@ -794,7 +753,6 @@ private fun PhotoDetailItem(
                         showImageViewer = true
                     }
             )
-            // Delete button overlay (top-right)
             IconButton(
                 onClick = { onDelete() },
                 modifier = Modifier
@@ -871,16 +829,13 @@ private fun PhotoDetailItem(
     }
 }
 
-/**
- * Full-screen image viewer for a photo.
- */
 @Composable
 private fun PhotoViewerScreen(
     imageUrl: String,
     caption: String,
     onDismiss: () -> Unit
 ) {
-    var zoom by remember { mutableFloatStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     Column(
@@ -892,7 +847,6 @@ private fun PhotoViewerScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            // Close button
             IconButton(
                 onClick = { onDismiss() },
                 modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
@@ -903,10 +857,6 @@ private fun PhotoViewerScreen(
                     tint = Color.White
                 )
             }
-
-            // Image with pinch zoom
-            val scale = remember { mutableFloatStateOf(1f) }
-            val offset = remember { mutableStateOf(Offset.Zero) }
 
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -925,13 +875,10 @@ private fun PhotoViewerScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { offset ->
-                                // Single tap to toggle full screen/fit
                                 scale.value = if (scale.value == 1f) 2f else 1f
                                 offset.value = Offset.Zero
                             },
-                            onLongPress = {},
                             onDoubleTap = { offset ->
-                                // Double tap to zoom in/out
                                 scale.value = if (scale.value == 1f) 2f else 1f
                                 offset.value = Offset.Zero
                             },
@@ -941,7 +888,7 @@ private fun PhotoViewerScreen(
                                     offset.value.x + dragAmount.x,
                                     offset.value.y + dragAmount.y
                                 )
-                                scale.value = 2f // Zoomed in state allows dragging
+                                scale.value = 2f
                             }
                         )
                     }
@@ -965,20 +912,9 @@ private fun PhotoViewerScreen(
                 }
             }
         }
-    // Image viewer overlay
-    if (showImageViewer) {
-        PhotoViewerScreen(
-            imageUrl = currentImageUrl,
-            caption = currentCaption,
-            onDismiss = { showImageViewer = false }
-        )
-    }
     }
 }
 
-/**
- * Resolves a photo's image source for offline-first loading.
- */
 private fun photoImageUrl(photo: PhotoResponse): String {
     val path = photo.thumbnailPath.ifBlank { photo.filePath }
     return when {
