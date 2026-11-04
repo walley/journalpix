@@ -686,6 +686,23 @@ fun PlaceDetailScreen(
                         }
                     }
                 }
+
+                // Delete place button (red bin icon) at bottom of screen
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier
+                      .align(Alignment.CenterHorizontally)
+                      .padding(bottom = 24.dp)
+                      .background(
+                          MaterialTheme.colorScheme.errorContainer, CircleShape
+                      )
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete place",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
             }
 
             // Error snackbar
