@@ -105,15 +105,33 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
+    /** Refresh currentPlace from the local OfflineStore only (no network). */
+    fun refreshLocalPlace(placeId: String) {
+        OfflineStore.findPlaceWithPhotos(placeId)?.let { currentPlace.value = it }
+    }
+
     fun getPlace(token: String, placeId: String) {
         viewModelScope.launch {
             isLoading.value = true
             try {
+                // Load from offline store first for instant display
+                val offline = OfflineStore.findPlaceWithPhotos(placeId)
+                if (offline != null) currentPlace.value = offline
                 val response = ApiService.apiClient.getPlace("Bearer $token", placeId)
-                if (response.success) currentPlace.value = response.data
-                else errorMessage.value = response.error ?: "Failed to load place"
+                if (response.success && response.data != null) {
+                    // Merge: prefer offline photos if server has none
+                    val serverPlace = response.data!!
+                    currentPlace.value = if (serverPlace.photos.isEmpty() && offline != null) {
+                        serverPlace.copy(photos = offline.photos)
+                    } else serverPlace
+                } else if (offline == null) {
+                    errorMessage.value = response.error ?: "Failed to load place"
+                }
             } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
+                // Fall back to offline
+                val offline = OfflineStore.findPlaceWithPhotos(placeId)
+                if (offline != null) currentPlace.value = offline
+                else errorMessage.value = "Network error: ${e.message}"
             } finally {
                 isLoading.value = false
             }
@@ -122,24 +140,30 @@ class PlaceViewModel : ViewModel() {
 
     fun updatePlace(token: String, placeId: String, request: UpdatePlaceRequest, onSuccess: () -> Unit) {
         Log.i(TAG_PLACE_VM, "updatePlace: placeId=$placeId, request=$request")
+        // Update local store immediately
+        OfflineStore.updatePlaceLocal(
+            placeId = placeId,
+            name = request.name,
+            description = request.description,
+            latitude = request.latitude,
+            longitude = request.longitude,
+            address = request.address,
+            visitDate = request.visitDate?.let { ZonedTime.fromInstant(java.time.Instant.parse(it.utc ?: ""), it.timezone ?: java.time.ZoneId.systemDefault().id) }
+        )
+        // Refresh local view immediately
+        OfflineStore.findPlaceWithPhotos(placeId)?.let { currentPlace.value = it }
+        onSuccess()
+        // Sync with backend in background
         viewModelScope.launch {
-            isLoading.value = true
             try {
-                Log.d(TAG_PLACE_VM, "updatePlace: calling API for placeId=$placeId")
                 val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, request)
                 if (response.success) {
-                    Log.i(TAG_PLACE_VM, "updatePlace: API success for placeId=$placeId")
-                    onSuccess()
+                    Log.i(TAG_PLACE_VM, "updatePlace: backend sync success for placeId=$placeId")
                 } else {
-                    Log.e(TAG_PLACE_VM, "updatePlace: API failed for placeId=$placeId: ${response.error ?: "unknown error"}")
-                    errorMessage.value = response.error ?: "Failed to update place"
+                    Log.e(TAG_PLACE_VM, "updatePlace: backend sync failed for placeId=$placeId: ${response.error ?: "unknown error"}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG_PLACE_VM, "updatePlace: network exception for placeId=$placeId: ${e.message}", e)
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-                Log.d(TAG_PLACE_VM, "updatePlace: finished for placeId=$placeId")
+                Log.e(TAG_PLACE_VM, "updatePlace: backend sync exception for placeId=$placeId: ${e.message}", e)
             }
         }
     }

@@ -598,8 +598,8 @@ fun PlaceDetailScreen(
                                                     placeRefreshKey += 1
                                                     mapSelection = null
                                                     mapSelectionAddress = null
-                                                    placeViewModel.getPlace(token, placeId)
-                                                    photoViewModel.getPhotosForPlace(token, placeId)
+                                                    // Refresh from local store (already updated by updatePlace)
+                                                    placeViewModel.refreshLocalPlace(placeId)
                                                 }
                                             )
                                         },

@@ -46,40 +46,51 @@ fun PlaceTimelineRow(
           .fillMaxWidth()
           .padding(start = 12.dp, end = 12.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Box(
             modifier = Modifier
                 .width(36.dp)
                 .fillMaxHeight()
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                  .size(28.dp)
-                  .clip(CircleShape)
-                  .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Text(
-                    "$number",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            // Drag handle vertically centered in remaining space
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                dragHandle?.invoke()
-                if (!isLast) {
+            // Vertical timeline line behind number and handle
+            if (!isLast) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Box(
                         modifier = Modifier
+                            .padding(top = 28.dp)
                             .width(2.dp)
                             .fillMaxHeight()
                             .background(lineColor)
                     )
+                }
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                      .size(28.dp)
+                      .clip(CircleShape)
+                      .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Text(
+                        "$number",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                // Drag handle vertically centered in remaining space
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    dragHandle?.invoke()
                 }
             }
         }

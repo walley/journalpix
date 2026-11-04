@@ -221,6 +221,14 @@ object OfflineStore {
         return null
     }
 
+    /** Find a place with its photos attached. */
+    fun findPlaceWithPhotos(placeId: String): PlaceWithPhotos? {
+        val found = findPlace(placeId)?.first ?: return null
+        val photos = photosByPlace[placeId].orEmpty()
+            .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
+        return found.copy(photos = photos)
+    }
+
     fun findPhotoWithPlace(photoId: String): Pair<PhotoResponse, String>? {
         for ((placeId, photos) in photosByPlace) {
             val found = photos.find { it.id == photoId }
@@ -448,6 +456,33 @@ object OfflineStore {
             val idx = list.indexOfFirst { it.id == placeId }
             if (idx >= 0) {
                 list[idx] = list[idx].copy(transportFromPrevious = mode?.name)
+                markPending(placeId)
+            }
+        }
+    }
+
+    /** Update a place's fields locally (e.g., lat/lon/address from map selection). */
+    fun updatePlaceLocal(
+        placeId: String,
+        name: String? = null,
+        description: String? = null,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        address: String? = null,
+        visitDate: ZonedTime? = null
+    ) {
+        placesByTrip.values.forEach { list ->
+            val idx = list.indexOfFirst { it.id == placeId }
+            if (idx >= 0) {
+                val p = list[idx]
+                list[idx] = p.copy(
+                    name = name ?: p.name,
+                    description = description ?: p.description,
+                    latitude = latitude ?: p.latitude,
+                    longitude = longitude ?: p.longitude,
+                    address = address ?: p.address,
+                    visitDate = visitDate ?: p.visitDate
+                )
                 markPending(placeId)
             }
         }
