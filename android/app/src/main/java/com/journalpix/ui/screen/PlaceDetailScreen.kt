@@ -88,6 +88,11 @@ fun PlaceDetailScreen(
     // Delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Image viewer state
+    var showImageViewer by remember { mutableStateOf(false) }
+    var currentImageUrl by remember { mutableStateOf("") }
+    var currentCaption by remember { mutableStateOf("") }
+
     // Map tap-to-select state
     var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
@@ -682,26 +687,22 @@ fun PlaceDetailScreen(
                                         )
                                     }
                                 }
-                            }
-                        }
+                                Spacer(Modifier.height(8.dp))
+                                IconButton(
+                                    onClick = { showDeleteDialog = true },
+                                    modifier = Modifier
+                                      .align(Alignment.CenterHorizontally)
+                                      .padding(bottom = 24.dp, top = 0.dp, start = 0.dp, end = 0.dp)
+                                      .background(
+                                          MaterialTheme.colorScheme.errorContainer, CircleShape
+                                      )
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete place",
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
                     }
-                }
-
-                // Delete place button (red bin icon) at bottom of screen
-                IconButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier
-                      .align(Alignment.CenterHorizontally)
-                      .padding(bottom = 24.dp)
-                      .background(
-                          MaterialTheme.colorScheme.errorContainer, CircleShape
-                      )
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete place",
-                        tint = MaterialTheme.colorScheme.onErrorContainer
-                    )
                 }
             }
 
@@ -788,12 +789,9 @@ private fun PhotoDetailItem(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
                     .clickable {
-                        // Open full-screen image viewer
-                        PhotoViewerScreen(
-                            imageUrl = photoImageUrl(photo),
-                            caption = photo.caption ?: "Photo",
-                            onDismiss = {}
-                        )
+                        currentImageUrl = photoImageUrl(photo)
+                        currentCaption = photo.caption ?: "Photo"
+                        showImageViewer = true
                     }
             )
             // Delete button overlay (top-right)
@@ -967,6 +965,14 @@ private fun PhotoViewerScreen(
                 }
             }
         }
+    // Image viewer overlay
+    if (showImageViewer) {
+        PhotoViewerScreen(
+            imageUrl = currentImageUrl,
+            caption = currentCaption,
+            onDismiss = { showImageViewer = false }
+        )
+    }
     }
 }
 
