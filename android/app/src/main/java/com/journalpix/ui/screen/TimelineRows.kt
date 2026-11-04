@@ -312,16 +312,19 @@ fun PlaceTimelineRowPreview() {
  */
 fun photoImageUrl(photo: PhotoResponse): String {
     val path = photo.thumbnailPath.ifBlank { photo.filePath }
-    return when {
+    val url = when {
         path.startsWith("content://") ||
         path.startsWith("file://") ||
         path.startsWith("http://") ||
         path.startsWith("https://") -> path
-        // Absolute filesystem path (e.g. /storage/emulated/0/...) — use as file:// URI
-        path.startsWith("/") -> "file://$path"
+        // Local device absolute path (e.g. /storage/emulated/0/...) — file:// URI
+        path.startsWith("/storage/") || path.startsWith("/data/") -> "file://$path"
+        // Server-side path (e.g. /var/journalpix/uploads/...) — map to public URL
         photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
         else -> ApiService.uploadUrl(path)
     }
+    android.util.Log.d("photoImageUrl", "path=$path -> url=$url")
+    return url
 }
 
 @Preview(showBackground = true)

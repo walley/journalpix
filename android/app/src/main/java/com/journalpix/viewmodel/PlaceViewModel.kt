@@ -113,33 +113,45 @@ class PlaceViewModel : ViewModel() {
     fun getPlace(token: String, placeId: String) {
         viewModelScope.launch {
             isLoading.value = true
+            Log.i(TAG_PLACE_VM, "getPlace START: placeId=$placeId")
             try {
                 // Load from offline store first for instant display
                 val offline = OfflineStore.findPlaceWithPhotos(placeId)
-                if (offline != null) currentPlace.value = offline
+                if (offline != null) {
+                    Log.i(TAG_PLACE_VM, "getPlace: loaded offline lat=${offline.latitude} lon=${offline.longitude} photos=${offline.photos.size}")
+                    currentPlace.value = offline
+                }
                 val response = ApiService.apiClient.getPlace("Bearer $token", placeId)
                 if (response.success && response.data != null) {
-                    // Merge: prefer offline photos if server has none
                     val serverPlace = response.data!!
-                    currentPlace.value = if (serverPlace.photos.isEmpty() && offline != null) {
-                        serverPlace.copy(photos = offline.photos)
-                    } else serverPlace
+                    Log.i(TAG_PLACE_VM, "getPlace: server lat=${serverPlace.latitude} lon=${serverPlace.longitude} photos=${serverPlace.photos.size}")
+                    // Always prefer local lat/lon if they were set locally (offline update)
+                    // and merge photos from offline if server has none
+                    val merged = serverPlace.copy(
+                        latitude = offline?.latitude ?: serverPlace.latitude,
+                        longitude = offline?.longitude ?: serverPlace.longitude,
+                        address = offline?.address ?: serverPlace.address,
+                        photos = if (serverPlace.photos.isEmpty() && offline != null) offline.photos else serverPlace.photos
+                    )
+                    currentPlace.value = merged
+                    Log.i(TAG_PLACE_VM, "getPlace: merged lat=${merged.latitude} lon=${merged.longitude} photos=${merged.photos.size}")
                 } else if (offline == null) {
                     errorMessage.value = response.error ?: "Failed to load place"
                 }
             } catch (e: Exception) {
-                // Fall back to offline
+                Log.e(TAG_PLACE_VM, "getPlace: exception ${e.message}", e)
                 val offline = OfflineStore.findPlaceWithPhotos(placeId)
                 if (offline != null) currentPlace.value = offline
                 else errorMessage.value = "Network error: ${e.message}"
             } finally {
                 isLoading.value = false
+                Log.i(TAG_PLACE_VM, "getPlace END: currentPlace lat=${currentPlace.value?.latitude} lon=${currentPlace.value?.longitude}")
             }
         }
     }
 
     fun updatePlace(token: String, placeId: String, request: UpdatePlaceRequest, onSuccess: () -> Unit) {
-        Log.i(TAG_PLACE_VM, "updatePlace: placeId=$placeId, request=$request")
+        Log.i(TAG_PLACE_VM, "updatePlace START: placeId=$placeId, lat=${request.latitude}, lon=${request.longitude}")
         // Update local store immediately
         OfflineStore.updatePlaceLocal(
             placeId = placeId,
@@ -150,8 +162,12 @@ class PlaceViewModel : ViewModel() {
             address = request.address,
             visitDate = request.visitDate?.let { ZonedTime.fromInstant(java.time.Instant.parse(it.utc ?: ""), it.timezone ?: java.time.ZoneId.systemDefault().id) }
         )
+        Log.i(TAG_PLACE_VM, "updatePlace: local store updated, refreshing view")
         // Refresh local view immediately
-        OfflineStore.findPlaceWithPhotos(placeId)?.let { currentPlace.value = it }
+        OfflineStore.findPlaceWithPhotos(placeId)?.let {
+            Log.i(TAG_PLACE_VM, "updatePlace: currentPlace now lat=${it.latitude} lon=${it.longitude}")
+            currentPlace.value = it
+        }
         onSuccess()
         // Sync with backend in background
         viewModelScope.launch {

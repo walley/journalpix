@@ -472,10 +472,12 @@ object OfflineStore {
         address: String? = null,
         visitDate: ZonedTime? = null
     ) {
+        android.util.Log.i("OfflineStore", "updatePlaceLocal START: placeId=$placeId, lat=$latitude, lon=$longitude, addr=$address")
         placesByTrip.values.forEach { list ->
             val idx = list.indexOfFirst { it.id == placeId }
             if (idx >= 0) {
                 val p = list[idx]
+                android.util.Log.i("OfflineStore", "updatePlaceLocal: found at idx=$idx, before lat=${p.latitude} lon=${p.longitude}")
                 list[idx] = p.copy(
                     name = name ?: p.name,
                     description = description ?: p.description,
@@ -484,7 +486,10 @@ object OfflineStore {
                     address = address ?: p.address,
                     visitDate = visitDate ?: p.visitDate
                 )
+                android.util.Log.i("OfflineStore", "updatePlaceLocal: after lat=${list[idx].latitude} lon=${list[idx].longitude}")
                 markPending(placeId)
+            } else {
+                android.util.Log.w("OfflineStore", "updatePlaceLocal: place $placeId NOT FOUND in list of ${list.size}")
             }
         }
     }

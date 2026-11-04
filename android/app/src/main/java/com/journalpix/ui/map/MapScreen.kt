@@ -183,7 +183,7 @@ fun MapScreen(
                 mapViewModel.mapSelectionPoint.value?.let { point ->
                     FloatingActionButton(
                         onClick = {
-                            Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}")
+                            Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, placeIdForUpdate='$placeIdForUpdate'")
                             if (placeIdForUpdate.isNotBlank()) {
                                 AppSession.pendingMapPlaceUpdate.value = Triple(
                                     point.latitude,

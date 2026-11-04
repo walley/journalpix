@@ -112,6 +112,7 @@ fun PlaceDetailScreen(
 
     LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
         val pending = AppSession.pendingMapPlaceUpdate.value
+        Log.i(TAG_PLACE_DETAIL, "pendingMapPlaceUpdate effect fired: pending=$pending, currentPlace lat=${currentPlace?.latitude} lon=${currentPlace?.longitude}")
         if (pending != null) {
             val (lat, lon, name) = pending
             Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name'")
@@ -168,7 +169,7 @@ fun PlaceDetailScreen(
     }
 
     LaunchedEffect(placeId, token) {
-        Log.i(TAG_PLACE_DETAIL, "Loading place: placeId=$placeId, tripId=$tripId")
+        Log.i(TAG_PLACE_DETAIL, "Loading place: placeId=$placeId, tripId=$tripId, pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}")
         placeViewModel.getPlace(token, placeId)
         photoViewModel.getPhotosForPlace(token, placeId)
     }
