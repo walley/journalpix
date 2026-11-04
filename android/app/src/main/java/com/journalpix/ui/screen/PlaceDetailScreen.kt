@@ -177,8 +177,8 @@ fun PlaceDetailScreen(
 
     val placeState = placeViewModel.currentPlace
     val currentPlace = placeState.value
-    // Only show full-screen spinner when we have no data yet
-    val isLoading = (placeViewModel.isLoading.value || photoViewModel.isLoading.value) && currentPlace == null
+    // Show skeleton when no data yet (also in @Preview where currentPlace is null)
+    val showSkeleton = currentPlace == null
 
     var editMode by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
@@ -379,7 +379,7 @@ fun PlaceDetailScreen(
               .fillMaxSize()
               .padding(paddingValues)
         ) {
-            if (isLoading) {
+            if (showSkeleton) {
                 PlaceDetailSkeleton()
             } else {
                 key(placeRefreshKey) {
