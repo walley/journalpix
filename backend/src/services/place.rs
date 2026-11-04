@@ -351,6 +351,15 @@ impl PlaceService {
     }
 
     pub async fn delete_place(&self, place_id: Uuid) -> Result<ApiResponse<String>, ApiError> {
+        // Unassign photos from this place before deleting (set place_id = NULL)
+        self.db_pool
+            .with_conn(|c| {
+                c.execute(
+                    "UPDATE photos SET place_id = NULL WHERE place_id = ?1",
+                    [place_id.to_string()],
+                )
+            })
+            .map_err(db_err)?;
         let n = self
             .db_pool
             .with_conn(|c| c.execute("DELETE FROM places WHERE id = ?1", [place_id.to_string()]))
@@ -358,7 +367,7 @@ impl PlaceService {
         if n == 0 {
             return Err(ApiError::NotFound("Place not found".into()));
         }
-        Ok(ApiResponse::message("Place deleted successfully".into()))
+        Ok(ApiResponse::message("Place deleted successfully. Photos unassigned.".into()))
     }
 
     pub async fn reorder_places(

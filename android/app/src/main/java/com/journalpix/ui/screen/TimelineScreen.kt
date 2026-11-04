@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
@@ -243,6 +245,39 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            Column(
+                modifier = Modifier.align(Alignment.BottomEnd),
+                horizontalAlignment = Alignment.End
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        navController.navigate("map/$effectiveTripId")
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Map,
+                        contentDescription = "View map",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                FloatingActionButton(
+                    onClick = {
+                        // Pick image to add to unassigned photos
+                        pickImageLauncher.launch("image/*")
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AddPhotoAlternate,
+                        contentDescription = "Add photo to unassigned",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         val isRefreshing = timelineViewModel.isSyncing.value
@@ -271,6 +306,64 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 32.dp)
                     ) {
+                        // Unassigned photos section
+                        val unassignedPhotos = OfflineStore.getUnassignedPhotos()
+                        if (unassignedPhotos.isNotEmpty()) {
+                            item {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Unassigned Photos",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(4),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        items(
+                                            items = unassignedPhotos,
+                                            key = { it.id }
+                                        ) { photo ->
+                                            Column(
+                                                modifier = Modifier
+                                                    .size(80.dp)
+                                                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(Color.Black.copy(alpha = 0.1f))
+                                                ) {
+                                                    AsyncImage(
+                                                        model = ImageRequest.Builder(LocalContext.current)
+                                                            .data(photoImageUrl(photo))
+                                                            .crossfade(true)
+                                                            .build(),
+                                                        contentDescription = photo.caption ?: "Photo",
+                                                        contentScale = ContentScale.Crop,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
+                                                Spacer(Modifier.height(4.dp))
+                                                Text(
+                                                    text = photo.takenAt?.timeLabel() ?: "No date",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(16.dp))
+                            }
+                        }
                         item {
                             Row(
                                 modifier = Modifier
@@ -950,5 +1043,20 @@ fun DayHeaderPreview() {
             photoCount = 12,
             expanded = true, onToggle = {}, onAddPhoto = {}
         )
+    }
+}
+
+/**
+ * Resolves a photo's image source for offline-first loading.
+ */
+private fun photoImageUrl(photo: PhotoResponse): String {
+    val path = photo.thumbnailPath.ifBlank { photo.filePath }
+    return when {
+        path.startsWith("content://") ||
+        path.startsWith("file://") ||
+        path.startsWith("http://") ||
+        path.startsWith("https://") -> path
+        photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
+        else -> ApiService.uploadUrl(path)
     }
 }

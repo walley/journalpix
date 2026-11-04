@@ -40,6 +40,8 @@ object OfflineStore {
     private val photosByPlace = ConcurrentHashMap<String, MutableList<PhotoResponse>>()
     private val placesByTrip = ConcurrentHashMap<String, MutableList<PlaceWithPhotos>>()
     private val trips = ConcurrentHashMap<String, TripResponse>()
+    /** Photos not assigned to any place */
+    private val unassignedPhotos = ConcurrentHashMap<String, PhotoResponse>()
     /** photoId -> reverse-geocoded address */
     val addresses = ConcurrentHashMap<String, String>()
     /** IDs that still need to be pushed when online (permanent sync queue). */
@@ -104,8 +106,11 @@ object OfflineStore {
             for (i in 0 until photosArr.length()) {
                 val o = photosArr.getJSONObject(i)
                 val ph = photoFromJson(o)
-                val pid = ph.placeId ?: continue
-                photosByPlace.getOrPut(pid) { mutableListOf() }.add(ph)
+                if (ph.placeId == null || ph.placeId.isEmpty()) {
+                    unassignedPhotos[ph.id] = ph
+                } else {
+                    photosByPlace.getOrPut(ph.placeId) { mutableListOf() }.add(ph)
+                }
             }
             val addr = root.optJSONObject("addresses")
             if (addr != null) {
@@ -133,6 +138,7 @@ object OfflineStore {
 
             val photosArr = JSONArray()
             photosByPlace.values.flatten().forEach { photosArr.put(photoToJson(it)) }
+            unassignedPhotos.values.forEach { photosArr.put(photoToJson(it)) }
             root.put("photos", photosArr)
 
             val addr = JSONObject()
@@ -445,6 +451,38 @@ object OfflineStore {
                 markPending(placeId)
             }
         }
+    }
+
+    /** Add a photo without assigning it to any place (unassigned). */
+    fun addUnassignedPhoto(
+        uriString: String,
+        latitude: Double?,
+        longitude: Double?,
+        takenAt: ZonedTime? = null,
+        caption: String? = null
+    ): PhotoResponse {
+        val photo = PhotoResponse(
+            id = "photo-${UUID.randomUUID()}",
+            placeId = null,
+            userId = "00000000-0000-0000-0000-000000000001",
+            filePath = uriString,
+            thumbnailPath = uriString,
+            latitude = latitude,
+            longitude = longitude,
+            takenAt = takenAt,
+            caption = caption,
+            orderIndex = unassignedPhotos.size,
+            createdAt = java.time.Instant.now().toString(),
+            place = null
+        )
+        unassignedPhotos[photo.id] = photo
+        markPending(photo.id)
+        return photo
+    }
+
+    /** Get all unassigned photos (not assigned to any place). */
+    fun getUnassignedPhotos(): List<PhotoResponse> {
+        return unassignedPhotos.values.toList()
     }
 
     fun addPhoto(

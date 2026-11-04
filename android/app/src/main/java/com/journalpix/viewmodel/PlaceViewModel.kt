@@ -167,6 +167,11 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
+    fun addUnassignedPhoto(context: Context, uriString: String, latitude: Double?, longitude: Double?, takenAt: ZonedTime?, caption: String? = null) {
+        Log.i(TAG_PLACE_VM, "addUnassignedPhoto: uri=$uriString, lat=$latitude, lon=$longitude")
+        OfflineStore.addUnassignedPhoto(uriString, latitude, longitude, takenAt, caption)
+    }
+
     fun movePlaceUp(token: String, tripId: String, placeId: String, onSuccess: () -> Unit) {
         movePlace(token, tripId, placeId, -1, onSuccess)
     }
