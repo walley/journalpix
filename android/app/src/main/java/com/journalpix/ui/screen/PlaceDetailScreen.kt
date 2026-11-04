@@ -333,20 +333,13 @@ fun PlaceDetailScreen(
         }
     }
 
-    if (currentPlace == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    val visitLabel = currentPlace.visitLabel()
+    val visitLabel = currentPlace?.visitLabel()
     val visitDateText = if (visitLabel != null) "Visit: $visitLabel" else null
 
     val mapCameraState = rememberCameraPositionState {
-        position = if (currentPlace.latitude != null && currentPlace.longitude != null) {
+        position = if (currentPlace?.latitude != null && currentPlace?.longitude != null) {
             CameraPosition(
-                LatLng(currentPlace.latitude!!, currentPlace.longitude!!),
+                LatLng(currentPlace?.latitude ?: 0.0, currentPlace?.longitude ?: 0.0),
                 15f
             )
         } else {
