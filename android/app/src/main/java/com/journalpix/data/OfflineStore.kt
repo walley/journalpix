@@ -89,47 +89,58 @@ object OfflineStore {
             return
         }
         try {
-            trips.clear()
-            placesByTrip.clear()
-            photosByPlace.clear()
-            addresses.clear()
-            syncPending.clear()
+            // Parse into TEMP collections first — only swap in on full success so a
+            // single bad entry can never wipe the in-memory (and later persisted) data
+            val newTrips = HashMap<String, TripResponse>()
+            val newPlaces = HashMap<String, MutableList<PlaceWithPhotos>>()
+            val newPhotos = HashMap<String, MutableList<PhotoResponse>>()
+            val newUnassigned = HashMap<String, PhotoResponse>()
+            val newAddresses = HashMap<String, String>()
+            val newPending = HashSet<String>()
 
             val root = JSONObject(file.readText())
             val tripsArr = root.optJSONArray("trips") ?: JSONArray()
             for (i in 0 until tripsArr.length()) {
                 val o = tripsArr.getJSONObject(i)
                 val t = tripFromJson(o)
-                trips[t.id] = t
+                newTrips[t.id] = t
             }
             val placesArr = root.optJSONArray("places") ?: JSONArray()
             for (i in 0 until placesArr.length()) {
                 val o = placesArr.getJSONObject(i)
                 val p = placeFromJson(o)
-                placesByTrip.getOrPut(p.tripId) { mutableListOf() }.add(p)
+                newPlaces.getOrPut(p.tripId) { mutableListOf() }.add(p)
             }
             val photosArr = root.optJSONArray("photos") ?: JSONArray()
             for (i in 0 until photosArr.length()) {
                 val o = photosArr.getJSONObject(i)
                 val ph = photoFromJson(o)
                 if (ph.placeId == null || ph.placeId.isEmpty()) {
-                    unassignedPhotos[ph.id] = ph
+                    newUnassigned[ph.id] = ph
                 } else {
-                    photosByPlace.getOrPut(ph.placeId) { mutableListOf() }.add(ph)
+                    newPhotos.getOrPut(ph.placeId) { mutableListOf() }.add(ph)
                 }
             }
             val addr = root.optJSONObject("addresses")
             if (addr != null) {
-                addr.keys().forEach { k -> addresses[k] = addr.getString(k) }
+                addr.keys().forEach { k -> newAddresses[k] = addr.getString(k) }
             }
             val pending = root.optJSONArray("syncPending")
             if (pending != null) {
-                for (i in 0 until pending.length()) syncPending.add(pending.getString(i))
+                for (i in 0 until pending.length()) newPending.add(pending.getString(i))
             }
+
+            trips.clear(); trips.putAll(newTrips)
+            placesByTrip.clear(); placesByTrip.putAll(newPlaces)
+            photosByPlace.clear(); photosByPlace.putAll(newPhotos)
+            unassignedPhotos.clear(); unassignedPhotos.putAll(newUnassigned)
+            addresses.clear(); addresses.putAll(newAddresses)
+            syncPending.clear(); syncPending.addAll(newPending)
             cleanupDemoLeftovers()
             android.util.Log.i(TAG, "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "loadFromDisk: failed to parse store.json: ${e.message}", e)
+            // Never clear live data on a parse failure — keep whatever is in memory
+            android.util.Log.e(TAG, "loadFromDisk: failed to parse store.json, keeping in-memory data: ${e.message}", e)
         }
     }
 
@@ -205,8 +216,18 @@ object OfflineStore {
             syncPending.forEach { pending.put(it) }
             root.put("syncPending", pending)
 
-            storeFile(ctx).writeText(root.toString(2))
-        } catch (_: Exception) {
+            // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
+            val file = storeFile(ctx)
+            val tmp = File(file.parentFile, "store.json.tmp")
+            tmp.writeText(root.toString(2))
+            if (!tmp.renameTo(file)) {
+                // rename can fail across filesystems — fall back to direct copy
+                file.writeText(root.toString(2))
+                tmp.delete()
+            }
+            android.util.Log.i(TAG, "persist: wrote store.json (trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }})")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "persist: FAILED to write store.json: ${e.message}", e)
         }
     }
 
@@ -971,9 +992,9 @@ object OfflineStore {
         put("address", p.address)
         p.visitDate?.let { zt ->
             put("visitDate", JSONObject().apply {
-                put("utc", zt.utc)
-                put("timezone", zt.timezone)
-                put("local", zt.local)
+                zt.utc?.let { put("utc", it) }
+                zt.timezone?.let { put("timezone", it) }
+                zt.local?.let { put("local", it) }
                 zt.localTimezone?.let { put("localTimezone", it) }
             })
         }
@@ -992,10 +1013,10 @@ object OfflineStore {
         address = o.optString("address", null).takeIf { it.isNotBlank() },
         visitDate = o.optJSONObject("visitDate")?.let {
             ZonedTime(
-                utc = it.getString("utc"),
-                timezone = it.getString("timezone"),
-                local = it.getString("local"),
-                localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
+                utc = it.optString("utc", null).takeIf { s -> !s.isNullOrBlank() },
+                timezone = it.optString("timezone", null).takeIf { s -> !s.isNullOrBlank() },
+                local = it.optString("local", null).takeIf { s -> !s.isNullOrBlank() },
+                localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
             )
         } ?: o.optString("visitDate", null)
           .takeIf { it.isNotBlank() }
@@ -1016,9 +1037,9 @@ object OfflineStore {
         put("longitude", p.longitude)
         p.takenAt?.let { zt ->
             put("takenAt", JSONObject().apply {
-                put("utc", zt.utc)
-                put("timezone", zt.timezone)
-                put("local", zt.local)
+                zt.utc?.let { put("utc", it) }
+                zt.timezone?.let { put("timezone", it) }
+                zt.local?.let { put("local", it) }
                 zt.localTimezone?.let { put("localTimezone", it) }
             })
         }
@@ -1037,10 +1058,10 @@ object OfflineStore {
         longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
         takenAt = o.optJSONObject("takenAt")?.let {
             ZonedTime(
-                utc = it.getString("utc"),
-                timezone = it.getString("timezone"),
-                local = it.getString("local"),
-                localTimezone = it.optString("localTimezone", null).takeIf { it.isNotBlank() }
+                utc = it.optString("utc", null).takeIf { s -> !s.isNullOrBlank() },
+                timezone = it.optString("timezone", null).takeIf { s -> !s.isNullOrBlank() },
+                local = it.optString("local", null).takeIf { s -> !s.isNullOrBlank() },
+                localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
             )
         } ?: o.optString("takenAt", null)
           .takeIf { it.isNotBlank() }
