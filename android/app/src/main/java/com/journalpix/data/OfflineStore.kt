@@ -965,11 +965,11 @@ object OfflineStore {
         id = o.getString("id"),
         userId = o.getString("userId"),
         title = o.getString("title"),
-        description = o.optString("description", null).takeIf { it.isNotBlank() },
-        startDate = o.optString("startDate", null).takeIf { it.isNotBlank() },
-        startTimezone = o.optString("startTimezone", null).takeIf { it.isNotBlank() },
-        endDate = o.optString("endDate", null).takeIf { it.isNotBlank() },
-        endTimezone = o.optString("endTimezone", null).takeIf { it.isNotBlank() },
+        description = o.optString("description", "").takeIf { it.isNotBlank() },
+        startDate = o.optString("startDate", "").takeIf { it.isNotBlank() },
+        startTimezone = o.optString("startTimezone", "").takeIf { it.isNotBlank() },
+        endDate = o.optString("endDate", "").takeIf { it.isNotBlank() },
+        endTimezone = o.optString("endTimezone", "").takeIf { it.isNotBlank() },
         daysCount = o.optInt("daysCount", 0).takeIf { it > 0 },
         status = try {
             TripStatus.valueOf(o.optString("status", "PLANNED"))
@@ -1007,22 +1007,22 @@ object OfflineStore {
         id = o.getString("id"),
         tripId = o.getString("tripId"),
         name = o.getString("name"),
-        description = o.optString("description", null).takeIf { it.isNotBlank() },
+        description = o.optString("description", "").takeIf { it.isNotBlank() },
         latitude = if (o.isNull("latitude")) null else o.optDouble("latitude"),
         longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
-        address = o.optString("address", null).takeIf { it.isNotBlank() },
+        address = o.optString("address", "").takeIf { it.isNotBlank() },
         visitDate = o.optJSONObject("visitDate")?.let {
             ZonedTime(
                 utc = it.optString("utc", ""),
                 timezone = it.optString("timezone", "UTC"),
                 local = it.optString("local", ""),
-                localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
+                localTimezone = it.optString("localTimezone", "").takeIf { it.isNotBlank() }
             )
-        } ?: o.optString("visitDate", null)
+        } ?: o.optString("visitDate", "")
           .takeIf { it.isNotBlank() }
           ?.let { ZonedTime.parseLegacy(it) },
         orderIndex = o.optInt("orderIndex", 0),
-        transportFromPrevious = o.optString("transportFromPrevious", null).takeIf { it.isNotBlank() },
+        transportFromPrevious = o.optString("transportFromPrevious", "").takeIf { it.isNotBlank() },
         createdAt = o.optString("createdAt", ""),
         photos = emptyList()
     )
@@ -1050,7 +1050,7 @@ object OfflineStore {
 
     private fun photoFromJson(o: JSONObject) = PhotoResponse(
         id = o.getString("id"),
-        placeId = o.optString("placeId", null).takeIf { it.isNotBlank() },
+        placeId = o.optString("placeId", "").takeIf { it.isNotBlank() },
         userId = o.getString("userId"),
         filePath = o.getString("filePath"),
         thumbnailPath = o.optString("thumbnailPath", o.getString("filePath")),
@@ -1061,12 +1061,12 @@ object OfflineStore {
                 utc = it.optString("utc", ""),
                 timezone = it.optString("timezone", "UTC"),
                 local = it.optString("local", ""),
-                localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
+                localTimezone = it.optString("localTimezone", "").takeIf { it.isNotBlank() }
             )
-        } ?: o.optString("takenAt", null)
+        } ?: o.optString("takenAt", "")
           .takeIf { it.isNotBlank() }
           ?.let { ZonedTime.parseLegacy(it) },
-        caption = o.optString("caption", null).takeIf { it.isNotBlank() },
+        caption = o.optString("caption", "").takeIf { it.isNotBlank() },
         orderIndex = o.optInt("orderIndex", 0),
         createdAt = o.optString("createdAt", ""),
         place = null
