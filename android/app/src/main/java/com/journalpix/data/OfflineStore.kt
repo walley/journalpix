@@ -857,38 +857,68 @@ object OfflineStore {
         place = null
     )
 
+    /** Re-queue an item for upload without triggering a sync (used during merge). */
+    private fun requeuePending(id: String) {
+        if (syncPending.add(id)) {
+            android.util.Log.i("OfflineStore", "requeuePending: $id re-queued for upload (deleted or missing on server)")
+        }
+    }
+
+    /**
+     * Device-first merge: the mobile device is the source of truth.
+     * - Server places/photos are only ADDED when missing locally.
+     * - Local items are never removed, even if absent on the server.
+     * - Local items missing on the server are re-queued for upload.
+     * - Local trip metadata wins while it has pending changes.
+     */
     fun mergeBackendTimeline(timeline: TripTimeline) {
         val trip = timeline.trip
-        trips[trip.id] = trip
 
-        val newPlaces = mutableListOf<PlaceWithPhotos>()
-        val allPhotos = mutableMapOf<String, MutableList<PhotoResponse>>()
+        // Device-first: keep local trip if it has unsynced local changes
+        val localTrip = trips[trip.id]
+        if (localTrip == null || !syncPending.contains(trip.id)) {
+            trips[trip.id] = trip
+        } else {
+            android.util.Log.i("OfflineStore", "mergeBackendTimeline: keeping local pending trip ${trip.id}")
+        }
+
+        // Start from the local place list — server data only fills gaps
+        val merged = (placesByTrip[trip.id] ?: mutableListOf()).toMutableList()
+        val serverPlaceIds = mutableSetOf<String>()
 
         for (item in timeline.timeline) {
             for (place in item.places) {
                 val p =
                     if (place.visitDate == null) place.copy(visitDate = ZonedTime.parseLegacy(item.date)) else place
-              if (newPlaces.none { it.id == p.id }) {
-                newPlaces.add(p)
-              }
-                allPhotos[p.id] = p.photos.toMutableList()
+                serverPlaceIds.add(p.id)
+                val localIdx = merged.indexOfFirst { it.id == p.id }
+                if (localIdx == -1) {
+                    // Not on device → download from server
+                    merged.add(p)
+                    android.util.Log.i("OfflineStore", "mergeBackendTimeline: downloaded new place from server: ${p.id} '${p.name}'")
+                } else {
+                    // On both → device wins for place fields, but pull server photos we don't have
+                    val local = merged[localIdx]
+                    val serverPhotoIds = p.photos.map { it.id }.toSet()
+                    val localPhotos = photosByPlace[p.id].orEmpty()
+                    val missingPhotos = p.photos.filter { sp -> localPhotos.none { it.id == sp.id } }
+                    if (missingPhotos.isNotEmpty()) {
+                        photosByPlace[p.id] = (localPhotos + missingPhotos).toMutableList()
+                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: added ${missingPhotos.size} server photos to place ${p.id}")
+                    }
+                    merged[localIdx] = local.copy(photos = photosByPlace[p.id].orEmpty())
+                }
             }
         }
 
-        // Keep local-only places that haven't been synced to the server yet
-        val existing = placesByTrip[trip.id].orEmpty()
-        val localOnly = existing.filter { local ->
-            syncPending.contains(local.id) && newPlaces.none { it.id == local.id }
-        }
-        if (localOnly.isNotEmpty()) {
-            android.util.Log.i("OfflineStore", "mergeBackendTimeline: preserving ${localOnly.size} local-only pending places for trip ${trip.id}: ${localOnly.map { it.id }}")
-            newPlaces.addAll(localOnly)
+        // Local places missing on the server → keep them and re-upload
+        val reuploaded = merged.filter { it.id !in serverPlaceIds }
+        reuploaded.forEach { requeuePending(it.id) }
+        if (reuploaded.isNotEmpty()) {
+            android.util.Log.i("OfflineStore", "mergeBackendTimeline: ${reuploaded.size} local places missing on server, re-queued: ${reuploaded.map { it.id }}")
         }
 
-        placesByTrip[trip.id] = newPlaces
-        for ((placeId, photos) in allPhotos) {
-            photosByPlace[placeId] = photos
-        }
+        placesByTrip[trip.id] = merged
         persist()
     }
 }
