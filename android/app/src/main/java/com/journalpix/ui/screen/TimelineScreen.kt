@@ -262,6 +262,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         Icon(Icons.Default.Edit, contentDescription = "Edit trip name")
       }
       IconButton(onClick = {
+        Log.i(TAG_TIMELINE, "onClick: 'Add place on map' TopBar button — navigating to map addPlaceMode for trip $effectiveTripId")
         AppSession.clearPendingMapPlace()
         navController.navigate("map/$effectiveTripId?addPlaceMode=true")
       }) {
@@ -615,6 +616,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   item(key = "add-place-$dayKey") {
                     TextButton(
                       onClick = {
+                        Log.i(TAG_TIMELINE, "onClick: 'Add a place' button for day=$rawDate — opening create place dialog")
                         createPlaceDay = rawDate
                         showCreatePlaceDialog = true
                       }, modifier = Modifier.padding(

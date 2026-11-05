@@ -1,6 +1,7 @@
 package com.journalpix.ui.screen
 
 import android.app.DatePickerDialog
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,8 @@ import com.journalpix.viewmodel.TripViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+
+private const val TAG = "JPXHS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,10 +70,14 @@ fun HomeScreen(navController:NavController) {
 
   Scaffold(topBar = {
     CenterAlignedTopAppBar(title = {Text("JournalPix")}, actions = {
-      IconButton(onClick = {navController.navigate("about")}) {
+      IconButton(onClick = {
+        Log.i(TAG, "onClick: About button — navigating to about")
+        navController.navigate("about")
+      }) {
         Icon(Icons.Default.Info, contentDescription = "About")
       }
       IconButton(onClick = {
+        Log.i(TAG, "onClick: Logout button — logging out and navigating to auth")
         authViewModel.logout()
         navController.navigate("auth") {
           popUpTo(0) {inclusive = true}
@@ -80,7 +87,10 @@ fun HomeScreen(navController:NavController) {
       }
     })
   }, floatingActionButton = {
-    FloatingActionButton(onClick = {showCreateTripDialog = true}) {
+    FloatingActionButton(onClick = {
+      Log.i(TAG, "onClick: Add Trip FAB — opening create trip dialog")
+      showCreateTripDialog = true
+    }) {
       Icon(Icons.Default.Add, contentDescription = "Add Trip")
     }
   }) {paddingValues ->
@@ -115,6 +125,7 @@ fun HomeScreen(navController:NavController) {
           LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(tripViewModel.trips.value) {trip ->
               TripCard(trip = trip, onClick = {
+                Log.i(TAG, "onClick: trip selected — id=${trip.id}, title='${trip.title}', navigating to timeline")
                 navController.navigate("timeline/${trip.id}")
               })
             }
