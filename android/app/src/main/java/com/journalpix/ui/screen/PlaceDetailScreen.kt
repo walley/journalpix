@@ -172,6 +172,9 @@ fun PlaceDetailScreen(
   val context = LocalContext.current
   val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
 
+  // The nav route may not carry tripId — fall back to the currently open trip
+  val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
+
   val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
   val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
 
@@ -246,7 +249,7 @@ fun PlaceDetailScreen(
         }
       )
       photoViewModel.reverseGeocode(
-        tripId, PhotoResponse(
+        effectiveTripId, PhotoResponse(
           id = "temp",
           placeId = placeId,
           userId = "",
@@ -277,7 +280,7 @@ fun PlaceDetailScreen(
   LaunchedEffect(placeId, token) {
     Log.i(
       TAG_PLACE_DETAIL,
-      "Loading place: placeId=$placeId, tripId=$tripId, pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}"
+      "Loading place: placeId=$placeId, tripId='$effectiveTripId', pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}"
     )
     placeViewModel.getPlace(token, placeId)
     photoViewModel.getPhotosForPlace(token, placeId)
@@ -583,9 +586,9 @@ fun PlaceDetailScreen(
                   onClick = {
                     Log.i(
                       TAG_PLACE_DETAIL,
-                      "Select on map for place $placeId, tripId='$tripId'"
+                      "Select on map for place $placeId, tripId='$effectiveTripId'"
                     )
-                    val targetTripId = AppSession.validateTripId(tripId)
+                    val targetTripId = AppSession.validateTripId(effectiveTripId)
                     if (targetTripId != null) {
                       AppSession.mapEditPlaceId.value = placeId
                       navController.navigate("map/$targetTripId?addPlaceMode=true")
@@ -806,7 +809,7 @@ fun PlaceDetailScreen(
                         placeId = placeId,
                         onDelete = { deletePhoto(photo.id) },
                         onReverseGeocode = {
-                          photoViewModel.reverseGeocode(tripId, photo) {
+                          photoViewModel.reverseGeocode(effectiveTripId, photo) {
                             photoViewModel.getPhotosForPlace(
                               token,
                               placeId
