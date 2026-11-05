@@ -90,13 +90,9 @@ class MainActivity : ComponentActivity() {
                                         .clip(RoundedCornerShape(24.dp)),
                                     tonalElevation = 4.dp
                                 ) {
-                                    // currentTripId must never be blank — a blank id is an invalid trip
-                                    val tripId = AppSession.validateTripId(AppSession.currentTripId.value)
-                                    if (tripId == null) {
-                                        Log.e(TAG_MAIN, "Nav bar: currentTripId is BLANK — invalid trip, showing error and destroying leftovers")
-                                        Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
-                                        com.journalpix.data.OfflineStore.destroyDemoTripLeftovers()
-                                    }
+                                    // No trip selected yet is fine while browsing Home/About — only
+                                    // Timeline/Map require a valid trip, checked on click below.
+                                    val tripId = AppSession.currentTripId.value
                                     NavigationBarItem(
                                         selected = currentRoute == "home",
                                         onClick = {
@@ -112,8 +108,14 @@ class MainActivity : ComponentActivity() {
                                     NavigationBarItem(
                                         selected = currentRoute?.startsWith("timeline/") == true,
                                         onClick = {
-                                            Log.i(TAG_MAIN, "Nav: timeline tripId=$tripId")
-                                            tripId?.let { navController.navigate("timeline/$it") }
+                                            Log.i(TAG_MAIN, "Nav: timeline tripId='$tripId'")
+                                            val valid = AppSession.validateTripId(tripId)
+                                            if (valid != null) {
+                                                navController.navigate("timeline/$valid")
+                                            } else {
+                                                Log.e(TAG_MAIN, "Nav: timeline blocked — no trip selected")
+                                                Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
+                                            }
                                         },
                                         icon = { Icon(Icons.Default.DateRange, contentDescription = "Timeline") },
                                         label = { Text("Timeline") }
@@ -121,8 +123,14 @@ class MainActivity : ComponentActivity() {
                                     NavigationBarItem(
                                         selected = currentRoute?.startsWith("map/") == true,
                                         onClick = {
-                                            Log.i(TAG_MAIN, "Nav: map tripId=$tripId")
-                                            tripId?.let { navController.navigate("map/$it") }
+                                            Log.i(TAG_MAIN, "Nav: map tripId='$tripId'")
+                                            val valid = AppSession.validateTripId(tripId)
+                                            if (valid != null) {
+                                                navController.navigate("map/$valid")
+                                            } else {
+                                                Log.e(TAG_MAIN, "Nav: map blocked — no trip selected")
+                                                Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
+                                            }
                                         },
                                         icon = { Icon(Icons.Default.Map, contentDescription = "Map") },
                                         label = { Text("Map") }
