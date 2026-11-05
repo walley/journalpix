@@ -229,7 +229,14 @@ object OfflineStore {
 
     /** Find a place with its photos attached. */
     fun findPlaceWithPhotos(placeId: String): PlaceWithPhotos? {
-        val found = findPlace(placeId)?.first ?: return null
+        val found = findPlace(placeId)?.first
+        if (found == null) {
+            val all = placesByTrip.entries.joinToString("; ") { (tripId, list) ->
+                "trip=$tripId: ${list.map { "${it.id}('${it.name}')" }}"
+            }
+            android.util.Log.w("OfflineStore", "findPlaceWithPhotos: NOT FOUND placeId=$placeId. Known places: $all")
+            return null
+        }
         val photos = photosByPlace[placeId].orEmpty()
             .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
         android.util.Log.i("OfflineStore", "findPlaceWithPhotos: placeId=$placeId, photos=${photos.size}, paths=${photos.map { it.filePath }}")
@@ -925,6 +932,7 @@ object OfflineStore {
         }
 
         placesByTrip[trip.id] = merged
+        android.util.Log.i("OfflineStore", "mergeBackendTimeline: trip ${trip.id} now has ${merged.size} places: ${merged.map { "${it.id}('${it.name}')" }}")
         persist()
     }
 }
