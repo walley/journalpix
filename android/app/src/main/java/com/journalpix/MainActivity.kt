@@ -9,12 +9,28 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.map.MapScreen
@@ -54,10 +70,73 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
 
+                    // Track current trip for bottom nav destinations
+                    if (currentRoute?.startsWith("timeline/") == true) {
+                        AppSession.currentTripId.value =
+                            navBackStackEntry?.arguments?.getString("tripId") ?: ""
+                    }
+
+                    Scaffold(
+                        bottomBar = {
+                            if (currentRoute != "auth") {
+                                // Floating rounded navigation bar near the very bottom
+                                NavigationBar(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                                        .clip(RoundedCornerShape(24.dp)),
+                                    tonalElevation = 4.dp
+                                ) {
+                                    val tripId = AppSession.currentTripId.value.ifBlank { "demo-trip-1" }
+                                    NavigationBarItem(
+                                        selected = currentRoute == "home",
+                                        onClick = {
+                                            Log.i(TAG_MAIN, "Nav: home")
+                                            navController.navigate("home") {
+                                                popUpTo("home") { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                                        label = { Text("Home") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = currentRoute?.startsWith("timeline/") == true,
+                                        onClick = {
+                                            Log.i(TAG_MAIN, "Nav: timeline tripId=$tripId")
+                                            navController.navigate("timeline/$tripId")
+                                        },
+                                        icon = { Icon(Icons.Default.DateRange, contentDescription = "Timeline") },
+                                        label = { Text("Timeline") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = currentRoute?.startsWith("map/") == true,
+                                        onClick = {
+                                            Log.i(TAG_MAIN, "Nav: map tripId=$tripId")
+                                            navController.navigate("map/$tripId")
+                                        },
+                                        icon = { Icon(Icons.Default.Map, contentDescription = "Map") },
+                                        label = { Text("Map") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = currentRoute == "about",
+                                        onClick = {
+                                            Log.i(TAG_MAIN, "Nav: about")
+                                            navController.navigate("about")
+                                        },
+                                        icon = { Icon(Icons.Default.Info, contentDescription = "About") },
+                                        label = { Text("About") }
+                                    )
+                                }
+                            }
+                        }
+                    ) { paddingValues ->
                     NavHost(
                         navController = navController,
-                        startDestination = "auth"
+                        startDestination = "auth",
+                        modifier = Modifier.padding(paddingValues)
                     ) {
                         composable("auth") { AuthScreen(navController) }
                         composable("home") { HomeScreen(navController) }
@@ -106,6 +185,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("about") { AboutScreen(navController) }
+                    }
                     }
                 }
             }
