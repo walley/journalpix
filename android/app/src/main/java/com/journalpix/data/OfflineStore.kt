@@ -81,7 +81,11 @@ object OfflineStore {
     private fun loadFromDisk() {
         val ctx = appContext ?: return
         val file = storeFile(ctx)
-        if (!file.exists()) return
+        android.util.Log.i("OfflineStore", "loadFromDisk: storeFile=${file.absolutePath}, exists=${file.exists()}, photosDir=${photosDir(ctx).absolutePath}")
+        if (!file.exists()) {
+            android.util.Log.i("OfflineStore", "loadFromDisk: no existing store.json — fresh start (data survives reinstalls in filesDir, wiped only on uninstall/clear-data)")
+            return
+        }
         try {
             trips.clear()
             placesByTrip.clear()
@@ -120,7 +124,9 @@ object OfflineStore {
             if (pending != null) {
                 for (i in 0 until pending.length()) syncPending.add(pending.getString(i))
             }
-        } catch (_: Exception) {
+            android.util.Log.i("OfflineStore", "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
+        } catch (e: Exception) {
+            android.util.Log.e("OfflineStore", "loadFromDisk: failed to parse store.json: ${e.message}", e)
         }
     }
 
