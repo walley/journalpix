@@ -89,7 +89,13 @@ class MainActivity : ComponentActivity() {
                                         .clip(RoundedCornerShape(24.dp)),
                                     tonalElevation = 4.dp
                                 ) {
-                                    val tripId = AppSession.currentTripId.value.ifBlank { "demo-trip-1" }
+                                    // currentTripId must never be blank — a blank id is an invalid trip
+                                    val tripId = AppSession.validateTripId(AppSession.currentTripId.value)
+                                    if (tripId == null) {
+                                        Log.e(TAG_MAIN, "Nav bar: currentTripId is BLANK — invalid trip, showing error and destroying leftovers")
+                                        Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
+                                        com.journalpix.data.OfflineStore.destroyDemoTripLeftovers()
+                                    }
                                     NavigationBarItem(
                                         selected = currentRoute == "home",
                                         onClick = {
@@ -106,7 +112,7 @@ class MainActivity : ComponentActivity() {
                                         selected = currentRoute?.startsWith("timeline/") == true,
                                         onClick = {
                                             Log.i(TAG_MAIN, "Nav: timeline tripId=$tripId")
-                                            navController.navigate("timeline/$tripId")
+                                            tripId?.let { navController.navigate("timeline/$it") }
                                         },
                                         icon = { Icon(Icons.Default.DateRange, contentDescription = "Timeline") },
                                         label = { Text("Timeline") }
@@ -115,7 +121,7 @@ class MainActivity : ComponentActivity() {
                                         selected = currentRoute?.startsWith("map/") == true,
                                         onClick = {
                                             Log.i(TAG_MAIN, "Nav: map tripId=$tripId")
-                                            navController.navigate("map/$tripId")
+                                            tripId?.let { navController.navigate("map/$it") }
                                         },
                                         icon = { Icon(Icons.Default.Map, contentDescription = "Map") },
                                         label = { Text("Map") }

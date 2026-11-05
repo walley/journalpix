@@ -21,13 +21,16 @@ class TimelineViewModel : ViewModel() {
     val timeline = mutableStateOf<TripTimeline?>(null)
 
     fun getTimeline(token: String, tripId: String) {
-        timeline.value = OfflineStore.timelineFor(tripId.ifBlank { "demo-trip-1" })
+        val validId = AppSession.validateTripId(tripId)
+        timeline.value = validId?.let { OfflineStore.timelineFor(it) }
         isLoading.value = false
-        errorMessage.value = null
+        errorMessage.value = AppSession.tripIdError.value
     }
 
     fun refreshOffline(tripId: String) {
-        timeline.value = OfflineStore.timelineFor(tripId.ifBlank { "demo-trip-1" })
+        val validId = AppSession.validateTripId(tripId)
+        timeline.value = validId?.let { OfflineStore.timelineFor(it) }
+        if (validId == null) errorMessage.value = AppSession.tripIdError.value
     }
 
     fun syncAndRefresh(token: String, tripId: String) {

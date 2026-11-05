@@ -119,7 +119,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   var hoverTargetIndex by remember {mutableStateOf<Int?>(null)}
 
   val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
-  val effectiveTripId = tripId.ifBlank {"demo-trip-1"}
+  // Blank tripId is invalid — validate and show error instead of falling back to a demo trip
+  val effectiveTripId = AppSession.validateTripId(tripId) ?: ""
 
   fun refresh() {
     timelineViewModel.refreshOffline(effectiveTripId)

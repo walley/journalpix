@@ -158,6 +158,28 @@ object OfflineStore {
         }
     }
 
+    /**
+     * Destroy an invalid trip (a blank currentTripId would fall back to the local
+     * "demo-trip-1" key): remove all its places, photos, trip entry and pending flags.
+     */
+    fun destroyDemoTripLeftovers() {
+        android.util.Log.i(TAG, "destroyDemoTripLeftovers: destroying invalid (blank/demo) trip leftovers")
+        val demoKeys = placesByTrip.keys.filter { it.startsWith("demo") }.toSet()
+        var removed = 0
+        demoKeys.forEach { key ->
+            placesByTrip.remove(key)?.forEach { p ->
+                photosByPlace.remove(p.id)
+                removed++
+            }
+        }
+        trips.keys.filter { it.startsWith("demo") }.forEach { trips.remove(it) }
+        // Drop pending queue entries that no longer exist locally
+        val knownIds = placesByTrip.values.flatten().map { it.id }.toSet() + trips.keys
+        syncPending.removeAll { it !in knownIds }
+        android.util.Log.i(TAG, "destroyDemoTripLeftovers: removed $removed places, demo trips: $demoKeys")
+        persist()
+    }
+
     fun persist() {
         val ctx = appContext ?: return
         try {
@@ -280,7 +302,27 @@ object OfflineStore {
     }
 
     fun ensureDemoTrip(tripId: String): TripResponse {
-        val id = tripId.ifBlank { "demo-trip-1" }
+        if (tripId.isBlank()) {
+            // A blank trip id is invalid — destroy any demo leftovers, never create a trip
+            android.util.Log.e(TAG, "ensureDemoTrip: tripId is BLANK — invalid trip, destroying demo leftovers")
+            destroyDemoTripLeftovers()
+            return TripResponse(
+                id = "",
+                userId = "",
+                title = "",
+                description = null,
+                startDate = null,
+                startTimezone = null,
+                endDate = null,
+                endTimezone = null,
+                status = TripStatus.PLANNED,
+                createdAt = "",
+                updatedAt = "",
+                placesCount = 0,
+                photosCount = 0
+            )
+        }
+        val id = tripId
         placesByTrip.putIfAbsent(id, mutableListOf())
         return trips.getOrPut(id) {
             TripResponse(
@@ -301,6 +343,7 @@ object OfflineStore {
 
     fun updateTripDates(tripId: String, startDate: String?, endDate: String?): TripResponse {
         val current = ensureDemoTrip(tripId)
+        if (current.id.isBlank()) return current
         val updated = current.copy(
             startDate = startDate ?: current.startDate,
             endDate = endDate ?: current.endDate,
@@ -313,6 +356,7 @@ object OfflineStore {
 
     fun updateTripTitle(tripId: String, title: String): TripResponse {
         val current = ensureDemoTrip(tripId)
+        if (current.id.isBlank()) return current
         val updated = current.copy(
             title = title.trim().ifBlank { current.title },
             updatedAt = java.time.Instant.now().toString()
@@ -324,6 +368,7 @@ object OfflineStore {
 
     fun updateTripDescription(tripId: String, description: String?): TripResponse {
         val current = ensureDemoTrip(tripId)
+        if (current.id.isBlank()) return current
         val updated = current.copy(
             description = description?.trim()?.takeIf { it.isNotBlank() },
             updatedAt = java.time.Instant.now().toString()
@@ -334,6 +379,10 @@ object OfflineStore {
     }
 
     fun timelineFor(tripId: String): TripTimeline {
+        if (tripId.isBlank()) {
+            android.util.Log.e(TAG, "timelineFor: tripId is BLANK — invalid trip, destroying demo leftovers")
+            destroyDemoTripLeftovers()
+        }
         val trip = trips[tripId]
         if (trip == null) {
             return TripTimeline(
@@ -465,6 +514,23 @@ object OfflineStore {
         transportFromPrevious: String? = null
     ): PlaceWithPhotos {
         val trip = ensureDemoTrip(tripId)
+        if (trip.id.isBlank()) {
+            android.util.Log.e(TAG, "addPlace: tripId is BLANK — refusing to create a place in an invalid trip")
+            return PlaceWithPhotos(
+                id = "",
+                tripId = "",
+                name = name,
+                description = null,
+                latitude = latitude,
+                longitude = longitude,
+                address = address,
+                visitDate = visitDate,
+                orderIndex = 0,
+                transportFromPrevious = transportFromPrevious,
+                createdAt = java.time.Instant.now().toString(),
+                photos = emptyList()
+            )
+        }
         val place = PlaceWithPhotos(
             id = "place-${UUID.randomUUID()}",
             tripId = trip.id,
@@ -674,6 +740,10 @@ object OfflineStore {
         longitude: Double?
     ): PlaceWithPhotos {
         val trip = ensureDemoTrip(tripId)
+        if (trip.id.isBlank()) {
+            android.util.Log.e(TAG, "assignPhotoToGeocodedPlace: tripId is BLANK — invalid trip, skipping")
+            return addPlace("", shortPlaceName(address), address = address, latitude = latitude, longitude = longitude)
+        }
         addresses[photoId] = address
 
         val shortName = shortPlaceName(address)

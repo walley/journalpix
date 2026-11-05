@@ -585,8 +585,18 @@ fun PlaceDetailScreen(
                       TAG_PLACE_DETAIL,
                       "Select on map for place $placeId, tripId='$tripId'"
                     )
-                    AppSession.mapEditPlaceId.value = placeId
-                    navController.navigate("map/${tripId.ifBlank { "demo-trip-1" }}?addPlaceMode=true")
+                    val targetTripId = AppSession.validateTripId(tripId)
+                    if (targetTripId != null) {
+                      AppSession.mapEditPlaceId.value = placeId
+                      navController.navigate("map/$targetTripId?addPlaceMode=true")
+                    } else {
+                      Log.e(TAG_PLACE_DETAIL, "Select on map blocked: tripId is BLANK — invalid trip")
+                      android.widget.Toast.makeText(
+                        context,
+                        AppSession.tripIdError.value ?: "Invalid trip",
+                        android.widget.Toast.LENGTH_LONG
+                      ).show()
+                    }
                   },
                   modifier = Modifier.size(32.dp)
                 ) {

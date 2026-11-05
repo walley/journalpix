@@ -1,5 +1,6 @@
 package com.journalpix.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,8 +18,13 @@ import retrofit2.HttpException
  * (Avoids losing the user when each screen creates its own AuthViewModel.)
  */
 object AppSession {
+    private const val TAG = "JPXAV"
+
     val currentUser = mutableStateOf<LoginResponse?>(null)
     val isLoggedIn = mutableStateOf(false)
+
+    /** Error shown when currentTripId is blank (such a trip is invalid). */
+    val tripIdError = mutableStateOf<String?>(null)
 
     /** Place pending creation from map selection: lat, lon, name. */
     val pendingMapPlace = mutableStateOf<Triple<Double, Double, String>?>(null)
@@ -51,6 +57,22 @@ object AppSession {
 
     fun clearPendingMapPlaceUpdate() {
         pendingMapPlaceUpdate.value = null
+    }
+
+    /**
+     * currentTripId must never be blank — a blank trip id means an invalid trip.
+     * Returns the id when valid, or null (and sets [tripIdError]) when blank.
+     */
+    fun validateTripId(tripId: String): String? {
+        Log.i(TAG, "validateTripId: called with tripId='$tripId'")
+        return if (tripId.isBlank()) {
+            Log.e(TAG, "validateTripId: currentTripId is BLANK — trip is invalid and must be destroyed")
+            tripIdError.value = "No trip selected — open a trip from Home first"
+            null
+        } else {
+            tripIdError.value = null
+            tripId
+        }
     }
 }
 
