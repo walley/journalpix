@@ -83,7 +83,7 @@ object OfflineStore {
     private fun loadFromDisk() {
         val ctx = appContext ?: return
         val file = storeFile(ctx)
-        android.util.Log.i(TAG, "loadFromDisk: storeFile=${file.absolutePath}, exists=${file.exists()}, photosDir=${photosDir(ctx).absolutePath}")
+        android.util.Log.i(TAG, "loadFromDisk: storeFile=${file.absolutePath}, exists=${file.exists()}, size=${if (file.exists()) file.length() else -1}, photosDir=${photosDir(ctx).absolutePath}")
         if (!file.exists()) {
             android.util.Log.i(TAG, "loadFromDisk: no existing store.json — fresh start (data survives reinstalls in filesDir, wiped only on uninstall/clear-data)")
             return
