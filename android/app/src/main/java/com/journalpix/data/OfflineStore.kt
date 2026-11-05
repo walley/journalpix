@@ -1013,9 +1013,9 @@ object OfflineStore {
         address = o.optString("address", null).takeIf { it.isNotBlank() },
         visitDate = o.optJSONObject("visitDate")?.let {
             ZonedTime(
-                utc = it.optString("utc", null).takeIf { s -> !s.isNullOrBlank() },
-                timezone = it.optString("timezone", null).takeIf { s -> !s.isNullOrBlank() },
-                local = it.optString("local", null).takeIf { s -> !s.isNullOrBlank() },
+                utc = it.optString("utc", ""),
+                timezone = it.optString("timezone", "UTC"),
+                local = it.optString("local", ""),
                 localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
             )
         } ?: o.optString("visitDate", null)
@@ -1058,9 +1058,9 @@ object OfflineStore {
         longitude = if (o.isNull("longitude")) null else o.optDouble("longitude"),
         takenAt = o.optJSONObject("takenAt")?.let {
             ZonedTime(
-                utc = it.optString("utc", null).takeIf { s -> !s.isNullOrBlank() },
-                timezone = it.optString("timezone", null).takeIf { s -> !s.isNullOrBlank() },
-                local = it.optString("local", null).takeIf { s -> !s.isNullOrBlank() },
+                utc = it.optString("utc", ""),
+                timezone = it.optString("timezone", "UTC"),
+                local = it.optString("local", ""),
                 localTimezone = it.optString("localTimezone", null).takeIf { s -> !s.isNullOrBlank() }
             )
         } ?: o.optString("takenAt", null)
