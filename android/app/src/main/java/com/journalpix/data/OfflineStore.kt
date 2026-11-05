@@ -301,6 +301,34 @@ object OfflineStore {
         return null
     }
 
+    /** All locally stored trips (offline mode / not logged in). */
+    fun allTrips(): List<TripResponse> = trips.values.sortedBy { it.createdAt }
+
+    /** Create a trip purely locally (offline, not logged in); queued for sync once logged in. */
+    fun createLocalTrip(title: String, startDate: String?, endDate: String?): TripResponse {
+        val id = "trip-${UUID.randomUUID()}"
+        android.util.Log.i(TAG, "createLocalTrip: id=$id, title='$title'")
+        val trip = TripResponse(
+            id = id,
+            userId = "",
+            title = title.ifBlank { "Trip $id" },
+            description = null,
+            startDate = startDate,
+            startTimezone = null,
+            endDate = endDate,
+            endTimezone = null,
+            status = TripStatus.PLANNED,
+            createdAt = java.time.Instant.now().toString(),
+            updatedAt = java.time.Instant.now().toString(),
+            placesCount = 0,
+            photosCount = 0
+        )
+        trips[id] = trip
+        placesByTrip.putIfAbsent(id, mutableListOf())
+        markPending(id)
+        return trip
+    }
+
     fun ensureDemoTrip(tripId: String): TripResponse {
         if (tripId.isBlank()) {
             // A blank trip id is invalid — destroy any demo leftovers, never create a trip
@@ -327,7 +355,8 @@ object OfflineStore {
         return trips.getOrPut(id) {
             TripResponse(
                 id = id,
-                userId = "00000000-0000-0000-0000-000000000001",
+                // No server user id here — user identity lives only in synchronization
+                userId = "",
                 title = if (id.startsWith("demo")) "Demo Alps Weekend" else "Trip $id",
                 description = null,
                 startDate = LocalDate.now().toString(),
@@ -504,6 +533,9 @@ object OfflineStore {
         )
     }
 
+    /** All places of a trip (offline view). */
+    fun placesForTrip(tripId: String): List<PlaceWithPhotos> = placesByTrip[tripId].orEmpty()
+
     fun addPlace(
         tripId: String,
         name: String,
@@ -622,6 +654,24 @@ object OfflineStore {
     }
 
     /** Reorder places within a trip by assigning new orderIndex values based on the given ID order. */
+    /** Delete a trip locally with all its places/photos; queued for server deletion on next sync. */
+    fun deleteTripLocal(tripId: String) {
+        android.util.Log.i(TAG, "deleteTripLocal: tripId=$tripId")
+        placesByTrip.remove(tripId)?.forEach { p -> photosByPlace.remove(p.id) }
+        trips.remove(tripId)
+        markPending(tripId)
+        persist()
+    }
+
+    /** Delete a place locally (and its photos); queued for server deletion on next sync. */
+    fun deletePlaceLocal(placeId: String) {
+        android.util.Log.i(TAG, "deletePlaceLocal: placeId=$placeId")
+        placesByTrip.values.forEach { list -> list.removeAll { it.id == placeId } }
+        photosByPlace.remove(placeId)
+        markPending(placeId)
+        persist()
+    }
+
     fun reorderPlaces(tripId: String, orderedPlaceIds: List<String>) {
         val list = placesByTrip.getOrPut(tripId) { mutableListOf() }
         val before = list.associate { it.id to it.orderIndex }
@@ -657,7 +707,7 @@ object OfflineStore {
         val photo = PhotoResponse(
             id = "photo-${UUID.randomUUID()}",
             placeId = null,
-            userId = "00000000-0000-0000-0000-000000000001",
+            userId = "",
             filePath = uriString,
             thumbnailPath = uriString,
             latitude = latitude,
@@ -689,7 +739,7 @@ object OfflineStore {
         val photo = PhotoResponse(
             id = "photo-${UUID.randomUUID()}",
             placeId = placeId,
-            userId = "00000000-0000-0000-0000-000000000001",
+            userId = "",
             filePath = uriString,
             thumbnailPath = uriString,
             latitude = latitude,
@@ -802,6 +852,30 @@ object OfflineStore {
         sortPhotosInPlace(target.id)
         persist()
         return target
+    }
+
+    /** Find a photo by id across all places and unassigned (offline view). */
+    fun findPhotoPublic(photoId: String): PhotoResponse? = findPhoto(photoId)
+
+    fun updatePhotoLocal(photoId: String, caption: String?) {
+        android.util.Log.i(TAG, "updatePhotoLocal: photoId=$photoId")
+        findPhoto(photoId)?.let { p ->
+            val updated = p.copy(caption = caption)
+            if (p.placeId != null) {
+                photosByPlace[p.placeId]?.replaceAll { if (it.id == photoId) updated else it }
+            } else {
+                unassignedPhotos[photoId] = updated
+            }
+            markPending(photoId)
+        }
+    }
+
+    fun deletePhotoLocal(photoId: String) {
+        android.util.Log.i(TAG, "deletePhotoLocal: photoId=$photoId")
+        photosByPlace.values.forEach { it.removeAll { p -> p.id == photoId } }
+        unassignedPhotos.remove(photoId)
+        markPending(photoId)
+        persist()
     }
 
     private fun findPhoto(photoId: String): PhotoResponse? {

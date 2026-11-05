@@ -76,17 +76,24 @@ object SyncManager {
             ?: ""
 
         CoroutineScope(Dispatchers.IO).launch {
-            performSyncSuspend(token)
+            performSyncSuspend()
         }
     }
 
-    suspend fun performSyncSuspend(token: String) {
+    /**
+     * The auth token is read HERE and only here — nowhere else in the app
+     * may touch it. All network access goes through this function.
+     */
+    suspend fun performSyncSuspend() {
         // Global gate: synchronization OFF in Settings means no sync, no network access at all
         val ctx = appContextRef?.get()
         if (ctx != null && !com.journalpix.ui.screen.isSyncEnabled(ctx)) {
             Log.i(TAG, "performSyncSuspend: synchronization is OFF in Settings — aborting, no network access")
             return
         }
+        val token = AppSession.currentUser.value?.token
+            ?: ctx?.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)?.getString("auth_token", null)
+            ?: ""
         val bearerToken = if (token.isBlank()) "" else "Bearer $token"
         val errors = mutableListOf<String>()
 

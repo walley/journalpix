@@ -61,11 +61,9 @@ fun HomeScreen(navController:NavController) {
     ).show()
   }
 
-  // Always read from shared session (not a per-screen ViewModel instance)
-  val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
-
-  LaunchedEffect(token) {
-    tripViewModel.getTrips(token)
+  // No token here — offline-first; SyncManager is the only place that uses the auth token
+  LaunchedEffect(Unit) {
+    tripViewModel.getTrips()
   }
 
   Scaffold(topBar = {
@@ -181,10 +179,10 @@ fun HomeScreen(navController:NavController) {
             com.journalpix.models.CreateTripRequest(
               title = newTripTitle.trim(), description = null, startDate = startDateText.ifBlank {null}, endDate = endDateText.ifBlank {null}, status = TripStatus.PLANNED
             )
-          tripViewModel.createTrip(token, request) {
+          tripViewModel.createTrip(request) {
             showCreateTripDialog = false
             newTripTitle = ""
-            tripViewModel.getTrips(token)
+            tripViewModel.getTrips()
           }
         }
       }) {

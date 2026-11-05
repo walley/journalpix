@@ -33,28 +33,11 @@ class PhotoViewModel : ViewModel() {
     val geocodeErrors = mutableStateMapOf<String, String>()
     val lastExifNote = mutableStateOf<String?>(null)
 
-    fun getPhotosForPlace(token: String, placeId: String) {
-      if (token.isBlank()) {
-            photos.value = OfflineStore.photosFor(placeId)
-            OfflineStore.addresses.forEach { (id, addr) -> resolvedAddresses[id] = addr }
-            isLoading.value = false
-            return
-        }
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.getPhotosForPlace("Bearer $token", placeId)
-                }
-                if (response.success) photos.value = response.data ?: emptyList()
-                else errorMessage.value = response.error ?: "Failed to load photos"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun getPhotosForPlace(placeId: String) {
+      // Local-only; server photos are merged by SyncManager (token never leaves it)
+      photos.value = OfflineStore.photosFor(placeId)
+      OfflineStore.addresses.forEach { (id, addr) -> resolvedAddresses[id] = addr }
+      isLoading.value = false
     }
 
     fun addPhotoOffline(
@@ -133,79 +116,24 @@ class PhotoViewModel : ViewModel() {
         }
     }
 
-    fun uploadPhoto(token: String, placeId: String, bitmap: Bitmap, onSuccess: () -> Unit) {
-      if (token.isBlank()) {
-            errorMessage.value = "Use gallery picker for offline photos"
-            return
-        }
-        viewModelScope.launch {
-            isLoading.value = true
-            try {
-                val byteArray = bitmapToByteArray(bitmap)
-                val requestFile = byteArray.toRequestBody("image/jpeg".toMediaType())
-                val body = MultipartBody.Part.createFormData("photo", "photo.jpg", requestFile)
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.uploadPhoto("Bearer $token", placeId, body)
-                }
-                if (response.success) onSuccess()
-                else errorMessage.value = response.error ?: "Failed to upload photo"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun uploadPhoto(placeId: String, bitmap: Bitmap, onSuccess: () -> Unit) {
+      // Local-only: photos are stored offline; SyncManager uploads them when sync is enabled
+      errorMessage.value = "Use gallery picker for photos"
     }
 
-    fun getPhoto(token: String, photoId: String) {
-        viewModelScope.launch {
-            isLoading.value = true
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.getPhoto("Bearer $token", photoId)
-                }
-                if (response.success) currentPhoto.value = response.data
-                else errorMessage.value = response.error ?: "Failed to load photo"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun getPhoto(photoId: String) {
+        currentPhoto.value = OfflineStore.findPhotoPublic(photoId)
+        isLoading.value = false
     }
 
-    fun updatePhoto(token: String, photoId: String, request: UpdatePhotoRequest, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isLoading.value = true
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.updatePhoto("Bearer $token", photoId, request)
-                }
-                if (response.success) onSuccess()
-                else errorMessage.value = response.error ?: "Failed to update photo"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun updatePhoto(photoId: String, request: UpdatePhotoRequest, onSuccess: () -> Unit) {
+        OfflineStore.updatePhotoLocal(photoId, request.caption)
+        onSuccess()
     }
 
-    fun deletePhoto(token: String, photoId: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isLoading.value = true
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.deletePhoto("Bearer $token", photoId)
-                }
-                if (response.success) onSuccess()
-                else errorMessage.value = response.error ?: "Failed to delete photo"
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun deletePhoto(photoId: String, onSuccess: () -> Unit) {
+        OfflineStore.deletePhotoLocal(photoId)
+        onSuccess()
     }
 
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {

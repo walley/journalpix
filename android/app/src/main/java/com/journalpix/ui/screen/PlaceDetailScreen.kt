@@ -170,7 +170,7 @@ fun PlaceDetailScreen(
   tripId: String = ""
 ) {
   val context = LocalContext.current
-  val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
+  // No token here — offline-first; SyncManager is the only place that uses the auth token
 
   // The nav route may not carry tripId — fall back to the currently open trip
   val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
@@ -228,7 +228,6 @@ fun PlaceDetailScreen(
       editName = currentPlace?.name ?: ""
       editAddress = ""
       placeViewModel.updatePlace(
-        token = token,
         placeId = placeId,
         request = UpdatePlaceRequest(
           name = null,
@@ -277,13 +276,13 @@ fun PlaceDetailScreen(
     photoViewModel.resolvedAddresses.remove("temp")
   }
 
-  LaunchedEffect(placeId, token) {
+  LaunchedEffect(placeId) {
     Log.i(
       TAG_PLACE_DETAIL,
       "Loading place: placeId=$placeId, tripId='$effectiveTripId', pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}"
     )
-    placeViewModel.getPlace(token, placeId)
-    photoViewModel.getPhotosForPlace(token, placeId)
+    placeViewModel.getPlace(placeId)
+    photoViewModel.getPhotosForPlace(placeId)
   }
 
   placeViewModel.errorMessage.value?.let { error ->
@@ -303,7 +302,7 @@ fun PlaceDetailScreen(
       }
       photoViewModel.addPhotoOffline(context, placeId, uri) {
         Log.i(TAG_PLACE_DETAIL, "Photo added to place $placeId")
-        photoViewModel.getPhotosForPlace(token, placeId)
+        photoViewModel.getPhotosForPlace(placeId)
       }
     }
   }
@@ -340,16 +339,16 @@ fun PlaceDetailScreen(
 
   fun deletePhoto(photoId: String) {
     Log.w(TAG_PLACE_DETAIL, "Deleting photo: photoId=$photoId from place=$placeId")
-    photoViewModel.deletePhoto(token, photoId) {
+    photoViewModel.deletePhoto(photoId) {
       Log.i(TAG_PLACE_DETAIL, "Photo deleted: photoId=$photoId")
-      photoViewModel.getPhotosForPlace(token, placeId)
-      placeViewModel.getPlace(token, placeId)
+      photoViewModel.getPhotosForPlace(placeId)
+      placeViewModel.getPlace(placeId)
     }
   }
 
   fun deletePlace() {
     Log.w(TAG_PLACE_DETAIL, "Deleting whole place: placeId=$placeId")
-    placeViewModel.deletePlace(token, placeId) {
+    placeViewModel.deletePlace(placeId) {
       Log.i(TAG_PLACE_DETAIL, "Place deleted: placeId=$placeId")
       navController.popBackStack()
     }
@@ -445,7 +444,6 @@ fun PlaceDetailScreen(
                         "Saving place updates: name='$editName', address='$editAddress', lat=${currentPlace?.latitude}, lon=${currentPlace?.longitude}"
                       )
                       placeViewModel.updatePlace(
-                        token = token,
                         placeId = placeId,
                         request = UpdatePlaceRequest(
                           name = editName.takeIf { it.isNotBlank() },
@@ -466,8 +464,8 @@ fun PlaceDetailScreen(
                           )
                           placeRefreshKey += 1
                           editMode = false
-                          placeViewModel.getPlace(token, placeId)
-                          photoViewModel.getPhotosForPlace(token, placeId)
+                          placeViewModel.getPlace(placeId)
+                          photoViewModel.getPhotosForPlace(placeId)
                         }
                       )
                     },
@@ -732,7 +730,6 @@ fun PlaceDetailScreen(
                         "Applying map selection: lat=$lat, lon=$lon"
                       )
                       placeViewModel.updatePlace(
-                        token = token,
                         placeId = placeId,
                         request = UpdatePlaceRequest(
                           name = null,
@@ -810,10 +807,7 @@ fun PlaceDetailScreen(
                         onDelete = { deletePhoto(photo.id) },
                         onReverseGeocode = {
                           photoViewModel.reverseGeocode(effectiveTripId, photo) {
-                            photoViewModel.getPhotosForPlace(
-                              token,
-                              placeId
-                            )
+                            photoViewModel.getPhotosForPlace(placeId)
                           }
                         },
                         resolvedAddress = photoViewModel.resolvedAddresses[photo.id]

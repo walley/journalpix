@@ -13,111 +13,40 @@ class TripViewModel : ViewModel() {
     val trips = mutableStateOf<List<TripResponse>>(emptyList())
     val currentTrip = mutableStateOf<TripResponse?>(null)
 
-    fun getTrips(token: String, onSuccess: (List<TripResponse>) -> Unit = {}) {
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
+    // No token parameters anywhere: trips are read from the local OfflineStore,
+    // server sync (the only place the token is used) is triggered via SyncManager.
 
-            try {
-                val response = ApiService.apiClient.getTrips("Bearer $token")
-
-                if (response.success) {
-                    trips.value = response.data ?: emptyList()
-                    onSuccess(trips.value)
-                } else {
-                    errorMessage.value = response.error ?: "Failed to load trips"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun getTrips(onSuccess: (List<TripResponse>) -> Unit = {}) {
+        trips.value = com.journalpix.data.OfflineStore.allTrips()
+        isLoading.value = false
+        errorMessage.value = null
+        onSuccess(trips.value)
     }
 
-    fun createTrip(token: String, request: CreateTripRequest, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-
-            try {
-                val response = ApiService.apiClient.createTrip("Bearer $token", request)
-
-                if (response.success) {
-                    response.data?.let {
-                        onSuccess()
-                    }
-                } else {
-                    errorMessage.value = response.error ?: "Failed to create trip"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun createTrip(request: CreateTripRequest, onSuccess: () -> Unit) {
+        val local = com.journalpix.data.OfflineStore.createLocalTrip(
+            request.title, request.startDate, request.endDate
+        )
+        trips.value = trips.value + local
+        isLoading.value = false
+        errorMessage.value = null
+        onSuccess()
     }
 
-    fun getTrip(token: String, tripId: String) {
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-
-            try {
-                val response = ApiService.apiClient.getTrip("Bearer $token", tripId)
-
-                if (response.success) {
-                    currentTrip.value = response.data
-                } else {
-                    errorMessage.value = response.error ?: "Failed to load trip"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun getTrip(tripId: String) {
+        currentTrip.value = com.journalpix.data.OfflineStore.getTrip(tripId)
+        isLoading.value = false
+        errorMessage.value = null
     }
 
-    fun updateTrip(token: String, tripId: String, request: UpdateTripRequest, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-
-            try {
-                val response = ApiService.apiClient.updateTrip("Bearer $token", tripId, request)
-
-                if (response.success) {
-                    onSuccess()
-                } else {
-                    errorMessage.value = response.error ?: "Failed to update trip"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun updateTrip(tripId: String, request: UpdateTripRequest, onSuccess: () -> Unit) {
+        com.journalpix.data.OfflineStore.updateTripTitle(tripId, request.title ?: "")
+        onSuccess()
     }
 
-    fun deleteTrip(token: String, tripId: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = null
-
-            try {
-                val response = ApiService.apiClient.deleteTrip("Bearer $token", tripId)
-
-                if (response.success) {
-                    onSuccess()
-                } else {
-                    errorMessage.value = response.error ?: "Failed to delete trip"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            } finally {
-                isLoading.value = false
-            }
-        }
+    fun deleteTrip(tripId: String, onSuccess: () -> Unit) {
+        com.journalpix.data.OfflineStore.deleteTripLocal(tripId)
+        trips.value = trips.value.filterNot { it.id == tripId }
+        onSuccess()
     }
 }

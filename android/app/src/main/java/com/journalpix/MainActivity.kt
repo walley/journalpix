@@ -235,22 +235,17 @@ class MainActivity : ComponentActivity() {
                 inputStream?.close()
 
                 bitmap?.let { bmp ->
-                    // Get the current trip - for now use first trip or default
-                    // In production, you might want to show a dialog to select which trip/place
-                    val sharedPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-                    val token = AppSession.currentUser.value?.token
-                        ?: sharedPrefs.getString("auth_token", null)
-
-                    if (token != null) {
-                        tripViewModel.getTrips(token) { trips ->
-                            if (trips.isNotEmpty()) {
-                                val firstTrip = trips.first()
-                                photoViewModel.uploadPhoto(token, firstTrip.id, bmp) {
-                                    runOnUiThread {
-                                        Toast.makeText(this@MainActivity, "Photo uploaded successfully", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
+                    // Offline-first share: store the photo locally in the first trip.
+                    // No token here — SyncManager handles any server upload.
+                    val trips = com.journalpix.data.OfflineStore.allTrips()
+                    if (trips.isNotEmpty()) {
+                        val firstTrip = trips.first()
+                        val photo = com.journalpix.data.OfflineStore.addUnassignedPhoto(
+                            uriString = uri.toString(), latitude = null, longitude = null
+                        )
+                        Log.i(TAG_MAIN, "Share intent: stored photo ${photo.id} locally (trip ${firstTrip.id})")
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Photo saved to journal", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

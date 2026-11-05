@@ -20,7 +20,7 @@ class TimelineViewModel : ViewModel() {
     val errorMessage = mutableStateOf<String?>(null)
     val timeline = mutableStateOf<TripTimeline?>(null)
 
-    fun getTimeline(token: String, tripId: String) {
+    fun getTimeline(tripId: String) {
         val validId = AppSession.validateTripId(tripId)
         timeline.value = validId?.let { OfflineStore.timelineFor(it) }
         isLoading.value = false
@@ -33,13 +33,14 @@ class TimelineViewModel : ViewModel() {
         if (validId == null) errorMessage.value = AppSession.tripIdError.value
     }
 
-    fun syncAndRefresh(token: String, tripId: String) {
+    fun syncAndRefresh(tripId: String) {
         viewModelScope.launch {
             isSyncing.value = true
             try {
                 // Network I/O must not run on the main thread (viewModelScope = Main) — causes ANR
+                // Token lives only inside SyncManager; it no-ops when logged out or sync is off
                 withContext(Dispatchers.IO) {
-                    SyncManager.performSyncSuspend(token)
+                    SyncManager.performSyncSuspend()
                 }
             } catch (_: Exception) {
             } finally {
@@ -83,27 +84,17 @@ class TimelineViewModel : ViewModel() {
         refreshOffline(tripId)
     }
 
-    fun reorderTimeline(token: String, tripId: String, newOrder: List<String>, onSuccess: () -> Unit) {
-        getTimeline(token, tripId)
+    fun reorderTimeline(tripId: String, newOrder: List<String>, onSuccess: () -> Unit) {
+        OfflineStore.reorderPlaces(tripId, newOrder)
+        getTimeline(tripId)
         onSuccess()
     }
 
-    fun reorderPlaces(token: String, tripId: String, placeIds: List<String>, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiService.apiClient.reorderPlaces("Bearer $token", tripId, com.journalpix.models.ReorderPlacesRequest(placeIds))
-                }
-                if (response.success) {
-                    getTimeline(token, tripId)
-                    onSuccess()
-                } else {
-                    errorMessage.value = response.error ?: "Failed to reorder places"
-                }
-            } catch (e: Exception) {
-                errorMessage.value = "Network error: ${e.message}"
-            }
-        }
+    fun reorderPlaces(tripId: String, placeIds: List<String>, onSuccess: () -> Unit) {
+        // Local-first; server sync happens via SyncManager (token never leaves it)
+        OfflineStore.reorderPlaces(tripId, placeIds)
+        refreshOffline(tripId)
+        onSuccess()
     }
 
     fun getTimelineItems(): List<TimelineItem> {

@@ -118,7 +118,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   var dragOffsetY by remember {mutableStateOf(0f)}
   var hoverTargetIndex by remember {mutableStateOf<Int?>(null)}
 
-  val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
+  // No token here — offline-first; SyncManager is the only place that uses the auth token
   // Blank tripId is invalid — validate and show error instead of falling back to a demo trip
   val effectiveTripId = AppSession.validateTripId(tripId) ?: ""
 
@@ -155,7 +155,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     if (verifyDragged.id != dragged.id || verifyTarget.id != target.id) {
       Log.e(TAG_TIMELINE, "reorderDayPlaces: SWAP VERIFICATION FAILED in local list!")
     }
-    placeViewModel.reorderPlaces(token, effectiveTripId, newOrder.map {it.id}) {
+    placeViewModel.reorderPlaces(effectiveTripId, newOrder.map {it.id}) {
       refresh()
       // Verify after refresh - log all day orders
       val allDays = timelineViewModel.timeline.value?.timeline?.map {day ->
@@ -216,7 +216,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   LaunchedEffect(effectiveTripId) {
     // Always sync on trip selection so real server data replaces any
     // stale/demo data that may be persisted locally in store.json.
-    timelineViewModel.syncAndRefresh(token, effectiveTripId)
+    timelineViewModel.syncAndRefresh(effectiveTripId)
   }
 
   // Handle place added from map selection
@@ -239,7 +239,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         val request = com.journalpix.models.CreatePlaceRequest(
           tripId = effectiveTripId, name = name, description = null, latitude = lat, longitude = lon, address = null, visitDate = null, orderIndex = null
         )
-        placeViewModel.createPlace(token, effectiveTripId, request) {
+        placeViewModel.createPlace(effectiveTripId, request) {
           Log.d(TAG_TIMELINE, "createPlace onSuccess invoked for map place: lat=$lat, lon=$lon")
           AppSession.clearPendingMapPlace()
           refresh()
@@ -317,7 +317,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     ) {
       PullToRefreshBox(
         isRefreshing = isRefreshing, onRefresh = {
-          timelineViewModel.syncAndRefresh(token, effectiveTripId)
+          timelineViewModel.syncAndRefresh(effectiveTripId)
         }, state = pullToRefreshState, modifier = Modifier.fillMaxSize()
       ) {
         if (timelineViewModel.isLoading.value) {
@@ -958,7 +958,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                 ),
                 orderIndex = null
               )
-              placeViewModel.createPlace(token, effectiveTripId, request) {
+              placeViewModel.createPlace(effectiveTripId, request) {
                 isAddingPlace = false
                 showCreatePlaceDialog = false
                 newPlaceName = ""
