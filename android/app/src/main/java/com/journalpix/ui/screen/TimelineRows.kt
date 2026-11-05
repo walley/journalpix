@@ -323,7 +323,7 @@ fun photoImageUrl(photo: PhotoResponse): String {
         photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
         else -> ApiService.uploadUrl(path)
     }
-    android.util.Log.d("photoImageUrl", "path=$path -> url=$url")
+    android.util.Log.d("JPXTR", "path=$path -> url=$url")
     return url
 }
 

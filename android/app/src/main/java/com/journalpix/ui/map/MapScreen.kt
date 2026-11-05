@@ -40,7 +40,7 @@ import de.afarber.openmapview.compose.Polyline
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
 
-private const val TAG_MAP = "JPXMap"
+private const val TAG_MAP = "JPXM"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

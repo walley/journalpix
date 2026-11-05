@@ -73,7 +73,7 @@ import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
 import java.time.ZoneId
 
-private const val TAG_PLACE_DETAIL = "JPXPlaceDetail"
+private const val TAG_PLACE_DETAIL = "JPXPDS"
 
 /** Shimmer skeleton box that animates while content is loading. */
 @Composable
@@ -906,13 +906,13 @@ private fun PhotoDetailItem(
           .listener(
             onError = { _, result ->
               Log.e(
-                "PhotoDetailItem",
+                "JPXPDS",
                 "Image load ERROR: ${result.throwable.message}",
                 result.throwable
               )
             },
             onSuccess = { _, result ->
-              Log.i("PhotoDetailItem", "Image load OK: ${photoImageUrl(photo)}")
+              Log.i("JPXPDS", "Image load OK: ${photoImageUrl(photo)}")
             }
           )
           .build(),

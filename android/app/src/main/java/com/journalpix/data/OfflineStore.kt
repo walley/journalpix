@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object OfflineStore {
 
+    private const val TAG = "JPXOS"
+
     const val BEFORE_KEY = "before"
     const val AFTER_KEY = "after"
 
@@ -81,9 +83,9 @@ object OfflineStore {
     private fun loadFromDisk() {
         val ctx = appContext ?: return
         val file = storeFile(ctx)
-        android.util.Log.i("OfflineStore", "loadFromDisk: storeFile=${file.absolutePath}, exists=${file.exists()}, photosDir=${photosDir(ctx).absolutePath}")
+        android.util.Log.i(TAG, "loadFromDisk: storeFile=${file.absolutePath}, exists=${file.exists()}, photosDir=${photosDir(ctx).absolutePath}")
         if (!file.exists()) {
-            android.util.Log.i("OfflineStore", "loadFromDisk: no existing store.json — fresh start (data survives reinstalls in filesDir, wiped only on uninstall/clear-data)")
+            android.util.Log.i(TAG, "loadFromDisk: no existing store.json — fresh start (data survives reinstalls in filesDir, wiped only on uninstall/clear-data)")
             return
         }
         try {
@@ -124,9 +126,9 @@ object OfflineStore {
             if (pending != null) {
                 for (i in 0 until pending.length()) syncPending.add(pending.getString(i))
             }
-            android.util.Log.i("OfflineStore", "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
+            android.util.Log.i(TAG, "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
         } catch (e: Exception) {
-            android.util.Log.e("OfflineStore", "loadFromDisk: failed to parse store.json: ${e.message}", e)
+            android.util.Log.e(TAG, "loadFromDisk: failed to parse store.json: ${e.message}", e)
         }
     }
 
@@ -234,12 +236,12 @@ object OfflineStore {
             val all = placesByTrip.entries.joinToString("; ") { (tripId, list) ->
                 "trip=$tripId: ${list.map { "${it.id}('${it.name}')" }}"
             }
-            android.util.Log.w("OfflineStore", "findPlaceWithPhotos: NOT FOUND placeId=$placeId. Known places: $all")
+            android.util.Log.w(TAG, "findPlaceWithPhotos: NOT FOUND placeId=$placeId. Known places: $all")
             return null
         }
         val photos = photosByPlace[placeId].orEmpty()
             .sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
-        android.util.Log.i("OfflineStore", "findPlaceWithPhotos: placeId=$placeId, photos=${photos.size}, paths=${photos.map { it.filePath }}")
+        android.util.Log.i(TAG, "findPlaceWithPhotos: placeId=$placeId, photos=${photos.size}, paths=${photos.map { it.filePath }}")
         return found.copy(photos = photos)
     }
 
@@ -496,12 +498,12 @@ object OfflineStore {
         address: String? = null,
         visitDate: ZonedTime? = null
     ) {
-        android.util.Log.i("OfflineStore", "updatePlaceLocal START: placeId=$placeId, lat=$latitude, lon=$longitude, addr=$address")
+        android.util.Log.i(TAG, "updatePlaceLocal START: placeId=$placeId, lat=$latitude, lon=$longitude, addr=$address")
         placesByTrip.values.forEach { list ->
             val idx = list.indexOfFirst { it.id == placeId }
             if (idx >= 0) {
                 val p = list[idx]
-                android.util.Log.i("OfflineStore", "updatePlaceLocal: found at idx=$idx, before lat=${p.latitude} lon=${p.longitude}")
+                android.util.Log.i(TAG, "updatePlaceLocal: found at idx=$idx, before lat=${p.latitude} lon=${p.longitude}")
                 list[idx] = p.copy(
                     name = name ?: p.name,
                     description = description ?: p.description,
@@ -510,10 +512,10 @@ object OfflineStore {
                     address = address ?: p.address,
                     visitDate = visitDate ?: p.visitDate
                 )
-                android.util.Log.i("OfflineStore", "updatePlaceLocal: after lat=${list[idx].latitude} lon=${list[idx].longitude}")
+                android.util.Log.i(TAG, "updatePlaceLocal: after lat=${list[idx].latitude} lon=${list[idx].longitude}")
                 markPending(placeId)
             } else {
-                android.util.Log.w("OfflineStore", "updatePlaceLocal: place $placeId NOT FOUND in list of ${list.size}")
+                android.util.Log.w(TAG, "updatePlaceLocal: place $placeId NOT FOUND in list of ${list.size}")
             }
         }
     }
@@ -527,7 +529,7 @@ object OfflineStore {
             if (idx >= 0) {
                 list[idx] = list[idx].copy(orderIndex = index)
             } else {
-                android.util.Log.e("OfflineStore", "reorderPlaces: place id $id not found in trip $tripId")
+                android.util.Log.e(TAG, "reorderPlaces: place id $id not found in trip $tripId")
             }
         }
         // Verify the swap actually took effect
@@ -535,10 +537,10 @@ object OfflineStore {
         orderedPlaceIds.forEachIndexed { index, id ->
             val actual = after[id]
             if (actual != index) {
-                android.util.Log.e("OfflineStore", "reorderPlaces VERIFY FAILED: place $id expected orderIndex=$index but got $actual (was ${before[id]})")
+                android.util.Log.e(TAG, "reorderPlaces VERIFY FAILED: place $id expected orderIndex=$index but got $actual (was ${before[id]})")
             }
         }
-        android.util.Log.i("OfflineStore", "reorderPlaces: applied order ${orderedPlaceIds.map { "$it=${after[it]}" }}")
+        android.util.Log.i(TAG, "reorderPlaces: applied order ${orderedPlaceIds.map { "$it=${after[it]}" }}")
         // Persist
         list.forEach { markPending(it.id) }
     }
@@ -873,7 +875,7 @@ object OfflineStore {
     /** Re-queue an item for upload without triggering a sync (used during merge). */
     private fun requeuePending(id: String) {
         if (syncPending.add(id)) {
-            android.util.Log.i("OfflineStore", "requeuePending: $id re-queued for upload (deleted or missing on server)")
+            android.util.Log.i(TAG, "requeuePending: $id re-queued for upload (deleted or missing on server)")
         }
     }
 
@@ -892,7 +894,7 @@ object OfflineStore {
         if (localTrip == null || !syncPending.contains(trip.id)) {
             trips[trip.id] = trip
         } else {
-            android.util.Log.i("OfflineStore", "mergeBackendTimeline: keeping local pending trip ${trip.id}")
+            android.util.Log.i(TAG, "mergeBackendTimeline: keeping local pending trip ${trip.id}")
         }
 
         // Start from the local place list — server data only fills gaps
@@ -915,13 +917,13 @@ object OfflineStore {
                     }
                     if (localIdx != -1) {
                         nameMatchedLocalIds.add(merged[localIdx].id)
-                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: server place ${p.id} '${p.name}' matches local ${merged[localIdx].id} by name — keeping local, no duplicate")
+                        android.util.Log.i(TAG, "mergeBackendTimeline: server place ${p.id} '${p.name}' matches local ${merged[localIdx].id} by name — keeping local, no duplicate")
                     }
                 }
                 if (localIdx == -1) {
                     // Not on device → download from server
                     merged.add(p)
-                    android.util.Log.i("OfflineStore", "mergeBackendTimeline: downloaded new place from server: ${p.id} '${p.name}'")
+                    android.util.Log.i(TAG, "mergeBackendTimeline: downloaded new place from server: ${p.id} '${p.name}'")
                 } else {
                     // On both → device wins for place fields, but pull server photos we don't have
                     val local = merged[localIdx]
@@ -930,7 +932,7 @@ object OfflineStore {
                     val missingPhotos = p.photos.filter { sp -> localPhotos.none { it.id == sp.id } }
                     if (missingPhotos.isNotEmpty()) {
                         photosByPlace[localId] = (localPhotos + missingPhotos).toMutableList()
-                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: added ${missingPhotos.size} server photos to place $localId")
+                        android.util.Log.i(TAG, "mergeBackendTimeline: added ${missingPhotos.size} server photos to place $localId")
                     }
                     merged[localIdx] = local.copy(photos = photosByPlace[localId].orEmpty())
                 }
@@ -942,11 +944,11 @@ object OfflineStore {
         val reuploaded = merged.filter { it.id !in serverPlaceIds && it.id !in nameMatchedLocalIds }
         reuploaded.forEach { requeuePending(it.id) }
         if (reuploaded.isNotEmpty()) {
-            android.util.Log.i("OfflineStore", "mergeBackendTimeline: ${reuploaded.size} local places missing on server, re-queued: ${reuploaded.map { it.id }}")
+            android.util.Log.i(TAG, "mergeBackendTimeline: ${reuploaded.size} local places missing on server, re-queued: ${reuploaded.map { it.id }}")
         }
 
         placesByTrip[trip.id] = merged
-        android.util.Log.i("OfflineStore", "mergeBackendTimeline: trip ${trip.id} now has ${merged.size} places: ${merged.map { "${it.id}('${it.name}')" }}")
+        android.util.Log.i(TAG, "mergeBackendTimeline: trip ${trip.id} now has ${merged.size} places: ${merged.map { "${it.id}('${it.name}')" }}")
         persist()
     }
 }

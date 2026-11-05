@@ -16,7 +16,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-private const val TAG_PLACE_VM = "JPXPlaceVM"
+private const val TAG_PLACE_VM = "JPXPV"
 
 class PlaceViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)

@@ -90,7 +90,7 @@ import de.afarber.openmapview.compose.OpenMap
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
 
-private const val TAG_TIMELINE = "JPXTimeline"
+private const val TAG_TIMELINE = "JPXTS"
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable

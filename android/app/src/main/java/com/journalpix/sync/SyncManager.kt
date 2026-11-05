@@ -26,7 +26,7 @@ import java.lang.ref.WeakReference
 
 object SyncManager {
     const val ACTION_SYNC = "com.journalpix.ACTION_SYNC"
-    private const val TAG = "JP_SYNC"
+    private const val TAG = "JPXSM"
 
     @Volatile
     private var appContextRef: WeakReference<Context>? = null

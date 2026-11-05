@@ -8,7 +8,7 @@ import com.journalpix.models.*
 import kotlinx.coroutines.launch
 import android.util.Log
 
-private const val TAG_MAP_VM = "JPXMapVM"
+private const val TAG_MAP_VM = "JPXMV"
 
 class MapViewModel : ViewModel() {
     val isLoading = mutableStateOf(false)
