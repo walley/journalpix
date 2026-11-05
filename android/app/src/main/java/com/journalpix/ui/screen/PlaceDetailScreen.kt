@@ -368,6 +368,16 @@ fun PlaceDetailScreen(
     }
   }
 
+  // Center + zoom the minimap on the place's coordinates once they are known (async load)
+  LaunchedEffect(currentPlace?.latitude, currentPlace?.longitude) {
+    val lat = currentPlace?.latitude
+    val lon = currentPlace?.longitude
+    if (lat != null && lon != null) {
+      Log.i(TAG_PLACE_DETAIL, "Minimap: centering on place lat=$lat lon=$lon zoom=15")
+      mapCameraState.position = CameraPosition(LatLng(lat, lon), 15f)
+    }
+  }
+
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
@@ -630,6 +640,21 @@ fun PlaceDetailScreen(
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
+                    // Minimap is read-only: tapping it opens the big map for editing
+                    .clickable {
+                      Log.i(TAG_PLACE_DETAIL, "Minimap tapped — opening big map for place $placeId")
+                      val targetTripId = AppSession.validateTripId(effectiveTripId)
+                      if (targetTripId != null) {
+                        AppSession.mapEditPlaceId.value = placeId
+                        navController.navigate("map/$targetTripId?addPlaceMode=true")
+                      } else {
+                        android.widget.Toast.makeText(
+                          context,
+                          AppSession.tripIdError.value ?: "Invalid trip",
+                          android.widget.Toast.LENGTH_LONG
+                        ).show()
+                      }
+                    }
                 ) {
                   OpenMap(
                     modifier = Modifier.fillMaxSize(),
@@ -641,14 +666,7 @@ fun PlaceDetailScreen(
                     ),
                     uiSettings = MapUiSettings(
                       zoomControlsEnabled = false
-                    ),
-                    onMapClick = { latLng ->
-                      Log.i(
-                        TAG_PLACE_DETAIL,
-                        "Map tapped: lat=${latLng.latitude}, lon=${latLng.longitude}"
-                      )
-                      mapSelection = Pair(latLng.latitude, latLng.longitude)
-                    }
+                    )
                   ) {
                     MarkerComposable(
                       state = rememberMarkerState(
