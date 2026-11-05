@@ -221,13 +221,14 @@ fun PlaceDetailScreen(
       AppSession.clearPendingMapPlaceUpdate()
       AppSession.mapEditPlaceId.value = null
       editMode = true
-      editName = if (name.isNotBlank()) name else currentPlace?.name ?: ""
+      // A map location update must NEVER change the place name — keep the user-entered name
+      editName = currentPlace?.name ?: ""
       editAddress = ""
       placeViewModel.updatePlace(
         token = token,
         placeId = placeId,
         request = UpdatePlaceRequest(
-          name = if (name.isNotBlank()) name else null,
+          name = null,
           description = null,
           latitude = lat,
           longitude = lon,

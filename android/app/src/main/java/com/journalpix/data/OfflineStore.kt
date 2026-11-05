@@ -133,18 +133,27 @@ object OfflineStore {
         }
     }
 
-    /** Remove leftover demo-testing artifacts (old "Demo Place" and trip-title-named places). */
+    /** Remove leftover demo-testing artifacts (old "Demo Place", trip-title-named places, demo trips). */
     private fun cleanupDemoLeftovers() {
         val demoNamePattern = Regex("^Trip demo", RegexOption.IGNORE_CASE)
         var removed = 0
+        // Drop whole demo trips and their places
+        val demoTripIds = placesByTrip.keys.filter { it.startsWith("demo") }.toSet()
+        demoTripIds.forEach { tripId ->
+            removed += placesByTrip.remove(tripId)?.size ?: 0
+        }
+        trips.keys.filter { it.startsWith("demo") }.forEach { trips.remove(it) }
         placesByTrip.values.forEach { list ->
             val before = list.size
             list.removeAll { it.id == "demo-place-1" || it.name == "Demo Place" || demoNamePattern.containsMatchIn(it.name) }
             removed += before - list.size
         }
         photosByPlace.remove("demo-place-1")
-        if (removed > 0) {
-            android.util.Log.i(TAG, "cleanupDemoLeftovers: removed $removed demo leftover places")
+        // Drop pending queue entries that no longer exist locally
+        val knownIds = placesByTrip.values.flatten().map { it.id }.toSet() + trips.keys
+        syncPending.removeAll { it !in knownIds }
+        if (removed > 0 || demoTripIds.isNotEmpty()) {
+            android.util.Log.i(TAG, "cleanupDemoLeftovers: removed $removed demo leftover places, demo trips: $demoTripIds")
             persist()
         }
     }
