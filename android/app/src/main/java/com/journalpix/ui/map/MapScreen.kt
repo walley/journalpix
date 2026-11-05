@@ -130,8 +130,12 @@ fun MapScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
+                    // When opened from a place view, inherit the place name as the title
+                    val placeTitle = editPlace?.name?.takeIf { it.isNotBlank() }
                     Text(
-                        mapViewModel.mapRoute.value?.tripTitle ?: "Map View"
+                        placeTitle
+                            ?: mapViewModel.mapRoute.value?.tripTitle
+                            ?: "Map View"
                     )
                 },
                 navigationIcon = {
