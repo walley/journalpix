@@ -126,7 +126,13 @@ fun HomeScreen(navController:NavController) {
             items(tripViewModel.trips.value) {trip ->
               TripCard(trip = trip, onClick = {
                 Log.i(TAG, "onClick: trip selected — id=${trip.id}, title='${trip.title}', navigating to timeline")
-                navController.navigate("timeline/${trip.id}")
+                if (trip.id.isBlank()) {
+                  Log.e(TAG, "Cannot open trip — id is BLANK")
+                  android.widget.Toast.makeText(context, "Invalid trip", android.widget.Toast.LENGTH_LONG).show()
+                } else {
+                  AppSession.currentTripId.value = trip.id
+                  navController.navigate("timeline/${trip.id}")
+                }
               })
             }
           }

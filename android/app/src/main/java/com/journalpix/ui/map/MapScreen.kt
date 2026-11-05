@@ -57,9 +57,15 @@ fun MapScreen(
     var newPlaceName by remember { mutableStateOf("") }
     var showAddPlaceDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(tripId) {
-        if (tripId.isNotEmpty()) {
-            mapViewModel.loadTripRoute(tripId, places)
+    // The route may carry a blank tripId — fall back to the currently open trip
+    val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
+    Log.i(TAG_MAP, "MapScreen opened: route tripId='$tripId', effectiveTripId='$effectiveTripId', addPlaceMode=$addPlaceMode, placeIdForUpdate='$placeIdForUpdate'")
+
+    LaunchedEffect(effectiveTripId) {
+        if (effectiveTripId.isNotEmpty()) {
+            mapViewModel.loadTripRoute(effectiveTripId, places)
+        } else {
+            Log.e(TAG_MAP, "MapScreen: effectiveTripId is BLANK — invalid trip, nothing to load")
         }
     }
 
@@ -264,7 +270,7 @@ fun MapScreen(
                             onClick = {
                                 mapViewModel.toggleBubble(place.id)
                                 Log.i(TAG_MAP, "Marker clicked: placeId=${place.id}, navigating to place detail")
-                                navController.navigate("place/${place.id}?tripId=$tripId")
+                                navController.navigate("place/${place.id}?tripId=$effectiveTripId")
                                 true
                             }
                         ) {

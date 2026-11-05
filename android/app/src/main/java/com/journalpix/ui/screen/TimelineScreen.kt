@@ -126,6 +126,17 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     timelineViewModel.refreshOffline(effectiveTripId)
   }
 
+  // Guarded navigation to the map — never navigate with a blank/invalid tripId
+  fun navigateToMap(addPlaceMode: Boolean) {
+    val valid = AppSession.validateTripId(effectiveTripId)
+    if (valid != null) {
+      navController.navigate(if (addPlaceMode) "map/$valid?addPlaceMode=true" else "map/$valid")
+    } else {
+      Log.e(TAG_TIMELINE, "Map navigation blocked — tripId is blank/invalid")
+      android.widget.Toast.makeText(context, AppSession.tripIdError.value ?: "Invalid trip", android.widget.Toast.LENGTH_LONG).show()
+    }
+  }
+
   fun reorderDayPlaces(dayPlaces:List<PlaceWithPhotos>, fromIndex:Int, toIndex:Int) {
     if (fromIndex == toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= dayPlaces.size || toIndex >= dayPlaces.size) {
       Log.w(TAG_TIMELINE, "reorderDayPlaces: invalid indices from=$fromIndex to=$toIndex size=${dayPlaces.size}")
@@ -265,7 +276,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
       IconButton(onClick = {
         Log.i(TAG_TIMELINE, "onClick: 'Add place on map' TopBar button — navigating to map addPlaceMode for trip $effectiveTripId")
         AppSession.clearPendingMapPlace()
-        navController.navigate("map/$effectiveTripId?addPlaceMode=true")
+        navigateToMap(addPlaceMode = true)
       }) {
         Icon(Icons.Default.Add, contentDescription = "Add place on map")
       }
@@ -276,7 +287,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     ) {
       FloatingActionButton(
         onClick = {
-          navController.navigate("map/$effectiveTripId")
+          navigateToMap(addPlaceMode = false)
         }, modifier = Modifier.size(48.dp)
       ) {
         Icon(
@@ -366,7 +377,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   .background(MaterialTheme.colorScheme.surfaceVariant)
                   .clickable {
                     Log.i(TAG_TIMELINE, "Minimap tapped — opening full map for trip $effectiveTripId")
-                    navController.navigate("map/$effectiveTripId")
+                    navigateToMap(addPlaceMode = false)
                   }
               ) {
                 if (positioned.isNotEmpty()) {
@@ -831,8 +842,13 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     selectedPlace?.let {place ->
       val live = timelineViewModel.timeline.value?.timeline?.flatMap {it.places}?.find {it.id == place.id} ?: place
       Log.i(TAG_TIMELINE, "Opening place detail screen: placeId=${place.id}, name='${place.name}'")
-      AppSession.openedPlaceSnapshot.value = live
-      navController.navigate("place/${place.id}?tripId=$effectiveTripId")
+      if (place.id.isBlank()) {
+        Log.e(TAG_TIMELINE, "Cannot open place detail — place id is BLANK")
+        android.widget.Toast.makeText(context, "Invalid place", android.widget.Toast.LENGTH_LONG).show()
+      } else {
+        AppSession.openedPlaceSnapshot.value = live
+        navController.navigate("place/${place.id}?tripId=$effectiveTripId")
+      }
       selectedPlace = null
     }
 
@@ -911,8 +927,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             )
             Button(
               onClick = {
-                Log.i(TAG_TIMELINE, "Pick on map clicked: navigating to map/$effectiveTripId?addPlaceMode=true")
-                navController.navigate("map/$effectiveTripId?addPlaceMode=true")
+                Log.i(TAG_TIMELINE, "Pick on map clicked: navigating to map for trip $effectiveTripId")
+                navigateToMap(addPlaceMode = true)
               }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
             ) {
               Text("Pick on map")
