@@ -300,6 +300,17 @@ object OfflineStore {
         return updated
     }
 
+    fun updateTripDescription(tripId: String, description: String?): TripResponse {
+        val current = ensureDemoTrip(tripId)
+        val updated = current.copy(
+            description = description?.trim()?.takeIf { it.isNotBlank() },
+            updatedAt = java.time.Instant.now().toString()
+        )
+        trips[current.id] = updated
+        markPending(current.id)
+        return updated
+    }
+
     fun timelineFor(tripId: String): TripTimeline {
         val trip = trips[tripId]
         if (trip == null) {

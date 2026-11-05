@@ -78,930 +78,992 @@ private const val TAG_PLACE_DETAIL = "JPXPlaceDetail"
 /** Shimmer skeleton box that animates while content is loading. */
 @Composable
 private fun SkeletonBox(
-    modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp)
+  modifier: Modifier = Modifier,
+  shape: RoundedCornerShape = RoundedCornerShape(8.dp)
 ) {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shimmerAlpha"
-    )
-    Box(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = alpha),
-                shape
-            )
-    )
+  val transition = rememberInfiniteTransition(label = "shimmer")
+  val alpha by transition.animateFloat(
+    initialValue = 0.3f,
+    targetValue = 0.7f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = 1000, easing = LinearEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "shimmerAlpha"
+  )
+  Box(
+    modifier = modifier
+      .background(
+        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = alpha),
+        shape
+      )
+  )
 }
 
 /** Full skeleton layout shown while place data is loading (also renders in @Preview). */
 @Composable
 private fun PlaceDetailSkeleton() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(horizontal = 16.dp, vertical = 8.dp),
+    verticalArrangement = Arrangement.spacedBy(12.dp)
+  ) {
+    // Title skeleton
+    SkeletonBox(
+      modifier = Modifier
+        .fillMaxWidth(0.6f)
+        .height(32.dp)
+    )
+    // Address row skeleton
+    SkeletonBox(
+      modifier = Modifier
+        .fillMaxWidth(0.8f)
+        .height(20.dp)
+    )
+    // Lat/lon row skeleton
+    SkeletonBox(
+      modifier = Modifier
+        .fillMaxWidth(0.5f)
+        .height(20.dp)
+    )
+    // Map skeleton
+    SkeletonBox(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(200.dp),
+      shape = RoundedCornerShape(12.dp)
+    )
+    // Photos header skeleton
+    SkeletonBox(
+      modifier = Modifier
+        .fillMaxWidth(0.4f)
+        .height(24.dp)
+    )
+    // Photos grid skeleton
+    LazyVerticalGrid(
+      columns = GridCells.Fixed(3),
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(220.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      userScrollEnabled = false
     ) {
-        // Title skeleton
+      items(6) {
         SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(32.dp)
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(68.dp)
         )
-        // Address row skeleton
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .height(20.dp)
-        )
-        // Lat/lon row skeleton
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .height(20.dp)
-        )
-        // Map skeleton
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            shape = RoundedCornerShape(12.dp)
-        )
-        // Photos header skeleton
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth(0.4f)
-                .height(24.dp)
-        )
-        // Photos grid skeleton
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            userScrollEnabled = false
-        ) {
-            items(6) {
-                SkeletonBox(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(68.dp)
-                )
-            }
-        }
+      }
     }
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceDetailScreen(
-    navController: NavController,
-    placeId: String,
-    tripId: String = ""
+  navController: NavController,
+  placeId: String,
+  tripId: String = ""
 ) {
-    val context = LocalContext.current
-    val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
+  val context = LocalContext.current
+  val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
 
-    val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
-    val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
+  val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
+  val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
 
-    val placeState = placeViewModel.currentPlace
-    val currentPlace = placeState.value
-    // Show skeleton when no data yet (also in @Preview where currentPlace is null)
-    val showSkeleton = currentPlace == null
+  val placeState = placeViewModel.currentPlace
+  val currentPlace = placeState.value
+  // Show skeleton when no data yet (also in @Preview where currentPlace is null)
+  val showSkeleton = currentPlace == null
 
-    var editMode by remember { mutableStateOf(false) }
-    var editName by remember { mutableStateOf("") }
-    var editAddress by remember { mutableStateOf("") }
+  var editMode by remember { mutableStateOf(false) }
+  var editName by remember { mutableStateOf("") }
+  var editAddress by remember { mutableStateOf("") }
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
-    var showImageViewer by remember { mutableStateOf(false) }
-    var currentImageUrl by remember { mutableStateOf("") }
-    var currentCaption by remember { mutableStateOf("") }
+  var showImageViewer by remember { mutableStateOf(false) }
+  var currentImageUrl by remember { mutableStateOf("") }
+  var currentCaption by remember { mutableStateOf("") }
 
-    var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
-    var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
+  var mapSelection by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+  var mapSelectionAddress by remember { mutableStateOf<String?>(null) }
 
-    var placeRefreshKey by remember { mutableStateOf(0) }
+  var placeRefreshKey by remember { mutableStateOf(0) }
 
-    LaunchedEffect(placeState.value) {
-        placeRefreshKey += 1
+  LaunchedEffect(placeState.value) {
+    placeRefreshKey += 1
+  }
+
+  LaunchedEffect(currentPlace) {
+    if (currentPlace != null) {
+      editName = currentPlace.name
+      editAddress = currentPlace.address ?: ""
     }
+  }
 
-    LaunchedEffect(currentPlace) {
-        if (currentPlace != null) {
-            editName = currentPlace.name
-            editAddress = currentPlace.address ?: ""
+  LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
+    val pending = AppSession.pendingMapPlaceUpdate.value
+    Log.i(
+      TAG_PLACE_DETAIL,
+      "pendingMapPlaceUpdate effect fired: pending=$pending, placeId=$placeId, currentPlace lat=${currentPlace?.latitude} lon=${currentPlace?.longitude}"
+    )
+    if (pending != null) {
+      val (lat, lon, name) = pending
+      Log.i(
+        TAG_PLACE_DETAIL,
+        "Pending map place update: lat=$lat, lon=$lon, name='$name' for placeId=$placeId"
+      )
+      AppSession.clearPendingMapPlaceUpdate()
+      AppSession.mapEditPlaceId.value = null
+      editMode = true
+      editName = if (name.isNotBlank()) name else currentPlace?.name ?: ""
+      editAddress = ""
+      placeViewModel.updatePlace(
+        token = token,
+        placeId = placeId,
+        request = UpdatePlaceRequest(
+          name = if (name.isNotBlank()) name else null,
+          description = null,
+          latitude = lat,
+          longitude = lon,
+          address = null,
+          day = null,
+          visitDate = null,
+          orderIndex = null,
+          transportFromPrevious = null
+        ),
+        onSuccess = {
+          Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
+          placeRefreshKey += 1
+          editMode = false
+          placeViewModel.refreshLocalPlace(placeId)
         }
+      )
+      photoViewModel.reverseGeocode(
+        tripId, PhotoResponse(
+          id = "temp",
+          placeId = placeId,
+          userId = "",
+          filePath = "",
+          thumbnailPath = "",
+          latitude = lat,
+          longitude = lon,
+          takenAt = null,
+          caption = null,
+          orderIndex = 0,
+          createdAt = ""
+        )
+      ) {
+        Log.i(TAG_PLACE_DETAIL, "Reverse geocode complete for map selection")
+      }
     }
+  }
 
-    LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
-        val pending = AppSession.pendingMapPlaceUpdate.value
-        Log.i(TAG_PLACE_DETAIL, "pendingMapPlaceUpdate effect fired: pending=$pending, placeId=$placeId, currentPlace lat=${currentPlace?.latitude} lon=${currentPlace?.longitude}")
-        if (pending != null) {
-            val (lat, lon, name) = pending
-            Log.i(TAG_PLACE_DETAIL, "Pending map place update: lat=$lat, lon=$lon, name='$name' for placeId=$placeId")
-            AppSession.clearPendingMapPlaceUpdate()
-            AppSession.mapEditPlaceId.value = null
-            editMode = true
-            editName = if (name.isNotBlank()) name else currentPlace?.name ?: ""
-            editAddress = ""
-            placeViewModel.updatePlace(
-                token = token,
-                placeId = placeId,
-                request = UpdatePlaceRequest(
-                    name = if (name.isNotBlank()) name else null,
-                    description = null,
-                    latitude = lat,
-                    longitude = lon,
-                    address = null,
-                    day = null,
-                    visitDate = null,
-                    orderIndex = null,
-                    transportFromPrevious = null
-                ),
-                onSuccess = {
-                    Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
-                    placeRefreshKey += 1
-                    editMode = false
-                    placeViewModel.refreshLocalPlace(placeId)
-                }
-            )
-            photoViewModel.reverseGeocode(tripId, PhotoResponse(
-                id = "temp",
-                placeId = placeId,
-                userId = "",
-                filePath = "",
-                thumbnailPath = "",
-                latitude = lat,
-                longitude = lon,
-                takenAt = null,
-                caption = null,
-                orderIndex = 0,
-                createdAt = ""
-            )) {
-                Log.i(TAG_PLACE_DETAIL, "Reverse geocode complete for map selection")
-            }
-        }
+  LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
+    val addr = photoViewModel.resolvedAddresses["temp"]
+    if (addr != null && addr.isNotBlank()) {
+      Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
+      editAddress = addr
     }
+    photoViewModel.resolvedAddresses.remove("temp")
+  }
 
-    LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
-        val addr = photoViewModel.resolvedAddresses["temp"]
-        if (addr != null && addr.isNotBlank()) {
-            Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
-            editAddress = addr
-        }
-        photoViewModel.resolvedAddresses.remove("temp")
-    }
+  LaunchedEffect(placeId, token) {
+    Log.i(
+      TAG_PLACE_DETAIL,
+      "Loading place: placeId=$placeId, tripId=$tripId, pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}"
+    )
+    placeViewModel.getPlace(token, placeId)
+    photoViewModel.getPhotosForPlace(token, placeId)
+  }
 
-    LaunchedEffect(placeId, token) {
-        Log.i(TAG_PLACE_DETAIL, "Loading place: placeId=$placeId, tripId=$tripId, pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}")
-        placeViewModel.getPlace(token, placeId)
+  placeViewModel.errorMessage.value?.let { error ->
+    Log.e(TAG_PLACE_DETAIL, "Place load error: $error")
+  }
+
+  val pickImageLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.GetContent()
+  ) { uri: Uri? ->
+    if (uri != null) {
+      try {
+        context.contentResolver.takePersistableUriPermission(
+          uri,
+          android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+      } catch (_: Exception) {
+      }
+      photoViewModel.addPhotoOffline(context, placeId, uri) {
+        Log.i(TAG_PLACE_DETAIL, "Photo added to place $placeId")
         photoViewModel.getPhotosForPlace(token, placeId)
+      }
     }
+  }
 
-    placeViewModel.errorMessage.value?.let { error ->
-        Log.e(TAG_PLACE_DETAIL, "Place load error: $error")
+  val permissionLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestMultiplePermissions()
+  ) { _ -> pickImageLauncher.launch("image/*") }
+
+  fun startAddPhoto() {
+    val needed = mutableListOf<String>()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      if (ContextCompat.checkSelfPermission(
+          context,
+          Manifest.permission.ACCESS_MEDIA_LOCATION
+        )
+        != PackageManager.PERMISSION_GRANTED
+      ) needed.add(Manifest.permission.ACCESS_MEDIA_LOCATION)
     }
-
-    val pickImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: Exception) { }
-            photoViewModel.addPhotoOffline(context, placeId, uri) {
-                Log.i(TAG_PLACE_DETAIL, "Photo added to place $placeId")
-                photoViewModel.getPhotosForPlace(token, placeId)
-            }
-        }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
+        != PackageManager.PERMISSION_GRANTED
+      ) needed.add(Manifest.permission.READ_MEDIA_IMAGES)
+    } else {
+      if (ContextCompat.checkSelfPermission(
+          context,
+          Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        != PackageManager.PERMISSION_GRANTED
+      ) needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
+    if (needed.isNotEmpty()) permissionLauncher.launch(needed.toTypedArray())
+    else pickImageLauncher.launch("image/*")
+  }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ -> pickImageLauncher.launch("image/*") }
-
-    fun startAddPhoto() {
-        val needed = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-            ) needed.add(Manifest.permission.ACCESS_MEDIA_LOCATION)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
-                != PackageManager.PERMISSION_GRANTED
-            ) needed.add(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED
-            ) needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-        if (needed.isNotEmpty()) permissionLauncher.launch(needed.toTypedArray())
-        else pickImageLauncher.launch("image/*")
+  fun deletePhoto(photoId: String) {
+    Log.w(TAG_PLACE_DETAIL, "Deleting photo: photoId=$photoId from place=$placeId")
+    photoViewModel.deletePhoto(token, photoId) {
+      Log.i(TAG_PLACE_DETAIL, "Photo deleted: photoId=$photoId")
+      photoViewModel.getPhotosForPlace(token, placeId)
+      placeViewModel.getPlace(token, placeId)
     }
+  }
 
-    fun deletePhoto(photoId: String) {
-        Log.w(TAG_PLACE_DETAIL, "Deleting photo: photoId=$photoId from place=$placeId")
-        photoViewModel.deletePhoto(token, photoId) {
-            Log.i(TAG_PLACE_DETAIL, "Photo deleted: photoId=$photoId")
-            photoViewModel.getPhotosForPlace(token, placeId)
-            placeViewModel.getPlace(token, placeId)
-        }
+  fun deletePlace() {
+    Log.w(TAG_PLACE_DETAIL, "Deleting whole place: placeId=$placeId")
+    placeViewModel.deletePlace(token, placeId) {
+      Log.i(TAG_PLACE_DETAIL, "Place deleted: placeId=$placeId")
+      navController.popBackStack()
     }
+  }
 
-    fun deletePlace() {
-        Log.w(TAG_PLACE_DETAIL, "Deleting whole place: placeId=$placeId")
-        placeViewModel.deletePlace(token, placeId) {
-            Log.i(TAG_PLACE_DETAIL, "Place deleted: placeId=$placeId")
-            navController.popBackStack()
-        }
+  val visitLabel = currentPlace?.visitLabel()
+  val visitDateText = if (visitLabel != null) "Visit: $visitLabel" else null
+
+  val mapCameraState = rememberCameraPositionState {
+    position = if (currentPlace?.latitude != null && currentPlace?.longitude != null) {
+      CameraPosition(
+        LatLng(currentPlace?.latitude ?: 0.0, currentPlace?.longitude ?: 0.0),
+        15f
+      )
+    } else {
+      CameraPosition(LatLng(0.0, 0.0), 3f)
     }
+  }
 
-    val visitLabel = currentPlace?.visitLabel()
-    val visitDateText = if (visitLabel != null) "Visit: $visitLabel" else null
-
-    val mapCameraState = rememberCameraPositionState {
-        position = if (currentPlace?.latitude != null && currentPlace?.longitude != null) {
-            CameraPosition(
-                LatLng(currentPlace?.latitude ?: 0.0, currentPlace?.longitude ?: 0.0),
-                15f
-            )
-        } else {
-            CameraPosition(LatLng(0.0, 0.0), 3f)
+  Scaffold(
+    topBar = {
+      CenterAlignedTopAppBar(
+        title = { Text(currentPlace?.name ?: "Place") },
+        navigationIcon = {
+          IconButton(onClick = { navController.popBackStack() }) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+          }
         }
+      )
+    },
+    floatingActionButton = {
+      FloatingActionButton(
+        onClick = { startAddPhoto() },
+        modifier = Modifier.size(48.dp)
+      ) {
+        Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add photo")
+      }
     }
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(currentPlace?.name ?: "Place") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { startAddPhoto() },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add photo")
-            }
-        }
-    ) { paddingValues ->
-        Box(
+  ) { paddingValues ->
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(paddingValues)
+    ) {
+      if (showSkeleton) {
+        PlaceDetailSkeleton()
+      } else {
+        key(placeRefreshKey) {
+          Column(
             modifier = Modifier
               .fillMaxSize()
-              .padding(paddingValues)
-        ) {
-            if (showSkeleton) {
-                PlaceDetailSkeleton()
-            } else {
-                key(placeRefreshKey) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                              .fillMaxWidth()
-                              .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            if (editMode) {
-                                OutlinedTextField(
-                                    value = editName,
-                                    onValueChange = { editName = it },
-                                    label = { Text("Place name") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                OutlinedTextField(
-                                    value = editAddress,
-                                    onValueChange = { editAddress = it },
-                                    label = { Text("Address") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
-                                ) {
-                                    TextButton(
-                                        onClick = {
-                                            editName = currentPlace?.name ?: ""
-                                            editAddress = currentPlace?.address ?: ""
-                                            editMode = false
-                                        }
-                                    ) { Text("Cancel") }
-                                    Spacer(Modifier.width(8.dp))
-                                    Button(
-                                        onClick = {
-                                            Log.i(TAG_PLACE_DETAIL, "Saving place updates: name='$editName', address='$editAddress', lat=${currentPlace?.latitude}, lon=${currentPlace?.longitude}")
-                                            placeViewModel.updatePlace(
-                                                token = token,
-                                                placeId = placeId,
-                                                request = UpdatePlaceRequest(
-                                                    name = editName.takeIf { it.isNotBlank() },
-                                                    description = null,
-                                                    latitude = currentPlace.latitude,
-                                                    longitude = currentPlace.longitude,
-                                                    address = editAddress.takeIf { it.isNotBlank() }.takeUnless { it == "" },
-                                                    day = null,
-                                                    visitDate = null,
-                                                    orderIndex = null,
-                                                    transportFromPrevious = null
-                                                ),
-                                                onSuccess = {
-                                                    Log.i(TAG_PLACE_DETAIL, "Place updated successfully")
-                                                    placeRefreshKey += 1
-                                                    editMode = false
-                                                    placeViewModel.getPlace(token, placeId)
-                                                    photoViewModel.getPhotosForPlace(token, placeId)
-                                                }
-                                            )
-                                        },
-                                        enabled = editName.isNotBlank()
-                                    ) {
-                                        Text("Save")
-                                    }
-                                }
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = currentPlace.name,
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            Log.i(TAG_PLACE_DETAIL, "Edit mode enabled for place $placeId")
-                                            editMode = true
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Edit,
-                                            contentDescription = "Edit place details",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Place,
-                                        contentDescription = "Address",
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = currentPlace.address ?: "unknown",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.MyLocation,
-                                        contentDescription = "Location",
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = if (currentPlace.latitude != null && currentPlace.longitude != null) {
-                                            "Lat: %.6f, Lon: %.6f".format(
-                                                currentPlace.latitude!!,
-                                                currentPlace.longitude!!
-                                            )
-                                        } else {
-                                            "latlon unknown"
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                visitDateText?.let {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Schedule,
-                                            contentDescription = "Visit time",
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            text = it,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                if (currentPlace.transportFromPrevious != null && currentPlace.transportFromPrevious.isNotBlank()) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "Transport: ${currentPlace.transportFromPrevious}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                IconButton(
-                                    onClick = {
-                                        Log.i(TAG_PLACE_DETAIL, "Select on map for place $placeId, tripId='$tripId'")
-                                        AppSession.mapEditPlaceId.value = placeId
-                                        navController.navigate("map/${tripId.ifBlank { "demo-trip-1" }}?addPlaceMode=true")
-                                    },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.MyLocation,
-                                        contentDescription = "Select place on map",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-
-                        if (currentPlace.latitude != null && currentPlace.longitude != null) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Location",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier
-                                      .padding(start = 16.dp, top = 8.dp)
-                                      .align(Alignment.Start)
-                                )
-                                Box(
-                                    modifier = Modifier
-                                      .fillMaxWidth()
-                                      .height(200.dp)
-                                      .padding(horizontal = 16.dp)
-                                      .clip(RoundedCornerShape(8.dp))
-                                      .background(MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    OpenMap(
-                                        modifier = Modifier.fillMaxSize(),
-                                        cameraPositionState = mapCameraState,
-                                        properties = MapProperties(
-                                            mapType = MapType.STANDARD,
-                                            minZoomPreference = 3f,
-                                            maxZoomPreference = 20f
-                                        ),
-                                        uiSettings = MapUiSettings(
-                                            zoomControlsEnabled = false
-                                        ),
-                                        onMapClick = { latLng ->
-                                            Log.i(TAG_PLACE_DETAIL, "Map tapped: lat=${latLng.latitude}, lon=${latLng.longitude}")
-                                            mapSelection = Pair(latLng.latitude, latLng.longitude)
-                                        }
-                                    ) {
-                                        MarkerComposable(
-                                            state = rememberMarkerState(
-                                                LatLng(currentPlace.latitude!!, currentPlace.longitude!!)
-                                            )
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                  .size(32.dp)
-                                                  .background(
-                                                      Color(0xFF3B82F6), RoundedCornerShape(16.dp)
-                                                  )
-                                                  .clip(RoundedCornerShape(16.dp)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = currentPlace.name.take(1).uppercase(),
-                                                    color = Color.White,
-                                                    style = MaterialTheme.typography.titleSmall
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    mapSelection?.let { point ->
-                                        val markerState = rememberMarkerState(
-                                            LatLng(point.first, point.second)
-                                        )
-                                        MarkerComposable(
-                                            state = markerState,
-                                            onClick = {
-                                                Log.d(TAG_PLACE_DETAIL, "Selection marker clicked: lat=${point.first}, lon=${point.second}")
-                                                true
-                                            }
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                  .size(32.dp)
-                                                  .background(Color.Red, RoundedCornerShape(16.dp))
-                                                  .clip(RoundedCornerShape(16.dp)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = "?",
-                                                    color = Color.White,
-                                                    style = MaterialTheme.typography.titleMedium
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            mapSelection?.let { (lat, lon) ->
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "Selected: %.6f, %.6f".format(lat, lon),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 16.dp)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Button(
-                                        onClick = {
-                                            Log.i(TAG_PLACE_DETAIL, "Applying map selection: lat=$lat, lon=$lon")
-                                            placeViewModel.updatePlace(
-                                                token = token,
-                                                placeId = placeId,
-                                                request = UpdatePlaceRequest(
-                                                    name = null,
-                                                    description = null,
-                                                    latitude = lat,
-                                                    longitude = lon,
-                                                    address = mapSelectionAddress.takeIf { it?.isNotBlank() == true },
-                                                    day = null,
-                                                    visitDate = null,
-                                                    orderIndex = null,
-                                                    transportFromPrevious = null
-                                                ),
-                                                onSuccess = {
-                                                    Log.i(TAG_PLACE_DETAIL, "Place updated from map selection")
-                                                    placeRefreshKey += 1
-                                                    mapSelection = null
-                                                    mapSelectionAddress = null
-                                                    // Refresh from local store (already updated by updatePlace)
-                                                    placeViewModel.refreshLocalPlace(placeId)
-                                                }
-                                            )
-                                        },
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                                    ) {
-                                        Text("Apply location")
-                                    }
-                                }
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                  .fillMaxWidth()
-                                  .padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Photos (${currentPlace.photos.size})",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                if (currentPlace.photos.isEmpty()) {
-                                    Text(
-                                        text = "No photos yet",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 8.dp)
-                                    )
-                                } else {
-                                    LazyVerticalGrid(
-                                        columns = GridCells.Fixed(3),
-                                        modifier = Modifier
-                                          .fillMaxWidth()
-                                          .height(220.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        userScrollEnabled = false
-                                    ) {
-                                        items(
-                                            items = currentPlace.photos,
-                                            key = { it.id }
-                                        ) { photo ->
-                                            PhotoDetailItem(
-                                                photo = photo,
-                                                placeId = placeId,
-                                                onDelete = { deletePhoto(photo.id) },
-                                                onReverseGeocode = {
-                                                    photoViewModel.reverseGeocode(tripId, photo) {
-                                                        photoViewModel.getPhotosForPlace(token, placeId)
-                                                    }
-                                                },
-                                                resolvedAddress = photoViewModel.resolvedAddresses[photo.id] ?: currentPlace.address,
-                                                isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
-                                                geocodeError = photoViewModel.geocodeErrors[photo.id],
-                                                onImageClick = {
-                                                    currentImageUrl = photoImageUrl(photo)
-                                                    currentCaption = photo.caption ?: "Photo"
-                                                    showImageViewer = true
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+              .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Column(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+              if (editMode) {
+                OutlinedTextField(
+                  value = editName,
+                  onValueChange = { editName = it },
+                  label = { Text("Place name") },
+                  singleLine = true,
+                  modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                  value = editAddress,
+                  onValueChange = { editAddress = it },
+                  label = { Text("Address") },
+                  singleLine = true,
+                  modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.End
+                ) {
+                  TextButton(
+                    onClick = {
+                      editName = currentPlace?.name ?: ""
+                      editAddress = currentPlace?.address ?: ""
+                      editMode = false
                     }
-                }
-
-                photoViewModel.errorMessage.value?.let { error ->
-                    Snackbar(
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .padding(16.dp)
-                          .align(Alignment.BottomCenter),
-                        action = {
-                            Button(onClick = { photoViewModel.errorMessage.value = null }) {
-                                Text("Dismiss")
-                            }
+                  ) { Text("Cancel") }
+                  Spacer(Modifier.width(8.dp))
+                  Button(
+                    onClick = {
+                      Log.i(
+                        TAG_PLACE_DETAIL,
+                        "Saving place updates: name='$editName', address='$editAddress', lat=${currentPlace?.latitude}, lon=${currentPlace?.longitude}"
+                      )
+                      placeViewModel.updatePlace(
+                        token = token,
+                        placeId = placeId,
+                        request = UpdatePlaceRequest(
+                          name = editName.takeIf { it.isNotBlank() },
+                          description = null,
+                          latitude = currentPlace.latitude,
+                          longitude = currentPlace.longitude,
+                          address = editAddress.takeIf { it.isNotBlank() }
+                            .takeUnless { it == "" },
+                          day = null,
+                          visitDate = null,
+                          orderIndex = null,
+                          transportFromPrevious = null
+                        ),
+                        onSuccess = {
+                          Log.i(
+                            TAG_PLACE_DETAIL,
+                            "Place updated successfully"
+                          )
+                          placeRefreshKey += 1
+                          editMode = false
+                          placeViewModel.getPlace(token, placeId)
+                          photoViewModel.getPhotosForPlace(token, placeId)
                         }
-                    ) {
-                        Text(error)
-                    }
+                      )
+                    },
+                    enabled = editName.isNotBlank()
+                  ) {
+                    Text("Save")
+                  }
                 }
+              } else {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = currentPlace.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                  )
+                  IconButton(
+                    onClick = {
+                      Log.i(
+                        TAG_PLACE_DETAIL,
+                        "Edit mode enabled for place $placeId"
+                      )
+                      editMode = true
+                    },
+                    modifier = Modifier.size(32.dp)
+                  ) {
+                    Icon(
+                      Icons.Default.Edit,
+                      contentDescription = "Edit place details",
+                      tint = MaterialTheme.colorScheme.primary
+                    )
+                  }
+                }
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Icon(
+                    Icons.Default.Place,
+                    contentDescription = "Address",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                  )
+                  Spacer(Modifier.width(4.dp))
+                  Text(
+                    text = currentPlace.address ?: "unknown",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Icon(
+                    Icons.Default.MyLocation,
+                    contentDescription = "Location",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                  )
+                  Spacer(Modifier.width(4.dp))
+                  Text(
+                    text = if (currentPlace.latitude != null && currentPlace.longitude != null) {
+                      "Lat: %.6f, Lon: %.6f".format(
+                        currentPlace.latitude,
+                        currentPlace.longitude
+                      )
+                    } else {
+                      "latlon unknown"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
+                visitDateText?.let {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Icon(
+                      Icons.Default.Schedule,
+                      contentDescription = "Visit time",
+                      modifier = Modifier.size(16.dp),
+                      tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                      text = it,
+                      style = MaterialTheme.typography.bodyMedium,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                }
+                if (currentPlace.transportFromPrevious != null && currentPlace.transportFromPrevious.isNotBlank()) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "Transport: ${currentPlace.transportFromPrevious}",
+                      style = MaterialTheme.typography.bodyMedium,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                }
+              }
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(
+                  onClick = {
+                    Log.i(
+                      TAG_PLACE_DETAIL,
+                      "Select on map for place $placeId, tripId='$tripId'"
+                    )
+                    AppSession.mapEditPlaceId.value = placeId
+                    navController.navigate("map/${tripId.ifBlank { "demo-trip-1" }}?addPlaceMode=true")
+                  },
+                  modifier = Modifier.size(32.dp)
+                ) {
+                  Icon(
+                    Icons.Default.MyLocation,
+                    contentDescription = "Select place on map",
+                    tint = MaterialTheme.colorScheme.primary
+                  )
+                }
+              }
             }
-        }
 
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete place?") },
-                text = {
-                    Text("This will delete \"${currentPlace?.name ?: ""}\" and all its photos. This cannot be undone.")
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showDeleteDialog = false
-                            deletePlace()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+            if (currentPlace.latitude != null && currentPlace.longitude != null) {
+              Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                Text(
+                  text = "Location",
+                  style = MaterialTheme.typography.titleMedium,
+                  fontWeight = FontWeight.Bold,
+                  modifier = Modifier
+                    .padding(start = 16.dp, top = 8.dp)
+                    .align(Alignment.Start)
+                )
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                  OpenMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = mapCameraState,
+                    properties = MapProperties(
+                      mapType = MapType.STANDARD,
+                      minZoomPreference = 3f,
+                      maxZoomPreference = 20f
+                    ),
+                    uiSettings = MapUiSettings(
+                      zoomControlsEnabled = false
+                    ),
+                    onMapClick = { latLng ->
+                      Log.i(
+                        TAG_PLACE_DETAIL,
+                        "Map tapped: lat=${latLng.latitude}, lon=${latLng.longitude}"
+                      )
+                      mapSelection = Pair(latLng.latitude, latLng.longitude)
+                    }
+                  ) {
+                    MarkerComposable(
+                      state = rememberMarkerState(
+                        LatLng(
+                          currentPlace.latitude!!,
+                          currentPlace.longitude!!
                         )
+                      )
                     ) {
-                        Text("Delete")
+                      Box(
+                        modifier = Modifier
+                          .size(32.dp)
+                          .background(
+                            Color(0xFF3B82F6), RoundedCornerShape(16.dp)
+                          )
+                          .clip(RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Text(
+                          text = currentPlace.name.take(1).uppercase(),
+                          color = Color.White,
+                          style = MaterialTheme.typography.titleSmall
+                        )
+                      }
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Cancel")
+                  }
+
+                  mapSelection?.let { point ->
+                    val markerState = rememberMarkerState(
+                      LatLng(point.first, point.second)
+                    )
+                    MarkerComposable(
+                      state = markerState,
+                      onClick = {
+                        Log.d(
+                          TAG_PLACE_DETAIL,
+                          "Selection marker clicked: lat=${point.first}, lon=${point.second}"
+                        )
+                        true
+                      }
+                    ) {
+                      Box(
+                        modifier = Modifier
+                          .size(32.dp)
+                          .background(
+                            Color.Red,
+                            RoundedCornerShape(16.dp)
+                          )
+                          .clip(RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Text(
+                          text = "?",
+                          color = Color.White,
+                          style = MaterialTheme.typography.titleMedium
+                        )
+                      }
                     }
+                  }
                 }
-            )
+              }
+
+              mapSelection?.let { (lat, lon) ->
+                Column(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                  Text(
+                    text = "Selected: %.6f, %.6f".format(lat, lon),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                  )
+                  Spacer(Modifier.height(8.dp))
+                  Button(
+                    onClick = {
+                      Log.i(
+                        TAG_PLACE_DETAIL,
+                        "Applying map selection: lat=$lat, lon=$lon"
+                      )
+                      placeViewModel.updatePlace(
+                        token = token,
+                        placeId = placeId,
+                        request = UpdatePlaceRequest(
+                          name = null,
+                          description = null,
+                          latitude = lat,
+                          longitude = lon,
+                          address = mapSelectionAddress.takeIf { it?.isNotBlank() == true },
+                          day = null,
+                          visitDate = null,
+                          orderIndex = null,
+                          transportFromPrevious = null
+                        ),
+                        onSuccess = {
+                          Log.i(
+                            TAG_PLACE_DETAIL,
+                            "Place updated from map selection"
+                          )
+                          placeRefreshKey += 1
+                          mapSelection = null
+                          mapSelectionAddress = null
+                          // Refresh from local store (already updated by updatePlace)
+                          placeViewModel.refreshLocalPlace(placeId)
+                        }
+                      )
+                    },
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 16.dp)
+                  ) {
+                    Text("Apply location")
+                  }
+                }
+              }
+
+              Column(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 16.dp, vertical = 8.dp)
+              ) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = "Photos (${currentPlace.photos.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                  )
+                }
+                if (currentPlace.photos.isEmpty()) {
+                  Text(
+                    text = "No photos yet",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                  )
+                } else {
+                  LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .height(220.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    userScrollEnabled = false
+                  ) {
+                    items(
+                      items = currentPlace.photos,
+                      key = { it.id }
+                    ) { photo ->
+                      PhotoDetailItem(
+                        photo = photo,
+                        placeId = placeId,
+                        onDelete = { deletePhoto(photo.id) },
+                        onReverseGeocode = {
+                          photoViewModel.reverseGeocode(tripId, photo) {
+                            photoViewModel.getPhotosForPlace(
+                              token,
+                              placeId
+                            )
+                          }
+                        },
+                        resolvedAddress = photoViewModel.resolvedAddresses[photo.id]
+                          ?: currentPlace.address,
+                        isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
+                        geocodeError = photoViewModel.geocodeErrors[photo.id],
+                        onImageClick = {
+                          currentImageUrl = photoImageUrl(photo)
+                          currentCaption = photo.caption ?: "Photo"
+                          showImageViewer = true
+                        }
+                      )
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
 
-        if (showImageViewer) {
-            PhotoViewerScreen(
-                imageUrl = currentImageUrl,
-                caption = currentCaption,
-                onDismiss = { showImageViewer = false }
-            )
+        photoViewModel.errorMessage.value?.let { error ->
+          Snackbar(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp)
+              .align(Alignment.BottomCenter),
+            action = {
+              Button(onClick = { photoViewModel.errorMessage.value = null }) {
+                Text("Dismiss")
+              }
+            }
+          ) {
+            Text(error)
+          }
         }
+      }
     }
+
+    if (showDeleteDialog) {
+      AlertDialog(
+        onDismissRequest = { showDeleteDialog = false },
+        title = { Text("Delete place?") },
+        text = {
+          Text("This will delete \"${currentPlace?.name ?: ""}\" and all its photos. This cannot be undone.")
+        },
+        confirmButton = {
+          Button(
+            onClick = {
+              showDeleteDialog = false
+              deletePlace()
+            },
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.errorContainer,
+              contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+          ) {
+            Text("Delete")
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showDeleteDialog = false }) {
+            Text("Cancel")
+          }
+        }
+      )
+    }
+
+    if (showImageViewer) {
+      PhotoViewerScreen(
+        imageUrl = currentImageUrl,
+        caption = currentCaption,
+        onDismiss = { showImageViewer = false }
+      )
+    }
+  }
 }
 
 @Composable
 private fun PhotoDetailItem(
-    photo: PhotoResponse,
-    placeId: String,
-    onDelete: () -> Unit,
-    onReverseGeocode: () -> Unit,
-    resolvedAddress: String? = null,
-    isGeocoding: Boolean = false,
-    geocodeError: String? = null,
-    onImageClick: () -> Unit = {}
+  photo: PhotoResponse,
+  placeId: String,
+  onDelete: () -> Unit,
+  onReverseGeocode: () -> Unit,
+  resolvedAddress: String? = null,
+  isGeocoding: Boolean = false,
+  geocodeError: String? = null,
+  onImageClick: () -> Unit = {}
 ) {
-    Column(
-        modifier = Modifier
-          .size(110.dp)
-          .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+  Column(
+    modifier = Modifier
+      .size(110.dp)
+      .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .clip(RoundedCornerShape(8.dp))
+        .background(Color.Black.copy(alpha = 0.1f))
     ) {
-        Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .clip(RoundedCornerShape(8.dp))
-              .background(Color.Black.copy(alpha = 0.1f))
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(photoImageUrl(photo))
-                    .crossfade(true)
-                    .listener(
-                        onError = { _, result ->
-                            Log.e("PhotoDetailItem", "Image load ERROR: ${result.throwable.message}", result.throwable)
-                        },
-                        onSuccess = { _, result ->
-                            Log.i("PhotoDetailItem", "Image load OK: ${photoImageUrl(photo)}")
-                        }
-                    )
-                    .build(),
-                contentDescription = photo.caption ?: "Photo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-                    .clickable { onImageClick() }
-            )
-            IconButton(
-                onClick = { onDelete() },
-                modifier = Modifier
-                  .align(Alignment.TopEnd)
-                  .padding(4.dp)
-                  .background(Color.White.copy(alpha = 0.85f), CircleShape)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete photo",
-                    tint = MaterialTheme.colorScheme.error
-                )
+      AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+          .data(photoImageUrl(photo))
+          .crossfade(true)
+          .listener(
+            onError = { _, result ->
+              Log.e(
+                "PhotoDetailItem",
+                "Image load ERROR: ${result.throwable.message}",
+                result.throwable
+              )
+            },
+            onSuccess = { _, result ->
+              Log.i("PhotoDetailItem", "Image load OK: ${photoImageUrl(photo)}")
             }
-        }
-        Spacer(Modifier.height(4.dp))
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 4.dp, vertical = 2.dp)
-        ) {
-            photo.takenAt?.let {
-                Text(
-                    text = "Taken: ${it.timeLabel()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1
-                )
-            }
-            if (photo.latitude != null && photo.longitude != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "GPS",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (isGeocoding) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(12.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        IconButton(
-                            onClick = onReverseGeocode,
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Place,
-                                contentDescription = "Look up address",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-                resolvedAddress?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1
-                    )
-                }
-                geocodeError?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
+          )
+          .build(),
+        contentDescription = photo.caption ?: "Photo",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+          .fillMaxSize()
+          .clickable { onImageClick() }
+      )
+      IconButton(
+        onClick = { onDelete() },
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+          .padding(4.dp)
+          .background(Color.White.copy(alpha = 0.85f), CircleShape)
+      ) {
+        Icon(
+          Icons.Default.Delete,
+          contentDescription = "Delete photo",
+          tint = MaterialTheme.colorScheme.error
+        )
+      }
     }
+    Spacer(Modifier.height(4.dp))
+    Column(
+      modifier = Modifier
+        .padding(horizontal = 4.dp, vertical = 2.dp)
+    ) {
+      photo.takenAt?.let {
+        Text(
+          text = "Taken: ${it.timeLabel()}",
+          style = MaterialTheme.typography.bodySmall,
+          maxLines = 1
+        )
+      }
+      if (photo.latitude != null && photo.longitude != null) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(
+            text = "GPS",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+          )
+          if (isGeocoding) {
+            CircularProgressIndicator(
+              modifier = Modifier.size(12.dp),
+              strokeWidth = 2.dp
+            )
+          } else {
+            IconButton(
+              onClick = onReverseGeocode,
+              modifier = Modifier.size(20.dp)
+            ) {
+              Icon(
+                Icons.Default.Place,
+                contentDescription = "Look up address",
+                tint = MaterialTheme.colorScheme.primary
+              )
+            }
+          }
+        }
+        resolvedAddress?.let {
+          Text(
+            text = it,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1
+          )
+        }
+        geocodeError?.let {
+          Text(
+            text = it,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            maxLines = 1
+          )
+        }
+      }
+    }
+  }
 }
 
 @Composable
 private fun PhotoViewerScreen(
-    imageUrl: String,
-    caption: String,
-    onDismiss: () -> Unit
+  imageUrl: String,
+  caption: String,
+  onDismiss: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(Color.Black)
+  ) {
+    Box(
+      modifier = Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = { onDismiss() },
-                modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
-                )
-            }
+      IconButton(
+        onClick = { onDismiss() },
+        modifier = Modifier
+          .align(Alignment.TopStart)
+          .padding(16.dp)
+      ) {
+        Icon(
+          Icons.Default.Close,
+          contentDescription = "Close",
+          tint = Color.White
+        )
+      }
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
-                    .build(),
-                contentDescription = caption,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize()
+      AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+          .data(imageUrl)
+          .build(),
+        contentDescription = caption,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.fillMaxSize()
+      )
+
+      caption?.let { cap ->
+        if (cap.isNotBlank()) {
+          Box(
+            modifier = Modifier
+              .align(Alignment.BottomCenter)
+              .padding(24.dp)
+              .background(Color.Black.copy(alpha = 0.6f))
+          ) {
+            Text(
+              text = cap,
+              style = MaterialTheme.typography.bodyMedium,
+              color = Color.White,
+              modifier = Modifier.padding(8.dp)
             )
-
-            caption?.let { cap ->
-                if (cap.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(24.dp)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                    ) {
-                        Text(
-                            text = cap,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                }
-            }
+          }
         }
+      }
     }
+  }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun PlaceDetailScreenPreview() {
-    JournalPixTheme {
-        PlaceDetailScreen(
-            navController = rememberNavController(),
-            placeId = "demo-place-1",
-            tripId = "demo-trip-1"
-        )
-    }
+  JournalPixTheme {
+    PlaceDetailScreen(
+      navController = rememberNavController(),
+      placeId = "demo-place-1",
+      tripId = "demo-trip-1"
+    )
+  }
 }

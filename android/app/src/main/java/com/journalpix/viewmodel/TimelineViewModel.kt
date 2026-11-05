@@ -65,6 +65,11 @@ class TimelineViewModel : ViewModel() {
         refreshOffline(tripId)
     }
 
+    fun updateTripDescription(tripId: String, description: String?) {
+        OfflineStore.updateTripDescription(tripId, description)
+        refreshOffline(tripId)
+    }
+
     fun setTransport(placeId: String, mode: TransportMode?, tripId: String) {
         OfflineStore.setTransport(placeId, mode)
         refreshOffline(tripId)

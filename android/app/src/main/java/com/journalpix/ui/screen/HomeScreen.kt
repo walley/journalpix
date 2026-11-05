@@ -34,314 +34,270 @@ import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
-    val context = LocalContext.current
-    val authViewModel: AuthViewModel = remember { AuthViewModel() }
-    val tripViewModel: TripViewModel = remember { TripViewModel() }
-    var showCreateTripDialog by remember { mutableStateOf(false) }
-    var newTripTitle by remember { mutableStateOf("") }
-    var startDateText by remember { mutableStateOf(LocalDate.now().toString()) }
-    var endDateText by remember { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
+fun HomeScreen(navController:NavController) {
+  val context = LocalContext.current
+  val authViewModel:AuthViewModel = remember {AuthViewModel()}
+  val tripViewModel:TripViewModel = remember {TripViewModel()}
+  var showCreateTripDialog by remember {mutableStateOf(false)}
+  var newTripTitle by remember {mutableStateOf("")}
+  var startDateText by remember {mutableStateOf(LocalDate.now().toString())}
+  var endDateText by remember {mutableStateOf(LocalDate.now().plusDays(7).toString())}
 
-    fun showDatePicker(initialDateStr: String, onDateSelected: (LocalDate) -> Unit) {
-        val cal = Calendar.getInstance()
-        try {
-            val parsed = LocalDate.parse(initialDateStr.trim())
-            cal.set(parsed.year, parsed.monthValue - 1, parsed.dayOfMonth)
-        } catch (_: Exception) { }
-
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
-            },
-            cal.get(Calendar.YEAR),
-            cal.get(Calendar.MONTH),
-            cal.get(Calendar.DAY_OF_MONTH)
-        ).show()
+  fun showDatePicker(initialDateStr:String, onDateSelected:(LocalDate) -> Unit) {
+    val cal = Calendar.getInstance()
+    try {
+      val parsed = LocalDate.parse(initialDateStr.trim())
+      cal.set(parsed.year, parsed.monthValue - 1, parsed.dayOfMonth)
+    } catch (_:Exception) {
     }
 
-    // Always read from shared session (not a per-screen ViewModel instance)
-    val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
+    DatePickerDialog(
+      context, {_, year, month, dayOfMonth ->
+        onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
+      }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)
+    ).show()
+  }
 
-    LaunchedEffect(token) {
-        // Demo token → offline sample trips; never shows network errors for demo
-        tripViewModel.getTrips(token)
-    }
+  // Always read from shared session (not a per-screen ViewModel instance)
+  val token = AppSession.currentUser.value?.token ?: AuthViewModel.DEMO_TOKEN
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("JournalPix") },
-                actions = {
-                    IconButton(onClick = { navController.navigate("about") }) {
-                        Icon(Icons.Default.Info, contentDescription = "About")
-                    }
-                    IconButton(onClick = {
-                        authViewModel.logout()
-                        navController.navigate("auth") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }) {
-                        Icon(Icons.Default.Logout, contentDescription = "Logout")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateTripDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Trip")
-            }
+  LaunchedEffect(token) {
+    tripViewModel.getTrips(token)
+  }
+
+  Scaffold(topBar = {
+    CenterAlignedTopAppBar(title = {Text("JournalPix")}, actions = {
+      IconButton(onClick = {navController.navigate("about")}) {
+        Icon(Icons.Default.Info, contentDescription = "About")
+      }
+      IconButton(onClick = {
+        authViewModel.logout()
+        navController.navigate("auth") {
+          popUpTo(0) {inclusive = true}
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(paddingValues)
+      }) {
+        Icon(Icons.Default.Logout, contentDescription = "Logout")
+      }
+    })
+  }, floatingActionButton = {
+    FloatingActionButton(onClick = {showCreateTripDialog = true}) {
+      Icon(Icons.Default.Add, contentDescription = "Add Trip")
+    }
+  }) {paddingValues ->
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(paddingValues)
+    ) {
+      if (tripViewModel.isLoading.value) {
+        Box(
+          modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
         ) {
-            if (tripViewModel.isLoading.value) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                if (tripViewModel.trips.value.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "No trips",
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("No trips yet")
-                            Text("Create your first trip!")
-                        }
-                    }
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(tripViewModel.trips.value) { trip ->
-                            TripCard(trip = trip, onClick = {
-                                navController.navigate("timeline/${trip.id}")
-                            })
-                        }
-                    }
-                }
-            }
+          CircularProgressIndicator()
         }
-    }
-
-    if (showCreateTripDialog) {
-        AlertDialog(
-            onDismissRequest = { showCreateTripDialog = false },
-            title = { Text("Create New Trip") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = newTripTitle,
-                        onValueChange = { newTripTitle = it },
-                        label = { Text("Trip Title") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = startDateText,
-                        onValueChange = { startDateText = it },
-                        label = { Text("Start Date (yyyy-MM-dd)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                showDatePicker(startDateText) { selectedDate ->
-                                    startDateText = selectedDate.toString()
-                                }
-                            }) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Select start date")
-                            }
-                        }
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = endDateText,
-                        onValueChange = { endDateText = it },
-                        label = { Text("End Date (yyyy-MM-dd)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                showDatePicker(endDateText) { selectedDate ->
-                                    endDateText = selectedDate.toString()
-                                }
-                            }) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Select end date")
-                            }
-                        }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (newTripTitle.isNotBlank()) {
-                        val request = com.journalpix.models.CreateTripRequest(
-                            title = newTripTitle.trim(),
-                            description = null,
-                            startDate = startDateText.ifBlank { null },
-                            endDate = endDateText.ifBlank { null },
-                            status = TripStatus.PLANNED
-                        )
-                        tripViewModel.createTrip(token, request) {
-                            showCreateTripDialog = false
-                            newTripTitle = ""
-                            tripViewModel.getTrips(token)
-                        }
-                    }
-                }) {
-                    Text("Create")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateTripDialog = false }) {
-                    Text("Cancel")
-                }
+      } else {
+        if (tripViewModel.trips.value.isEmpty()) {
+          Box(
+            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+          ) {
+            Column(
+              horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+              Icon(
+                Icons.Default.Add, contentDescription = "No trips", modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+              Spacer(modifier = Modifier.height(16.dp))
+              Text("No trips yet")
+              Text("Create your first trip!")
             }
-        )
+          }
+        } else {
+          LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(tripViewModel.trips.value) {trip ->
+              TripCard(trip = trip, onClick = {
+                navController.navigate("timeline/${trip.id}")
+              })
+            }
+          }
+        }
+      }
     }
+  }
 
-    tripViewModel.errorMessage.value?.let { error ->
-      AlertDialog(
-        onDismissRequest = { tripViewModel.errorMessage.value = null },
-        title = { Text("Error") },
-        text = { Text(error) },
-        confirmButton = {
-          Button(onClick = { tripViewModel.errorMessage.value = null }) {
-            Text("OK")
+  if (showCreateTripDialog) {
+    AlertDialog(onDismissRequest = {showCreateTripDialog = false}, title = {Text("Create New Trip")}, text = {
+      Column {
+        OutlinedTextField(
+          value = newTripTitle, onValueChange = {newTripTitle = it}, label = {Text("Trip Title")}, modifier = Modifier.fillMaxWidth(), singleLine = true
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+          value = startDateText,
+                          onValueChange = {startDateText = it},
+                          label = {Text("Start Date (yyyy-MM-dd)")},
+                          modifier = Modifier.fillMaxWidth(),
+                          singleLine = true,
+                          trailingIcon = {
+                            IconButton(onClick = {
+                              showDatePicker(startDateText) {selectedDate ->
+                                startDateText = selectedDate.toString()
+                              }
+                            }) {
+                              Icon(Icons.Default.DateRange, contentDescription = "Select start date")
+                            }
+                          })
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(value = endDateText, onValueChange = {endDateText = it}, label = {Text("End Date (yyyy-MM-dd)")}, modifier = Modifier.fillMaxWidth(), singleLine = true, trailingIcon = {
+          IconButton(onClick = {
+            showDatePicker(endDateText) {selectedDate ->
+              endDateText = selectedDate.toString()
+            }
+          }) {
+            Icon(Icons.Default.DateRange, contentDescription = "Select end date")
           }
         })
-    }
+      }
+    }, confirmButton = {
+      Button(onClick = {
+        if (newTripTitle.isNotBlank()) {
+          val request =
+            com.journalpix.models.CreateTripRequest(
+              title = newTripTitle.trim(), description = null, startDate = startDateText.ifBlank {null}, endDate = endDateText.ifBlank {null}, status = TripStatus.PLANNED
+            )
+          tripViewModel.createTrip(token, request) {
+            showCreateTripDialog = false
+            newTripTitle = ""
+            tripViewModel.getTrips(token)
+          }
+        }
+      }) {
+        Text("Create")
+      }
+    }, dismissButton = {
+      TextButton(onClick = {showCreateTripDialog = false}) {
+        Text("Cancel")
+      }
+    })
+  }
+
+  tripViewModel.errorMessage.value?.let {error ->
+    AlertDialog(onDismissRequest = {tripViewModel.errorMessage.value = null}, title = {Text("Error")}, text = {Text(error)}, confirmButton = {
+      Button(onClick = {tripViewModel.errorMessage.value = null}) {
+        Text("OK")
+      }
+    })
+  }
 }
 
 @Composable
-fun TripCard(trip: TripResponse, onClick: () -> Unit) {
-    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
-    val startDate = trip.startDate?.let { LocalDate.parse(it) }
-    val endDate = trip.endDate?.let { LocalDate.parse(it) }
+fun TripCard(trip:TripResponse, onClick:() -> Unit) {
+  val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+  val startDate = trip.startDate?.let {LocalDate.parse(it)}
+  val endDate = trip.endDate?.let {LocalDate.parse(it)}
 
-    val statusContainerColor = when (trip.status) {
-        TripStatus.PLANNED -> MaterialTheme.colorScheme.primaryContainer
-        TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.secondaryContainer
-        TripStatus.COMPLETED -> MaterialTheme.colorScheme.tertiaryContainer
-        TripStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
-    }
-    val statusContentColor = when (trip.status) {
-        TripStatus.PLANNED -> MaterialTheme.colorScheme.onPrimaryContainer
-        TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.onSecondaryContainer
-        TripStatus.COMPLETED -> MaterialTheme.colorScheme.onTertiaryContainer
-        TripStatus.CANCELLED -> MaterialTheme.colorScheme.onErrorContainer
-    }
+  val statusContainerColor = when (trip.status) {
+    TripStatus.PLANNED -> MaterialTheme.colorScheme.primaryContainer
+    TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.secondaryContainer
+    TripStatus.COMPLETED -> MaterialTheme.colorScheme.tertiaryContainer
+    TripStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
+  }
+  val statusContentColor = when (trip.status) {
+    TripStatus.PLANNED -> MaterialTheme.colorScheme.onPrimaryContainer
+    TripStatus.IN_PROGRESS -> MaterialTheme.colorScheme.onSecondaryContainer
+    TripStatus.COMPLETED -> MaterialTheme.colorScheme.onTertiaryContainer
+    TripStatus.CANCELLED -> MaterialTheme.colorScheme.onErrorContainer
+  }
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(8.dp)
-          .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+  Card(
+    onClick = onClick, modifier = Modifier
+      .fillMaxWidth()
+      .padding(8.dp)
+      .clickable(onClick = onClick)
+  ) {
+    Row( modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp)) {
+      Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+          text = trip.title, style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+          text = trip.description ?: "No description", style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row {
+          startDate?.let {start ->
             Text(
-                text = trip.title,
-                style = MaterialTheme.typography.titleLarge
+              text = start.format(formatter), style = MaterialTheme.typography.bodySmall
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = trip.description ?: "No description",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row {
-                startDate?.let { start ->
-                    Text(
-                        text = start.format(formatter),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    endDate?.let { end ->
-                        Text(" - ")
-                        Text(
-                            text = end.format(formatter),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
+            endDate?.let {end ->
+              Text(" - ")
+              Text(
+                text = end.format(formatter), style = MaterialTheme.typography.bodySmall
+              )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row {
-                Text(
-                    text = "${trip.placesCount ?: 0} places",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "${trip.photosCount ?: 0} photos",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = trip.status.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = statusContentColor,
-                modifier = Modifier
-                  .clip(RoundedCornerShape(8.dp))
-                  .background(statusContainerColor)
-                  .padding(horizontal = 10.dp, vertical = 4.dp)
-            )
+          }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row {
+          Text(
+            text = "${trip.placesCount ?: 0} places", style = MaterialTheme.typography.bodySmall
+          )
+          Spacer(modifier = Modifier.width(16.dp))
+          Text(
+            text = "${trip.photosCount ?: 0} photos", style = MaterialTheme.typography.bodySmall
+          )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+          text = trip.status.name,
+          style = MaterialTheme.typography.labelMedium,
+          color = statusContentColor,
+          modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(statusContainerColor)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+      }
+      Column(){Text("nazdar")}
     }
+  }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    JournalPixTheme {
-        HomeScreen(navController = rememberNavController())
-    }
+  JournalPixTheme {
+    HomeScreen(navController = rememberNavController())
+  }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TripCardPreview() {
-    JournalPixTheme {
-        TripCard(
-            trip = TripResponse(
-                id = "1",
-                userId = "u1",
-                title = "Tokyo & Kyoto Trip",
-                description = "Exploring Japan in spring",
-                startDate = "2025-04-01",
-                endDate = "2025-04-14",
-                status = TripStatus.IN_PROGRESS,
-                placesCount = 8,
-                photosCount = 42,
-                createdAt = "",
-                updatedAt = ""
-            ),
-            onClick = {}
-        )
-    }
+  JournalPixTheme {
+    TripCard(
+      trip = TripResponse(
+        id = "1",
+        userId = "u1",
+        title = "Tokyo & Kyoto Trip",
+        description = "Exploring Japan in spring",
+        startDate = "2025-04-01",
+        endDate = "2025-04-14",
+        status = TripStatus.IN_PROGRESS,
+        placesCount = 8,
+        photosCount = 42,
+        createdAt = "",
+        updatedAt = ""
+      ), onClick = {})
+  }
 }

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -94,6 +95,7 @@ fun TimelineScreen(navController: NavController, tripId: String) {
     var showCreatePlaceDialog by remember { mutableStateOf(false) }
     var showEditDatesDialog by remember { mutableStateOf(false) }
     var showEditTitleDialog by remember { mutableStateOf(false) }
+    var showEditDescriptionDialog by remember { mutableStateOf(false) }
     var editTransportPlaceId by remember { mutableStateOf<String?>(null) }
     var createPlaceDay by remember { mutableStateOf<String?>(null) }
     var newPlaceName by remember { mutableStateOf("") }
@@ -348,6 +350,50 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 32.dp)
                     ) {
+                        // Trip description — 4th column under TopBar, scrolls with page
+                        item {
+                          val description = timeline.trip.description
+                          Card(
+                            modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(horizontal = 16.dp, vertical = 8.dp)
+                              .clickable { showEditDescriptionDialog = true },
+                            colors = CardDefaults.cardColors(
+                              containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            )
+                          ) {
+                            Row(
+                              modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                              verticalAlignment = Alignment.CenterVertically
+                            ) {
+                              Icon(
+                                Icons.Default.Description,
+                                contentDescription = "Description",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                              )
+                              Spacer(Modifier.width(8.dp))
+                              Text(
+                                text = description?.takeIf { it.isNotBlank() }
+                                  ?: "Add trip description…",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (description.isNullOrBlank())
+                                  MaterialTheme.colorScheme.onSurfaceVariant
+                                else
+                                  MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
+                              )
+                              Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit description",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                              )
+                            }
+                          }
+                        }
                         // Unassigned photos section
                         val unassignedPhotos = OfflineStore.getUnassignedPhotos()
                         if (unassignedPhotos.isNotEmpty()) {
@@ -635,6 +681,37 @@ fun TimelineScreen(navController: NavController, tripId: String) {
                 },
                 dismissButton = {
                     TextButton(onClick = { showEditTitleDialog = false }) { Text("Cancel") }
+                }
+            )
+        }
+
+        if (showEditDescriptionDialog && timeline != null) {
+            var descText by remember(timeline.trip.description) {
+                mutableStateOf(timeline.trip.description ?: "")
+            }
+            AlertDialog(
+                onDismissRequest = { showEditDescriptionDialog = false },
+                title = { Text("Trip description") },
+                text = {
+                    OutlinedTextField(
+                        value = descText,
+                        onValueChange = { descText = it },
+                        label = { Text("Description") },
+                        singleLine = false,
+                        minLines = 3,
+                        maxLines = 6,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        Log.i(TAG_TIMELINE, "Saving trip description: '${descText.trim()}'")
+                        timelineViewModel.updateTripDescription(effectiveTripId, descText)
+                        showEditDescriptionDialog = false
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditDescriptionDialog = false }) { Text("Cancel") }
                 }
             )
         }
