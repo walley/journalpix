@@ -32,6 +32,9 @@ object AppSession {
     /** Currently open trip — used by the bottom nav bar for timeline/map destinations. */
     val currentTripId = mutableStateOf("")
 
+    /** Snapshot of the place row that was clicked, used as offline fallback in place detail. */
+    val openedPlaceSnapshot = mutableStateOf<com.journalpix.models.PlaceWithPhotos?>(null)
+
     fun setUser(user: LoginResponse?) {
         currentUser.value = user
         isLoggedIn.value = user != null

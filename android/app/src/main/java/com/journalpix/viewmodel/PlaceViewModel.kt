@@ -122,7 +122,15 @@ class PlaceViewModel : ViewModel() {
             Log.i(TAG_PLACE_VM, "getPlace START: placeId=$placeId")
             try {
                 // Load from offline store first for instant display
-                val offline = OfflineStore.findPlaceWithPhotos(placeId)
+                var offline = OfflineStore.findPlaceWithPhotos(placeId)
+                if (offline == null) {
+                    // Fall back to the snapshot of the row that was clicked (survives sync ID remaps)
+                    val snapshot = AppSession.openedPlaceSnapshot.value
+                    if (snapshot != null && snapshot.id == placeId) {
+                        Log.i(TAG_PLACE_VM, "getPlace: using clicked-row snapshot for $placeId ('${snapshot.name}')")
+                        offline = snapshot
+                    }
+                }
                 if (offline != null) {
                     Log.i(TAG_PLACE_VM, "getPlace: loaded offline lat=${offline.latitude} lon=${offline.longitude} photos=${offline.photos.size}")
                     currentPlace.value = offline
@@ -148,7 +156,11 @@ class PlaceViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG_PLACE_VM, "getPlace: exception ${e.message}", e)
-                val offline = OfflineStore.findPlaceWithPhotos(placeId)
+                var offline = OfflineStore.findPlaceWithPhotos(placeId)
+                if (offline == null) {
+                    val snapshot = AppSession.openedPlaceSnapshot.value
+                    if (snapshot != null && snapshot.id == placeId) offline = snapshot
+                }
                 if (offline != null) {
                     // Local-only place (not on server yet) — 404 is expected, not an error
                     if (e is retrofit2.HttpException && e.code() == 404) {

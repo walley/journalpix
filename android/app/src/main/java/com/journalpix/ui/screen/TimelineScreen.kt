@@ -828,6 +828,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     selectedPlace?.let {place ->
       val live = timelineViewModel.timeline.value?.timeline?.flatMap {it.places}?.find {it.id == place.id} ?: place
       Log.i(TAG_TIMELINE, "Opening place detail screen: placeId=${place.id}, name='${place.name}'")
+      AppSession.openedPlaceSnapshot.value = live
       navController.navigate("place/${place.id}?tripId=$effectiveTripId")
       selectedPlace = null
     }
