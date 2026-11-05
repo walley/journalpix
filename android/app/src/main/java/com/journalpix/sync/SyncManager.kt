@@ -46,6 +46,11 @@ object SyncManager {
     fun triggerSync(context: Context?) {
         context?.let { ctx ->
             appContextRef = WeakReference(ctx.applicationContext)
+            // Global gate: when synchronization is OFF in Settings, do nothing — no network access
+            if (!com.journalpix.ui.screen.isSyncEnabled(ctx)) {
+                Log.i(TAG, "triggerSync: synchronization is OFF in Settings — skipping sync, no network access")
+                return@let
+            }
             Log.d(TAG, "Triggering synchronization intent: $ACTION_SYNC")
             val intent = Intent(ACTION_SYNC).apply {
                 setPackage(ctx.packageName)
@@ -76,6 +81,12 @@ object SyncManager {
     }
 
     suspend fun performSyncSuspend(token: String) {
+        // Global gate: synchronization OFF in Settings means no sync, no network access at all
+        val ctx = appContextRef?.get()
+        if (ctx != null && !com.journalpix.ui.screen.isSyncEnabled(ctx)) {
+            Log.i(TAG, "performSyncSuspend: synchronization is OFF in Settings — aborting, no network access")
+            return
+        }
         val bearerToken = if (token.isBlank()) "" else "Bearer $token"
         val errors = mutableListOf<String>()
 

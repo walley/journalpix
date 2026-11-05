@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.journalpix.app-mergeDebugResources-66:/values-night-v8/values-night-v8.xml",
+            "outputFile": "com.journalpix.app-mergeDebugResources-70:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
                     "source": "/home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/res/values-night-v8/values-night-v8.xml",

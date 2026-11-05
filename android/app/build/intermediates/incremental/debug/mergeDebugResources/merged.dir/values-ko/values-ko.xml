@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">스마트폰에서 열기</string>
     <string name="common_signin_button_text">로그인</string>
     <string name="common_signin_button_text_long">Google 계정으로 로그인</string>
+    <string msgid="6083905920877235314" name="copy">"복사"</string>
     <string msgid="8038256446254964252" name="default_error_message">"입력이 잘못됨"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"팝업 창"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"드롭다운 메뉴"</string>
     <string name="error_a11y_label">오류: 잘못됨</string>
     <string name="error_icon_content_description">오류</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"고급"</string>
     <string name="exposed_dropdown_menu_content_description">드롭다운 메뉴 표시</string>
     <string name="icon_content_description">대화상자 아이콘</string>
     <string msgid="6827826412747255547" name="in_progress">"진행 중"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">확인</string>
     <string msgid="542007171693138492" name="navigation_menu">"탐색 메뉴"</string>
     <string msgid="6610465462668679431" name="not_selected">"선택되지 않음"</string>
+    <string msgid="6573031135582639649" name="not_set">"설정되지 않음"</string>
     <string name="password_toggle_content_description">비밀번호 표시</string>
+    <string msgid="6685851473431805375" name="preference_copied">"\'<ns2:g id="SUMMARY">%1$s</ns2:g>\'이(가) 클립보드에 복사되었습니다."</string>
     <string msgid="5941395253238309765" name="range_end">"범위 끝"</string>
     <string msgid="7097486360902471446" name="range_start">"범위 시작"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"검색"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"사용 안함"</string>
     <string msgid="1490883874751719580" name="state_on">"사용"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g>, <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"스위치"</string>
     <string msgid="1672349317127674378" name="tab">"탭"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns2:g id="PERCENTAGE">%1$d</ns2:g>퍼센트"</string>
     <string msgid="3765533235322692011" name="tooltip_description">"도움말"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"도움말 표시"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"사용 안함"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"사용"</string>
 </resources>

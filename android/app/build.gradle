@@ -13,8 +13,8 @@ android {
         applicationId 'com.journalpix'
         minSdk 26
         targetSdk 37
-        versionCode 66
-        versionName '1.0.66'
+        versionCode 67
+        versionName '1.0.67'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -100,6 +100,9 @@ dependencies {
 
     // Permissions
     implementation 'com.karumi:dexter:6.2.3'
+
+    // Native Android settings (PreferenceFragmentCompat)
+    implementation 'androidx.preference:preference-ktx:1.2.1'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

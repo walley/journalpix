@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">மொபைலில் திற</string>
     <string name="common_signin_button_text">உள்நுழைக</string>
     <string name="common_signin_button_text_long">Google மூலம் உள்நுழைக</string>
+    <string msgid="6083905920877235314" name="copy">"நகலெடு"</string>
     <string msgid="8038256446254964252" name="default_error_message">"தவறான உள்ளீடு"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"பாப்-அப் சாளரம்"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"கீழ்த்தோன்றல் மெனு"</string>
     <string name="error_a11y_label">பிழை: தவறானது</string>
     <string name="error_icon_content_description">பிழை</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"மேம்பட்டவை"</string>
     <string name="exposed_dropdown_menu_content_description">கீழ் தோன்றல் மெனுவைக் காட்டும் பட்டன்</string>
     <string name="icon_content_description">உரையாடல் ஐகான்</string>
     <string msgid="6827826412747255547" name="in_progress">"செயலிலுள்ளது"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">சரி</string>
     <string msgid="542007171693138492" name="navigation_menu">"வழிசெலுத்தல் மெனு"</string>
     <string msgid="6610465462668679431" name="not_selected">"தேர்ந்தெடுக்கப்படவில்லை"</string>
+    <string msgid="6573031135582639649" name="not_set">"அமைக்கப்படவில்லை"</string>
     <string name="password_toggle_content_description">கடவுச்சொல்லைக் காட்டு</string>
+    <string msgid="6685851473431805375" name="preference_copied">"\"<ns2:g id="SUMMARY">%1$s</ns2:g>\" கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது."</string>
     <string msgid="5941395253238309765" name="range_end">"வரம்பு முடிவு"</string>
     <string msgid="7097486360902471446" name="range_start">"வரம்பு தொடக்கம்"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"தேடல்"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"ஆஃப்"</string>
     <string msgid="1490883874751719580" name="state_on">"ஆன்"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g>, <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"மாற்றுதல்"</string>
     <string msgid="1672349317127674378" name="tab">"பிரிவு"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns2:g id="PERCENTAGE">%1$d</ns2:g> சதவீதம்."</string>
     <string msgid="3765533235322692011" name="tooltip_description">"உதவிக்குறிப்பு"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"உதவிக்குறிப்பைக் காட்டும்"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"ஆஃப்"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"ஆன்"</string>
 </resources>

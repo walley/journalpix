@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">දුරකථනය තුළ විවෘත කරන්න</string>
     <string name="common_signin_button_text">පුරන්න</string>
     <string name="common_signin_button_text_long">Google සමගින් පුරන්න</string>
+    <string msgid="6083905920877235314" name="copy">"පිටපත් කරන්න"</string>
     <string msgid="8038256446254964252" name="default_error_message">"වලංගු නොවන ආදානයකි"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"උත්පතන කවුළුව"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"පතන මෙනුව"</string>
     <string name="error_a11y_label">දෝෂය: වලංගු නැත</string>
     <string name="error_icon_content_description">දෝෂය</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"උසස්"</string>
     <string name="exposed_dropdown_menu_content_description">පතන මෙනුව පෙන්වන්න</string>
     <string name="icon_content_description">සංවාද නිරූපකය</string>
     <string msgid="6827826412747255547" name="in_progress">"ප්‍රගතියේ පවතී"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">හරි</string>
     <string msgid="542007171693138492" name="navigation_menu">"සංචාලන මෙනුව"</string>
     <string msgid="6610465462668679431" name="not_selected">"තෝරා නැත"</string>
+    <string msgid="6573031135582639649" name="not_set">"සකසා නැත"</string>
     <string name="password_toggle_content_description">මුරපදය පෙන්වන්න</string>
+    <string msgid="6685851473431805375" name="preference_copied">"\"<ns2:g id="SUMMARY">%1$s</ns2:g>\" පසුරු පුවරුවට පිටපත් කරන ලදී."</string>
     <string msgid="5941395253238309765" name="range_end">"පරාස අන්තය"</string>
     <string msgid="7097486360902471446" name="range_start">"පරාස ආරම්භය"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"සෙවීම"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"ක්‍රියාවිරහිතයි"</string>
     <string msgid="1490883874751719580" name="state_on">"ක්‍රියාත්මකයි"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g>, <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"මාරු කරන්න"</string>
     <string msgid="1672349317127674378" name="tab">"ටැබය"</string>
     <string msgid="5946805113151406391" name="template_percent">"සියයට <ns2:g id="PERCENTAGE">%1$d</ns2:g>."</string>
     <string msgid="3765533235322692011" name="tooltip_description">"මෙවලම් ඉඟිය"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"මෙවලම් ඉඟිය පෙන්වන්න"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"ක්‍රියාවිරහිතයි"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"ක්‍රියාත්මකයි"</string>
 </resources>

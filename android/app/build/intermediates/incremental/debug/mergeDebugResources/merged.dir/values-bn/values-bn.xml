@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">ফোনে খুলুন</string>
     <string name="common_signin_button_text">সাইন-ইন করুন</string>
     <string name="common_signin_button_text_long">Google এর মাধ্যমে সাইন-ইন করুন</string>
+    <string msgid="6083905920877235314" name="copy">"কপি করুন"</string>
     <string msgid="8038256446254964252" name="default_error_message">"ভুল ইনপুট"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"পপ-আপ উইন্ডো"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"ড্রপডাউন মেনু"</string>
     <string name="error_a11y_label">সমস্যা: সঠিক নয়</string>
     <string name="error_icon_content_description">সমস্যা</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"উন্নত"</string>
     <string name="exposed_dropdown_menu_content_description">ড্রপ-ডাউন মেনু দেখুন</string>
     <string name="icon_content_description">ডায়ালগ আইকন</string>
     <string msgid="6827826412747255547" name="in_progress">"কাজ চলছে"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">ঠিক আছে</string>
     <string msgid="542007171693138492" name="navigation_menu">"নেভিগেশন মেনু"</string>
     <string msgid="6610465462668679431" name="not_selected">"বেছে নেওয়া হয়নি"</string>
+    <string msgid="6573031135582639649" name="not_set">"সেট করা হয়নি"</string>
     <string name="password_toggle_content_description">পাসওয়ার্ড দেখান</string>
+    <string msgid="6685851473431805375" name="preference_copied">"\"<ns2:g id="SUMMARY">%1$s</ns2:g>\" ক্লিপবোর্ডে লিঙ্কটি কপি করা হয়েছে।"</string>
     <string msgid="5941395253238309765" name="range_end">"রেঞ্জ শেষ"</string>
     <string msgid="7097486360902471446" name="range_start">"রেঞ্জ শুরু"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"সার্চ করুন"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"বন্ধ আছে"</string>
     <string msgid="1490883874751719580" name="state_on">"চালু আছে"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"৯৯৯+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g>, <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"সুইচ"</string>
     <string msgid="1672349317127674378" name="tab">"ট্যাব"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns2:g id="PERCENTAGE">%1$d</ns2:g> শতাংশ।"</string>
     <string msgid="3765533235322692011" name="tooltip_description">"টুলটিপ"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"টুলটিপ দেখুন"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"বন্ধ"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"চালু"</string>
 </resources>

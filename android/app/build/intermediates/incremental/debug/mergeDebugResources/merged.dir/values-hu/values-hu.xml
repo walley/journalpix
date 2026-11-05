@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">Megnyitás a telefonon</string>
     <string name="common_signin_button_text">Bejelentkezés</string>
     <string name="common_signin_button_text_long">Bejelentkezés Google-fiókkal</string>
+    <string msgid="6083905920877235314" name="copy">"Másolás"</string>
     <string msgid="8038256446254964252" name="default_error_message">"Érvénytelen adat"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"Előugró ablak"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"Legördülő menü"</string>
     <string name="error_a11y_label">Hiba: érvénytelen</string>
     <string name="error_icon_content_description">Hiba</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"Speciális"</string>
     <string name="exposed_dropdown_menu_content_description">Legördülő menü megjelenítése</string>
     <string name="icon_content_description">Párbeszédpanel ikonja</string>
     <string msgid="6827826412747255547" name="in_progress">"Folyamatban"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">OK</string>
     <string msgid="542007171693138492" name="navigation_menu">"Navigációs menü"</string>
     <string msgid="6610465462668679431" name="not_selected">"Nincs kijelölve"</string>
+    <string msgid="6573031135582639649" name="not_set">"Nincs beállítva"</string>
     <string name="password_toggle_content_description">Jelszó megjelenítése</string>
+    <string msgid="6685851473431805375" name="preference_copied">"„<ns2:g id="SUMMARY">%1$s</ns2:g>” a vágólapra lett másolva."</string>
     <string msgid="5941395253238309765" name="range_end">"Tartomány vége"</string>
     <string msgid="7097486360902471446" name="range_start">"Tartomány kezdete"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"Keresés"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"Ki"</string>
     <string msgid="1490883874751719580" name="state_on">"Be"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g>, <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"Kapcsoló"</string>
     <string msgid="1672349317127674378" name="tab">"Lap"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns2:g id="PERCENTAGE">%1$d</ns2:g> százalék."</string>
     <string msgid="3765533235322692011" name="tooltip_description">"elemleírás"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"elemleírás megjelenítése"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"KI"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"BE"</string>
 </resources>

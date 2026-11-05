@@ -67,11 +67,13 @@
     <string name="common_open_on_phone">เปิดบนโทรศัพท์</string>
     <string name="common_signin_button_text">ลงชื่อเข้าใช้</string>
     <string name="common_signin_button_text_long">ลงชื่อเข้าใช้ด้วย Google</string>
+    <string msgid="6083905920877235314" name="copy">"คัดลอก"</string>
     <string msgid="8038256446254964252" name="default_error_message">"อินพุตไม่ถูกต้อง"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"หน้าต่างป๊อปอัป"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"เมนูแบบเลื่อนลง"</string>
     <string name="error_a11y_label">ข้อผิดพลาด: ไม่ถูกต้อง</string>
     <string name="error_icon_content_description">ข้อผิดพลาด</string>
+    <string msgid="2427401033573778270" name="expand_button_title">"ขั้นสูง"</string>
     <string name="exposed_dropdown_menu_content_description">แสดงเมนูแบบเลื่อนลง</string>
     <string name="icon_content_description">ไอคอนกล่องโต้ตอบ</string>
     <string msgid="6827826412747255547" name="in_progress">"กำลังดำเนินการ"</string>
@@ -209,7 +211,9 @@
     <string name="mtrl_timepicker_confirm">ตกลง</string>
     <string msgid="542007171693138492" name="navigation_menu">"เมนูการนำทาง"</string>
     <string msgid="6610465462668679431" name="not_selected">"ไม่ได้เลือก"</string>
+    <string msgid="6573031135582639649" name="not_set">"ไม่ได้ตั้งค่า"</string>
     <string name="password_toggle_content_description">แสดงรหัสผ่าน</string>
+    <string msgid="6685851473431805375" name="preference_copied">"คัดลอก \"<ns2:g id="SUMMARY">%1$s</ns2:g>\" ไปยังคลิปบอร์ดแล้ว"</string>
     <string msgid="5941395253238309765" name="range_end">"จุดสิ้นสุดของช่วง"</string>
     <string msgid="7097486360902471446" name="range_start">"จุดเริ่มต้นของช่วง"</string>
     <string msgid="6264217191555673260" name="search_menu_title">"ค้นหา"</string>
@@ -222,9 +226,12 @@
     <string msgid="5834637030682409883" name="state_off">"ปิดอยู่"</string>
     <string msgid="1490883874751719580" name="state_on">"เปิดอยู่"</string>
     <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="9167775378838880170" name="summary_collapsed_preference_list">"<ns2:g id="CURRENT_ITEMS">%1$s</ns2:g> <ns2:g id="ADDED_ITEMS">%2$s</ns2:g>"</string>
     <string msgid="2561197295334830845" name="switch_role">"เปลี่ยน"</string>
     <string msgid="1672349317127674378" name="tab">"แท็บ"</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns2:g id="PERCENTAGE">%1$d</ns2:g> เปอร์เซ็นต์"</string>
     <string msgid="3765533235322692011" name="tooltip_description">"เคล็ดลับเครื่องมือ"</string>
     <string msgid="3124740595719787496" name="tooltip_label">"แสดงเคล็ดลับเครื่องมือ"</string>
+    <string msgid="3140233346420563315" name="v7_preference_off">"ปิด"</string>
+    <string msgid="89551595707643515" name="v7_preference_on">"เปิด"</string>
 </resources>

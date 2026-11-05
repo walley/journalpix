@@ -7,6 +7,7 @@
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="white">#FFFFFFFF</color>
+    <item name="settings_fragment_container" type="id"/>
     <string name="app_name">JournalPix</string>
     <style name="Theme.JournalPix" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/purple_500</item>

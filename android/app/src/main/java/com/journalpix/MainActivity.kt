@@ -197,13 +197,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         composable("settings") {
-                            Log.i(TAG_MAIN, "Settings screen: not implemented yet")
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Settings — coming soon")
-                            }
+                            Log.i(TAG_MAIN, "Settings screen: native preferences")
+                            com.journalpix.ui.screen.SettingsScreen(navController)
                         }
                     }
                     }
