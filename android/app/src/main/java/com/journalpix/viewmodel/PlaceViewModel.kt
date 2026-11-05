@@ -149,8 +149,15 @@ class PlaceViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(TAG_PLACE_VM, "getPlace: exception ${e.message}", e)
                 val offline = OfflineStore.findPlaceWithPhotos(placeId)
-                if (offline != null) currentPlace.value = offline
-                else errorMessage.value = "Network error: ${e.message}"
+                if (offline != null) {
+                    // Local-only place (not on server yet) — 404 is expected, not an error
+                    if (e is retrofit2.HttpException && e.code() == 404) {
+                        Log.i(TAG_PLACE_VM, "getPlace: place $placeId is local-only (HTTP 404), using offline data")
+                    }
+                    currentPlace.value = offline
+                } else {
+                    errorMessage.value = "Network error: ${e.message}"
+                }
             } finally {
                 isLoading.value = false
                 Log.i(TAG_PLACE_VM, "getPlace END: currentPlace lat=${currentPlace.value?.latitude} lon=${currentPlace.value?.longitude}")

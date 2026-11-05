@@ -875,6 +875,16 @@ object OfflineStore {
             }
         }
 
+        // Keep local-only places that haven't been synced to the server yet
+        val existing = placesByTrip[trip.id].orEmpty()
+        val localOnly = existing.filter { local ->
+            syncPending.contains(local.id) && newPlaces.none { it.id == local.id }
+        }
+        if (localOnly.isNotEmpty()) {
+            android.util.Log.i("OfflineStore", "mergeBackendTimeline: preserving ${localOnly.size} local-only pending places for trip ${trip.id}: ${localOnly.map { it.id }}")
+            newPlaces.addAll(localOnly)
+        }
+
         placesByTrip[trip.id] = newPlaces
         for ((placeId, photos) in allPhotos) {
             photosByPlace[placeId] = photos
