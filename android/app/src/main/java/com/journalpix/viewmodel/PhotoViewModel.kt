@@ -44,7 +44,9 @@ class PhotoViewModel : ViewModel() {
             isLoading.value = true
             errorMessage.value = null
             try {
-                val response = ApiService.apiClient.getPhotosForPlace("Bearer $token", placeId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.getPhotosForPlace("Bearer $token", placeId)
+                }
                 if (response.success) photos.value = response.data ?: emptyList()
                 else errorMessage.value = response.error ?: "Failed to load photos"
             } catch (e: Exception) {
@@ -109,7 +111,9 @@ class PhotoViewModel : ViewModel() {
         viewModelScope.launch {
             geocodeLoadingIds[photo.id] = true
             geocodeErrors.remove(photo.id)
-            val result = NominatimClient.reverseGeocode(lat, lon)
+            val result = withContext(Dispatchers.IO) {
+                NominatimClient.reverseGeocode(lat, lon)
+            }
             result.onSuccess { address ->
                 resolvedAddresses[photo.id] = address
                 OfflineStore.addresses[photo.id] = address
@@ -140,7 +144,9 @@ class PhotoViewModel : ViewModel() {
                 val byteArray = bitmapToByteArray(bitmap)
                 val requestFile = byteArray.toRequestBody("image/jpeg".toMediaType())
                 val body = MultipartBody.Part.createFormData("photo", "photo.jpg", requestFile)
-                val response = ApiService.apiClient.uploadPhoto("Bearer $token", placeId, body)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.uploadPhoto("Bearer $token", placeId, body)
+                }
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to upload photo"
             } catch (e: Exception) {
@@ -155,7 +161,9 @@ class PhotoViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val response = ApiService.apiClient.getPhoto("Bearer $token", photoId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.getPhoto("Bearer $token", photoId)
+                }
                 if (response.success) currentPhoto.value = response.data
                 else errorMessage.value = response.error ?: "Failed to load photo"
             } catch (e: Exception) {
@@ -170,7 +178,9 @@ class PhotoViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val response = ApiService.apiClient.updatePhoto("Bearer $token", photoId, request)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.updatePhoto("Bearer $token", photoId, request)
+                }
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to update photo"
             } catch (e: Exception) {
@@ -185,7 +195,9 @@ class PhotoViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val response = ApiService.apiClient.deletePhoto("Bearer $token", photoId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.deletePhoto("Bearer $token", photoId)
+                }
                 if (response.success) onSuccess()
                 else errorMessage.value = response.error ?: "Failed to delete photo"
             } catch (e: Exception) {

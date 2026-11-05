@@ -7,7 +7,9 @@ import com.journalpix.api.ApiService
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.*
 import com.journalpix.models.ZonedTime
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Context
 import android.util.Log
 import java.time.Instant
@@ -42,7 +44,9 @@ class PlaceViewModel : ViewModel() {
             isLoading.value = true
             errorMessage.value = null
             try {
-                val response = ApiService.apiClient.getPlaces("Bearer $token", tripId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.getPlaces("Bearer $token", tripId)
+                }
                 if (response.success) places.value = response.data ?: emptyList()
                 else errorMessage.value = response.error ?: "Failed to load places"
             } catch (e: Exception) {
@@ -70,7 +74,9 @@ class PlaceViewModel : ViewModel() {
             errorMessage.value = null
             try {
                 Log.d(TAG_PLACE_VM, "createPlace: calling API for tripId=$tripId")
-                val response = ApiService.apiClient.createPlace("Bearer $token", tripId, request)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.createPlace("Bearer $token", tripId, request)
+                }
                 if (response.success && response.data != null) {
                     val placeResp = response.data
                     Log.i(TAG_PLACE_VM, "createPlace: API success, placeId=${placeResp.id}, name='${placeResp.name}', lat=${placeResp.latitude}, lon=${placeResp.longitude}")
@@ -121,7 +127,9 @@ class PlaceViewModel : ViewModel() {
                     Log.i(TAG_PLACE_VM, "getPlace: loaded offline lat=${offline.latitude} lon=${offline.longitude} photos=${offline.photos.size}")
                     currentPlace.value = offline
                 }
-                val response = ApiService.apiClient.getPlace("Bearer $token", placeId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.getPlace("Bearer $token", placeId)
+                }
                 if (response.success && response.data != null) {
                     val serverPlace = response.data!!
                     Log.i(TAG_PLACE_VM, "getPlace: server lat=${serverPlace.latitude} lon=${serverPlace.longitude} photos=${serverPlace.photos.size}")
@@ -170,7 +178,7 @@ class PlaceViewModel : ViewModel() {
         }
         onSuccess()
         // Sync with backend in background
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val response = ApiService.apiClient.updatePlace("Bearer $token", placeId, request)
                 if (response.success) {
@@ -190,7 +198,9 @@ class PlaceViewModel : ViewModel() {
             isLoading.value = true
             try {
                 Log.d(TAG_PLACE_VM, "deletePlace: calling API for placeId=$placeId")
-                val response = ApiService.apiClient.deletePlace("Bearer $token", placeId)
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.deletePlace("Bearer $token", placeId)
+                }
                 if (response.success) {
                     Log.i(TAG_PLACE_VM, "deletePlace: API success for placeId=$placeId")
                     onSuccess()
@@ -226,7 +236,9 @@ class PlaceViewModel : ViewModel() {
             isLoading.value = true
             try {
                 // Get all places for the trip to find current index and adjacent
-                val placesResp = ApiService.apiClient.getPlaces("Bearer $token", tripId)
+                val placesResp = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.getPlaces("Bearer $token", tripId)
+                }
                 if (!placesResp.success || placesResp.data == null) {
                     errorMessage.value = placesResp.error ?: "Failed to load places"
                     return@launch
@@ -253,11 +265,13 @@ class PlaceViewModel : ViewModel() {
                 newOrder[idx] = adjacentPlace
                 newOrder[newIdx] = currentPlace
 
-                val reorderResp = ApiService.apiClient.reorderPlaces(
-                    "Bearer $token",
-                    tripId,
-                    com.journalpix.models.ReorderPlacesRequest(newOrder.map { it.id })
-                )
+                val reorderResp = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.reorderPlaces(
+                        "Bearer $token",
+                        tripId,
+                        com.journalpix.models.ReorderPlacesRequest(newOrder.map { it.id })
+                    )
+                }
 
                 if (reorderResp.success) {
                     Log.i(TAG_PLACE_VM, "Move place $placeId direction=$direction: success")
@@ -280,7 +294,7 @@ class PlaceViewModel : ViewModel() {
         OfflineStore.reorderPlaces(tripId, placeIds)
         onSuccess()
         // Sync with backend in background
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val resp = ApiService.apiClient.reorderPlaces(
                     "Bearer $token",

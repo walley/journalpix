@@ -9,7 +9,9 @@ import com.journalpix.models.TimelineItem
 import com.journalpix.models.TransportMode
 import com.journalpix.models.TripTimeline
 import com.journalpix.sync.SyncManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class TimelineViewModel : ViewModel() {
@@ -32,7 +34,10 @@ class TimelineViewModel : ViewModel() {
         viewModelScope.launch {
             isSyncing.value = true
             try {
-                SyncManager.performSyncSuspend(token)
+                // Network I/O must not run on the main thread (viewModelScope = Main) — causes ANR
+                withContext(Dispatchers.IO) {
+                    SyncManager.performSyncSuspend(token)
+                }
             } catch (_: Exception) {
             } finally {
                 isSyncing.value = false
@@ -83,7 +88,9 @@ class TimelineViewModel : ViewModel() {
     fun reorderPlaces(token: String, tripId: String, placeIds: List<String>, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                val response = ApiService.apiClient.reorderPlaces("Bearer $token", tripId, com.journalpix.models.ReorderPlacesRequest(placeIds))
+                val response = withContext(Dispatchers.IO) {
+                    ApiService.apiClient.reorderPlaces("Bearer $token", tripId, com.journalpix.models.ReorderPlacesRequest(placeIds))
+                }
                 if (response.success) {
                     getTimeline(token, tripId)
                     onSuccess()
