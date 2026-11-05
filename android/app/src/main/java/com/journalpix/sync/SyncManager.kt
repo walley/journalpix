@@ -98,12 +98,25 @@ object SyncManager {
                             endTimezone = trip.endTimezone,
                             status = trip.status
                         )
-                        val updateResp =
-                            ApiService.apiClient.updateTrip(bearerToken, trip.id, updateReq)
-                        if (updateResp.success) {
-                            OfflineStore.clearPending(id)
-                            Log.d(TAG, "Updated trip: $id")
-                        } else {
+                        var updateOk = false
+                        try {
+                            val updateResp =
+                                ApiService.apiClient.updateTrip(bearerToken, trip.id, updateReq)
+                            if (updateResp.success) {
+                                updateOk = true
+                                OfflineStore.clearPending(id)
+                                Log.d(TAG, "Updated trip: $id")
+                            } else {
+                                Log.d(TAG, "Update trip returned success=false for $id: ${updateResp.error} — will try create")
+                            }
+                        } catch (e: HttpException) {
+                            if (e.code() == 404) {
+                                Log.d(TAG, "Update trip 404 for local id $id — trip not on server yet, will create")
+                            } else {
+                                Log.e(TAG, "Update trip HTTP ${e.code()} for $id: ${serverError(e)}")
+                            }
+                        }
+                        if (!updateOk) {
                             val createReq = CreateTripRequest(
                                 title = trip.title,
                                 description = trip.description,
@@ -120,9 +133,9 @@ object SyncManager {
                                 OfflineStore.clearPending(id)
                                 Log.d(TAG, "Created and mapped trip: $id -> ${createData.id}")
                             } else {
-                                val msg = createResp.error ?: updateResp.error ?: "trip sync failed"
-                                errors.add("Trip: $msg")
-                                Log.e(TAG, "Trip sync failed for $id: $msg")
+                                val msg = createResp.error ?: "trip sync failed"
+                                errors.add("Trip $id: $msg")
+                                Log.e(TAG, "Trip create failed for $id: $msg")
                             }
                         }
                         continue
@@ -141,12 +154,29 @@ object SyncManager {
                             orderIndex = place.orderIndex,
                             transportFromPrevious = place.transportFromPrevious
                         )
-                        val updateResp =
-                            ApiService.apiClient.updatePlace(bearerToken, place.id, updateReq)
-                        if (updateResp.success) {
-                            OfflineStore.clearPending(id)
-                            Log.d(TAG, "Updated place: $id")
-                        } else {
+                        // Try update first; on 404 (local UUID not on server) fall through to create
+                        var updateOk = false
+                        var updateError: String? = null
+                        try {
+                            val updateResp =
+                                ApiService.apiClient.updatePlace(bearerToken, place.id, updateReq)
+                            if (updateResp.success) {
+                                updateOk = true
+                                OfflineStore.clearPending(id)
+                                Log.d(TAG, "Updated place: $id")
+                            } else {
+                                updateError = updateResp.error
+                                Log.d(TAG, "Update place returned success=false for $id: $updateError — will try create")
+                            }
+                        } catch (e: HttpException) {
+                            if (e.code() == 404) {
+                                Log.d(TAG, "Update place 404 for local id $id — place not on server yet, will create")
+                            } else {
+                                updateError = serverError(e)
+                                Log.e(TAG, "Update place HTTP ${e.code()} for $id: $updateError")
+                            }
+                        }
+                        if (!updateOk) {
                             val createReq = CreatePlaceRequest(
                                 tripId = tripId,
                                 name = place.name,
@@ -158,17 +188,23 @@ object SyncManager {
                                 orderIndex = place.orderIndex,
                                 transportFromPrevious = place.transportFromPrevious
                             )
-                            val createResp =
-                                ApiService.apiClient.createPlace(bearerToken, tripId, createReq)
-                            val createData = createResp.data
-                            if (createResp.success && createData != null) {
-                                OfflineStore.updatePlaceServerId(id, createData)
-                                OfflineStore.clearPending(id)
-                                Log.d(TAG, "Created and mapped place: $id -> ${createData.id}")
-                            } else {
-                                val msg = createResp.error ?: updateResp.error ?: "place sync failed"
-                                errors.add("Place: $msg")
-                                Log.e(TAG, "Place sync failed for $id: $msg")
+                            try {
+                                val createResp =
+                                    ApiService.apiClient.createPlace(bearerToken, tripId, createReq)
+                                val createData = createResp.data
+                                if (createResp.success && createData != null) {
+                                    OfflineStore.updatePlaceServerId(id, createData)
+                                    OfflineStore.clearPending(id)
+                                    Log.d(TAG, "Created and mapped place: $id -> ${createData.id} (tripId=$tripId)")
+                                } else {
+                                    val msg = createResp.error ?: updateError ?: "place sync failed"
+                                    errors.add("Place $id: $msg")
+                                    Log.e(TAG, "Create place failed for $id (tripId=$tripId): $msg")
+                                }
+                            } catch (e: HttpException) {
+                                val msg = serverError(e)
+                                errors.add("Place $id: $msg")
+                                Log.e(TAG, "Create place HTTP ${e.code()} for $id (tripId=$tripId): $msg", e)
                             }
                         }
                         continue
@@ -231,9 +267,9 @@ object SyncManager {
 
                     OfflineStore.clearPending(id)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to sync item $id", e)
-                    errors.add(if (e is HttpException) serverError(e)
-                    else "${e.message ?: e.javaClass.simpleName}")
+                    val msg = if (e is HttpException) serverError(e) else "${e.message ?: e.javaClass.simpleName}"
+                    Log.e(TAG, "Failed to sync item $id: $msg", e)
+                    errors.add("Item $id: $msg")
                 }
             }
         }
