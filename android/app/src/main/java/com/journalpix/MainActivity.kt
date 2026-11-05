@@ -81,7 +81,8 @@ class MainActivity : ComponentActivity() {
 
                     Scaffold(
                         bottomBar = {
-                            if (currentRoute != "auth") {
+                            // Show nav bar only on real main destinations — currentRoute is null on first frame
+                            if (currentRoute != null && currentRoute != "auth") {
                                 // Floating rounded navigation bar near the very bottom
                                 NavigationBar(
                                     modifier = Modifier
