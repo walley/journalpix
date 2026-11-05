@@ -495,12 +495,12 @@ object OfflineStore {
             orderIndex = server.orderIndex,
             transportFromPrevious = server.transportFromPrevious,
             createdAt = server.createdAt,
-            photos = server.photos
+            photos = emptyList()
         )
         val list = placesByTrip.getOrPut(tripId) { mutableListOf() }
         val idx = list.indexOfFirst { it.id == place.id }
         if (idx >= 0) list[idx] = place else list.add(place)
-        photosByPlace.getOrPut(place.id) { mutableListOf() }.addAll(server.photos)
+        photosByPlace.putIfAbsent(place.id, mutableListOf())
         android.util.Log.i(TAG, "addServerPlace: stored server place ${place.id} '${place.name}' under trip $tripId")
         persist()
         return place
