@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
@@ -93,13 +94,13 @@ fun MapScreen(
         )
     }
 
-    // Center and zoom on the edited place's known coordinates
+    // Center and zoom on the edited place's known coordinates (zoom 17 = >2x closer than overview)
     LaunchedEffect(editPlaceId) {
         if (editPlaceId.isNotBlank() && hasEditTarget) {
-            Log.i(TAG_MAP, "Centering big map on edited place $editPlaceId lat=${editPlace!!.latitude} lon=${editPlace.longitude} zoom=15")
+            Log.i(TAG_MAP, "Centering big map on edited place $editPlaceId lat=${editPlace!!.latitude} lon=${editPlace.longitude} zoom=17")
             cameraPositionState.position = CameraPosition(
                 LatLng(editPlace.latitude!!, editPlace.longitude!!),
-                15f
+                17f
             )
         } else if (editPlaceId.isNotBlank()) {
             Log.w(TAG_MAP, "Edited place $editPlaceId has no coordinates — keeping route center")
@@ -304,8 +305,44 @@ fun MapScreen(
                     }
                 }
 
-                // Selection marker at tapped point
-                mapViewModel.mapSelectionPoint.value?.let { point ->
+                // Draggable pin for the place being edited — drag it to fine-tune the location
+                if (editPlaceId.isNotBlank() && hasEditTarget) {
+                    val editMarkerState = rememberMarkerState(
+                        LatLng(editPlace!!.latitude!!, editPlace.longitude!!)
+                    )
+                    LaunchedEffect(editPlaceId) {
+                        editMarkerState.position = LatLng(editPlace.latitude!!, editPlace.longitude!!)
+                    }
+                    // Marker drags become the pending selection, applied via the existing confirm flow
+                    LaunchedEffect(editMarkerState.position) {
+                        val p = editMarkerState.position
+                        Log.d(TAG_MAP, "Edit marker moved: lat=${p.latitude} lon=${p.longitude}")
+                        mapViewModel.mapSelectionPoint.value = com.journalpix.models.RoutePoint(
+                            latitude = p.latitude,
+                            longitude = p.longitude,
+                            placeId = editPlaceId,
+                            orderIndex = 0
+                        )
+                    }
+                    MarkerComposable(
+                        state = editMarkerState,
+                        draggable = true,
+                        onClick = {
+                            Log.d(TAG_MAP, "Edit marker clicked: placeId=$editPlaceId")
+                            true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Edit place location",
+                            tint = Color.Red,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
+                // Selection marker at tapped point (hidden while the draggable edit pin is shown)
+                if (editPlaceId.isBlank()) mapViewModel.mapSelectionPoint.value?.let { point ->
                     val markerState = rememberMarkerState(
                         LatLng(point.latitude, point.longitude)
                     )
