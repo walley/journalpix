@@ -898,13 +898,26 @@ object OfflineStore {
         // Start from the local place list — server data only fills gaps
         val merged = (placesByTrip[trip.id] ?: mutableListOf()).toMutableList()
         val serverPlaceIds = mutableSetOf<String>()
+        // Local IDs that matched a server place by name — server already has them, don't re-upload
+        val nameMatchedLocalIds = mutableSetOf<String>()
 
         for (item in timeline.timeline) {
             for (place in item.places) {
                 val p =
                     if (place.visitDate == null) place.copy(visitDate = ZonedTime.parseLegacy(item.date)) else place
                 serverPlaceIds.add(p.id)
-                val localIdx = merged.indexOfFirst { it.id == p.id }
+                var localIdx = merged.indexOfFirst { it.id == p.id }
+                if (localIdx == -1) {
+                    // Same name already exists locally (e.g. our own earlier push created the
+                    // server copy but the local ID rename didn't stick) → don't duplicate
+                    localIdx = merged.indexOfFirst {
+                        it.name.trim().equals(p.name.trim(), ignoreCase = true)
+                    }
+                    if (localIdx != -1) {
+                        nameMatchedLocalIds.add(merged[localIdx].id)
+                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: server place ${p.id} '${p.name}' matches local ${merged[localIdx].id} by name — keeping local, no duplicate")
+                    }
+                }
                 if (localIdx == -1) {
                     // Not on device → download from server
                     merged.add(p)
@@ -912,20 +925,21 @@ object OfflineStore {
                 } else {
                     // On both → device wins for place fields, but pull server photos we don't have
                     val local = merged[localIdx]
-                    val serverPhotoIds = p.photos.map { it.id }.toSet()
-                    val localPhotos = photosByPlace[p.id].orEmpty()
+                    val localId = local.id
+                    val localPhotos = photosByPlace[localId].orEmpty()
                     val missingPhotos = p.photos.filter { sp -> localPhotos.none { it.id == sp.id } }
                     if (missingPhotos.isNotEmpty()) {
-                        photosByPlace[p.id] = (localPhotos + missingPhotos).toMutableList()
-                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: added ${missingPhotos.size} server photos to place ${p.id}")
+                        photosByPlace[localId] = (localPhotos + missingPhotos).toMutableList()
+                        android.util.Log.i("OfflineStore", "mergeBackendTimeline: added ${missingPhotos.size} server photos to place $localId")
                     }
-                    merged[localIdx] = local.copy(photos = photosByPlace[p.id].orEmpty())
+                    merged[localIdx] = local.copy(photos = photosByPlace[localId].orEmpty())
                 }
             }
         }
 
         // Local places missing on the server → keep them and re-upload
-        val reuploaded = merged.filter { it.id !in serverPlaceIds }
+        // (unless they matched a server place by name — the server already has them)
+        val reuploaded = merged.filter { it.id !in serverPlaceIds && it.id !in nameMatchedLocalIds }
         reuploaded.forEach { requeuePending(it.id) }
         if (reuploaded.isNotEmpty()) {
             android.util.Log.i("OfflineStore", "mergeBackendTimeline: ${reuploaded.size} local places missing on server, re-queued: ${reuploaded.map { it.id }}")
