@@ -77,12 +77,33 @@ fun MapScreen(
         )
     }
 
-    // Keep camera in sync when ViewModel viewport changes (e.g. fit-to-route)
-    LaunchedEffect(viewport.centerLatitude, viewport.centerLongitude, viewport.zoom) {
+    // Opened for editing a specific place (from place detail minimap/location icon)?
+    val editPlaceId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
+    val editPlace = editPlaceId.takeIf { it.isNotBlank() }
+        ?.let { com.journalpix.data.OfflineStore.findPlaceWithPhotos(it) }
+    val hasEditTarget = editPlace?.latitude != null && editPlace.longitude != null
+
+    // Keep camera in sync when ViewModel viewport changes (e.g. fit-to-route),
+    // unless we opened the map centered on a specific place being edited
+    LaunchedEffect(viewport.centerLatitude, viewport.centerLongitude, viewport.zoom, hasEditTarget) {
+        if (hasEditTarget) return@LaunchedEffect
         cameraPositionState.position = CameraPosition(
             LatLng(viewport.centerLatitude, viewport.centerLongitude),
             viewport.zoom
         )
+    }
+
+    // Center and zoom on the edited place's known coordinates
+    LaunchedEffect(editPlaceId) {
+        if (editPlaceId.isNotBlank() && hasEditTarget) {
+            Log.i(TAG_MAP, "Centering big map on edited place $editPlaceId lat=${editPlace!!.latitude} lon=${editPlace.longitude} zoom=15")
+            cameraPositionState.position = CameraPosition(
+                LatLng(editPlace.latitude!!, editPlace.longitude!!),
+                15f
+            )
+        } else if (editPlaceId.isNotBlank()) {
+            Log.w(TAG_MAP, "Edited place $editPlaceId has no coordinates — keeping route center")
+        }
     }
 
     // Map tap-to-select: works regardless of addPlaceMode
