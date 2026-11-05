@@ -137,7 +137,8 @@ class MainActivity : ComponentActivity() {
                     ) { paddingValues ->
                     NavHost(
                         navController = navController,
-                        startDestination = "auth",
+                        // App starts on trip selection (Home); login lives in the Profile tab
+                        startDestination = "home",
                         modifier = Modifier.padding(paddingValues)
                     ) {
                         composable("auth") { AuthScreen(navController) }
@@ -188,13 +189,8 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("about") { AboutScreen(navController) }
                         composable("profile") {
-                            Log.i(TAG_MAIN, "Profile screen: not implemented yet")
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("User profile — coming soon")
-                            }
+                            Log.i(TAG_MAIN, "Profile screen")
+                            com.journalpix.ui.screen.ProfileScreen(navController)
                         }
                         composable("settings") {
                             Log.i(TAG_MAIN, "Settings screen: native preferences")
