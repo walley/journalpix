@@ -80,15 +80,8 @@ class PlaceViewModel : ViewModel() {
                 if (response.success && response.data != null) {
                     val placeResp = response.data
                     Log.i(TAG_PLACE_VM, "createPlace: API success, placeId=${placeResp.id}, name='${placeResp.name}', lat=${placeResp.latitude}, lon=${placeResp.longitude}")
-                    OfflineStore.addPlace(
-                        tripId = tripId,
-                        name = placeResp.name,
-                        visitDate = placeResp.visitDate,
-                        address = placeResp.address,
-                        latitude = placeResp.latitude,
-                        longitude = placeResp.longitude,
-                        transportFromPrevious = placeResp.transportFromPrevious
-                    )
+                    // Store under the SERVER id so later lookups/clicks resolve correctly
+                    OfflineStore.addServerPlace(tripId, placeResp)
                     onSuccess()
                     Log.d(TAG_PLACE_VM, "createPlace: offline store updated, onSuccess invoked")
                 } else {

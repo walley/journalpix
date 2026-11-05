@@ -478,6 +478,34 @@ object OfflineStore {
         return place
     }
 
+    /**
+     * Store a place that was created on the server, keeping the SERVER id
+     * (no pending flag). Prevents duplicate local place-… copies.
+     */
+    fun addServerPlace(tripId: String, server: PlaceResponse): PlaceWithPhotos {
+        val place = PlaceWithPhotos(
+            id = server.id,
+            tripId = tripId,
+            name = server.name,
+            description = server.description,
+            latitude = server.latitude,
+            longitude = server.longitude,
+            address = server.address,
+            visitDate = server.visitDate,
+            orderIndex = server.orderIndex,
+            transportFromPrevious = server.transportFromPrevious,
+            createdAt = server.createdAt,
+            photos = server.photos
+        )
+        val list = placesByTrip.getOrPut(tripId) { mutableListOf() }
+        val idx = list.indexOfFirst { it.id == place.id }
+        if (idx >= 0) list[idx] = place else list.add(place)
+        photosByPlace.getOrPut(place.id) { mutableListOf() }.addAll(server.photos)
+        android.util.Log.i(TAG, "addServerPlace: stored server place ${place.id} '${place.name}' under trip $tripId")
+        persist()
+        return place
+    }
+
     fun setTransport(placeId: String, mode: TransportMode?) {
         placesByTrip.values.forEach { list ->
             val idx = list.indexOfFirst { it.id == placeId }
