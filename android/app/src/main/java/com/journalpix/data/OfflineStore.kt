@@ -126,9 +126,26 @@ object OfflineStore {
             if (pending != null) {
                 for (i in 0 until pending.length()) syncPending.add(pending.getString(i))
             }
+            cleanupDemoLeftovers()
             android.util.Log.i(TAG, "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
         } catch (e: Exception) {
             android.util.Log.e(TAG, "loadFromDisk: failed to parse store.json: ${e.message}", e)
+        }
+    }
+
+    /** Remove leftover demo-testing artifacts (old "Demo Place" and trip-title-named places). */
+    private fun cleanupDemoLeftovers() {
+        val demoNamePattern = Regex("^Trip demo", RegexOption.IGNORE_CASE)
+        var removed = 0
+        placesByTrip.values.forEach { list ->
+            val before = list.size
+            list.removeAll { it.id == "demo-place-1" || it.name == "Demo Place" || demoNamePattern.containsMatchIn(it.name) }
+            removed += before - list.size
+        }
+        photosByPlace.remove("demo-place-1")
+        if (removed > 0) {
+            android.util.Log.i(TAG, "cleanupDemoLeftovers: removed $removed demo leftover places")
+            persist()
         }
     }
 
@@ -255,26 +272,7 @@ object OfflineStore {
 
     fun ensureDemoTrip(tripId: String): TripResponse {
         val id = tripId.ifBlank { "demo-trip-1" }
-        placesByTrip.putIfAbsent(
-            id,
-            mutableListOf(
-                PlaceWithPhotos(
-                    id = "demo-place-1",
-                    tripId = id,
-                    name = "Demo Place",
-                    description = "Add photos offline — GPS is read from EXIF",
-                    latitude = null,
-                    longitude = null,
-                    address = null,
-                    visitDate = null,
-                    orderIndex = 0,
-                    transportFromPrevious = null,
-                    createdAt = "2024-01-01T00:00:00Z",
-                    photos = emptyList()
-                )
-            )
-        )
-        photosByPlace.putIfAbsent("demo-place-1", mutableListOf())
+        placesByTrip.putIfAbsent(id, mutableListOf())
         return trips.getOrPut(id) {
             TripResponse(
                 id = id,

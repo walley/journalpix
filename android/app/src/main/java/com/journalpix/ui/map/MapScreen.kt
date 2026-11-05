@@ -186,10 +186,11 @@ fun MapScreen(
                             val editPlaceId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
                             Log.i(TAG_MAP, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, placeIdForUpdate='$placeIdForUpdate', mapEditPlaceId='${AppSession.mapEditPlaceId.value}', resolved='$editPlaceId'")
                             if (editPlaceId.isNotBlank()) {
+                                // Name must stay as entered by the user — only lat/lon change here
                                 AppSession.pendingMapPlaceUpdate.value = Triple(
                                     point.latitude,
                                     point.longitude,
-                                    mapViewModel.mapRoute.value?.tripTitle ?: ""
+                                    ""
                                 )
                                 AppSession.mapEditPlaceId.value = null
                             } else {
