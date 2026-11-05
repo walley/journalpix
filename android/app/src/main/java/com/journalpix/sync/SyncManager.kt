@@ -144,6 +144,12 @@ object SyncManager {
                     val placePair = OfflineStore.findPlace(id)
                     if (placePair != null) {
                         val (place, tripId) = placePair
+                        if (tripId.startsWith("demo")) {
+                            // Local-only demo trip fallback — nothing to push to the server
+                            Log.i(TAG, "Skipping pending place $id: belongs to local demo trip '$tripId', clearing pending flag")
+                            OfflineStore.clearPending(id)
+                            continue
+                        }
                         val updateReq = UpdatePlaceRequest(
                             name = place.name,
                             description = place.description,
