@@ -8,14 +8,16 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -90,9 +92,6 @@ class MainActivity : ComponentActivity() {
                                         .clip(RoundedCornerShape(24.dp)),
                                     tonalElevation = 4.dp
                                 ) {
-                                    // No trip selected yet is fine while browsing Home/About — only
-                                    // Timeline/Map require a valid trip, checked on click below.
-                                    val tripId = AppSession.currentTripId.value
                                     NavigationBarItem(
                                         selected = currentRoute == "home",
                                         onClick = {
@@ -106,34 +105,22 @@ class MainActivity : ComponentActivity() {
                                         label = { Text("Home") }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute?.startsWith("timeline/") == true,
+                                        selected = currentRoute == "profile",
                                         onClick = {
-                                            Log.i(TAG_MAIN, "Nav: timeline tripId='$tripId'")
-                                            val valid = AppSession.validateTripId(tripId)
-                                            if (valid != null) {
-                                                navController.navigate("timeline/$valid")
-                                            } else {
-                                                Log.e(TAG_MAIN, "Nav: timeline blocked — no trip selected")
-                                                Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
-                                            }
+                                            Log.i(TAG_MAIN, "Nav: profile (user) — screen not implemented yet")
+                                            navController.navigate("profile")
                                         },
-                                        icon = { Icon(Icons.Default.DateRange, contentDescription = "Timeline") },
-                                        label = { Text("Timeline") }
+                                        icon = { Icon(Icons.Default.Person, contentDescription = "User") },
+                                        label = { Text("User") }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute?.startsWith("map/") == true,
+                                        selected = currentRoute == "settings",
                                         onClick = {
-                                            Log.i(TAG_MAIN, "Nav: map tripId='$tripId'")
-                                            val valid = AppSession.validateTripId(tripId)
-                                            if (valid != null) {
-                                                navController.navigate("map/$valid")
-                                            } else {
-                                                Log.e(TAG_MAIN, "Nav: map blocked — no trip selected")
-                                                Toast.makeText(this@MainActivity, AppSession.tripIdError.value, Toast.LENGTH_LONG).show()
-                                            }
+                                            Log.i(TAG_MAIN, "Nav: settings — screen not implemented yet")
+                                            navController.navigate("settings")
                                         },
-                                        icon = { Icon(Icons.Default.Map, contentDescription = "Map") },
-                                        label = { Text("Map") }
+                                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                                        label = { Text("Settings") }
                                     )
                                     NavigationBarItem(
                                         selected = currentRoute == "about",
@@ -200,6 +187,24 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("about") { AboutScreen(navController) }
+                        composable("profile") {
+                            Log.i(TAG_MAIN, "Profile screen: not implemented yet")
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("User profile — coming soon")
+                            }
+                        }
+                        composable("settings") {
+                            Log.i(TAG_MAIN, "Settings screen: not implemented yet")
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Settings — coming soon")
+                            }
+                        }
                     }
                     }
                 }
