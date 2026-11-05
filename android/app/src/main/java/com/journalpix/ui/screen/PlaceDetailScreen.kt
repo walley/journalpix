@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -361,7 +362,7 @@ fun PlaceDetailScreen(
     position = if (currentPlace?.latitude != null && currentPlace?.longitude != null) {
       CameraPosition(
         LatLng(currentPlace?.latitude ?: 0.0, currentPlace?.longitude ?: 0.0),
-        15f
+        17f
       )
     } else {
       CameraPosition(LatLng(0.0, 0.0), 3f)
@@ -373,8 +374,8 @@ fun PlaceDetailScreen(
     val lat = currentPlace?.latitude
     val lon = currentPlace?.longitude
     if (lat != null && lon != null) {
-      Log.i(TAG_PLACE_DETAIL, "Minimap: centering on place lat=$lat lon=$lon zoom=15")
-      mapCameraState.position = CameraPosition(LatLng(lat, lon), 15f)
+      Log.i(TAG_PLACE_DETAIL, "Minimap: centering on place lat=$lat lon=$lon zoom=17")
+      mapCameraState.position = CameraPosition(LatLng(lat, lon), 17f)
     }
   }
 
@@ -612,8 +613,8 @@ fun PlaceDetailScreen(
                   modifier = Modifier.size(32.dp)
                 ) {
                   Icon(
-                    Icons.Default.MyLocation,
-                    contentDescription = "Select place on map",
+                    Icons.Default.Map,
+                    contentDescription = "Open place on big map",
                     tint = MaterialTheme.colorScheme.primary
                   )
                 }
