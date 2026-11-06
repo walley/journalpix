@@ -19,3 +19,16 @@ rustama.log
 
 # Editors/OS
 .DS_Store
+
+# Android Studio / Gradle build noise
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+*.iml
+*.hprof
+.gradle/
+build/
+

@@ -1,8 +1,0 @@
-com.journalpix.app-pngs-0 /home/walley/git/journalpix/android/app/build/generated/res/pngs/debug
-com.journalpix.app-updated_navigation_xml-1 /home/walley/git/journalpix/android/app/build/generated/updated_navigation_xml/debug
-com.journalpix.app-packageDebugResources-2 /home/walley/git/journalpix/android/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.journalpix.app-packageDebugResources-3 /home/walley/git/journalpix/android/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.journalpix.app-debug-4 /home/walley/git/journalpix/android/app/build/intermediates/merged_res/debug/mergeDebugResources
-com.journalpix.app-debug-5 /home/walley/git/journalpix/android/app/src/debug/res
-com.journalpix.app-main-6 /home/walley/git/journalpix/android/app/src/main/res
-gradleHome-0 /home/walley/.gradle
