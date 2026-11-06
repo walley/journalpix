@@ -387,6 +387,14 @@ fun PlaceDetailScreen(
           IconButton(onClick = { navController.popBackStack() }) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
           }
+        },
+        actions = {
+          IconButton(onClick = {
+            Log.i(TAG_PLACE_DETAIL, "Delete place button tapped: placeId=$placeId — showing confirm dialog")
+            showDeleteDialog = true
+          }) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete place")
+          }
         }
       )
     },
