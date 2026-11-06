@@ -84,6 +84,11 @@ fun MapScreen(
         ?.let { com.journalpix.data.OfflineStore.findPlaceWithPhotos(it) }
     val hasEditTarget = editPlace?.latitude != null && editPlace.longitude != null
 
+    // Draggable pin state for the edited place — hoisted so map taps can also move it
+    val editMarkerState = rememberMarkerState(
+        LatLng(editPlace?.latitude ?: 0.0, editPlace?.longitude ?: 0.0)
+    )
+
     // Keep camera in sync when ViewModel viewport changes (e.g. fit-to-route),
     // unless we opened the map centered on a specific place being edited
     LaunchedEffect(viewport.centerLatitude, viewport.centerLongitude, viewport.zoom, hasEditTarget) {
@@ -267,7 +272,12 @@ fun MapScreen(
                 ), onMapClick = { latLng ->
                     Log.d(TAG_MAP, "Map clicked: lat=${latLng.latitude}, lon=${latLng.longitude}")
                     mapViewModel.setMapSelectionPoint(latLng.latitude, latLng.longitude)
-                    if (addPlaceMode && onPlaceAdded != null) {
+                    if (editPlaceId.isNotBlank()) {
+                        // Editing a place's position: move the placed pin to the tapped point
+                        // (applied when the user hits the checkmark)
+                        Log.i(TAG_MAP, "Moving edit pin for place $editPlaceId to lat=${latLng.latitude} lon=${latLng.longitude}")
+                        editMarkerState.position = latLng
+                    } else if (addPlaceMode && onPlaceAdded != null) {
                         mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
                     }
                 }
@@ -379,11 +389,8 @@ fun MapScreen(
 
                 // Draggable pin for the place being edited — drag it to fine-tune the location
                 if (editPlaceId.isNotBlank() && hasEditTarget) {
-                    val editMarkerState = rememberMarkerState(
-                        LatLng(editPlace!!.latitude!!, editPlace.longitude!!)
-                    )
                     LaunchedEffect(editPlaceId) {
-                        editMarkerState.position = LatLng(editPlace.latitude!!, editPlace.longitude!!)
+                        editMarkerState.position = LatLng(editPlace!!.latitude!!, editPlace.longitude!!)
                     }
                     // Marker drags become the pending selection, applied via the existing confirm flow
                     LaunchedEffect(editMarkerState.position) {
