@@ -90,8 +90,17 @@ fun PlaceTimelineRow(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                ) {Text("x", color = MaterialTheme.colorScheme.onSurface);
-                    dragHandle?.invoke()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        dragHandle?.invoke()
+                    }
                 }
             }
         }

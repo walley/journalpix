@@ -593,7 +593,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                                        Icon(
                                          Icons.Default.DragHandle, contentDescription = "Drag to reorder", tint = if (isDragging) MaterialTheme.colorScheme.primary
                                          else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier
-                                           .size(24.dp)
+                                           .size(28.dp)
                                            .pointerInput(place.id) {
                                              detectDragGesturesAfterLongPress(onDragStart = {
                                                draggedPlaceId = place.id
