@@ -130,6 +130,11 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   fun navigateToMap(addPlaceMode: Boolean) {
     val valid = AppSession.validateTripId(effectiveTripId)
     if (valid != null) {
+      // Pass the whole trip route (all place lat/lons as a GeoJSON polyline) to the big map
+      AppSession.mapEditPlaceId.value = null
+      AppSession.mapGeoJson.value = com.journalpix.geo.GeoJson.forTripRoute(
+        com.journalpix.data.OfflineStore.placesForTrip(valid)
+      )
       navController.navigate(if (addPlaceMode) "map/$valid?addPlaceMode=true" else "map/$valid")
     } else {
       Log.e(TAG_TIMELINE, "Map navigation blocked — tripId is blank/invalid")

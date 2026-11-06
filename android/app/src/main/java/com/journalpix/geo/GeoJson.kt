@@ -51,6 +51,23 @@ object GeoJson {
         return FeatureCollection(features).toJson()
     }
 
+    /** GeoJSON of a trip route: one LineString through all places that have coordinates, in order. */
+    fun forTripRoute(places: List<PlaceWithPhotos>): String {
+        Log.i(TAG, "forTripRoute: ${places.size} places")
+        val coords = places
+            .filter { it.latitude != null && it.longitude != null }
+            .map { Pair(it.longitude!!, it.latitude!!) } // GeoJSON order: (lon, lat)
+        val features = if (coords.size >= 2) {
+            listOf(
+                Feature(
+                    geometry = Geometry.LineString(coords),
+                    properties = mapOf("kind" to "tripRoute")
+                )
+            )
+        } else emptyList()
+        return FeatureCollection(features).toJson()
+    }
+
     fun parse(json: String): FeatureCollection? {
         return try {
             val root = JSONObject(json)
