@@ -43,7 +43,8 @@ object GeoJson {
                     properties = mapOf(
                         "id" to place.id,
                         "name" to place.name,
-                        "kind" to "place"
+                        "kind" to "place",
+                        "label" to place.name
                     )
                 )
             )
@@ -73,7 +74,8 @@ object GeoJson {
                         "kind" to "place",
                         "id" to place.id,
                         "name" to place.name,
-                        "position" to (index + 1).toString() // 1-based position on the timeline
+                        "position" to (index + 1).toString(), // 1-based position on the timeline
+                        "label" to "${index + 1}. ${place.name}"
                     )
                 )
             )

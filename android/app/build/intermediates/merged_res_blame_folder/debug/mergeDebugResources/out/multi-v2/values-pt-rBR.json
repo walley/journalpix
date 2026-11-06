@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.journalpix.app-mergeDebugResources-70:/values-pt-rBR/values-pt-rBR.xml",
+            "outputFile": "com.journalpix.app-mergeDebugResources-72:/values-pt-rBR/values-pt-rBR.xml",
             "map": [
                 {
                     "source": "/home/walley/.gradle/caches/9.6.0/transforms/f54a65262a8e9d23c54cbec78b3ae85f/transformed/material3/res/values-pt-rBR/values-pt-rBR.xml",

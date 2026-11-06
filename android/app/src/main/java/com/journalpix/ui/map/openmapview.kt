@@ -41,11 +41,11 @@ import de.afarber.openmapview.compose.Polyline
 import de.afarber.openmapview.compose.rememberCameraPositionState
 import de.afarber.openmapview.compose.rememberMarkerState
 
-private const val TAG_MAP = "JPXM"
+private const val TAG_MAP = "JPXOV"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(
+fun OpenMapViewScreen(
     navController: NavController,
     tripId: String = "",
     places: List<PlaceWithPhotos> = emptyList(),

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.journalpix.app-mergeDebugResources-70:/values-hr/values-hr.xml",
+            "outputFile": "com.journalpix.app-mergeDebugResources-72:/values-hr/values-hr.xml",
             "map": [
                 {
                     "source": "/home/walley/.gradle/caches/9.6.0/transforms/58c9f033b289dda2a159fdbb42fa753f/transformed/foundation/res/values-hr/values-hr.xml",

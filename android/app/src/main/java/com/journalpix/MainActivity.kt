@@ -35,7 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import androidx.navigation.compose.rememberNavController
-import com.journalpix.ui.map.MapScreen
+import com.journalpix.ui.map.MapGlScreen
 import com.journalpix.ui.screen.AboutScreen
 import com.journalpix.ui.screen.AuthScreen
 import com.journalpix.ui.screen.HomeScreen
@@ -157,7 +157,7 @@ class MainActivity : ComponentActivity() {
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
                             val addPlaceMode = backStackEntry.arguments?.getBoolean("addPlaceMode") ?: false
                             val placeIdForUpdate = backStackEntry.arguments?.getString("placeIdForUpdate") ?: ""
-                            MapScreen(
+                            MapGlScreen(
                                 navController,
                                 tripId = tripId,
                                 addPlaceMode = addPlaceMode,

@@ -146,6 +146,11 @@
     <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"Elemleírás"</string>
     <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"Sáv bezárása"</string>
     <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"Navigációs sáv"</string>
+    <string name="maplibre_attributionErrorNoBrowser">Nincs webböngésző telepítve a készüléken, nem lehet megnyitni weboldalt.</string>
+    <string name="maplibre_attributionsDialogTitle">MapLibre Android</string>
+    <string name="maplibre_mapActionDescription">Egy MapLibre-szal készült térkép megjelenítése. Húzd két ujjadat a görgetéshez. Csippentsd össze a nagyításhoz.</string>
+    <string name="maplibre_myLocationViewContentDescription">Hely nézet. Megmutatja, hol vagy a térképen.</string>
+    <string name="maplibre_offline_error_region_definition_invalid">A megadott OfflineRegionDefinition nem fér bele a világ kereteibe: %s</string>
     <string name="material_clock_toggle_content_description">Válassza ki, hogy délelőtt vagy délután</string>
     <string name="material_hour_24h_suffix">%1$s óra</string>
     <string name="material_hour_selection">Óra kiválasztása</string>

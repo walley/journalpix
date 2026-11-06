@@ -13,8 +13,8 @@ android {
         applicationId 'com.journalpix'
         minSdk 26
         targetSdk 37
-        versionCode 82
-        versionName '1.0.82'
+        versionCode 83
+        versionName '1.0.83'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -91,9 +91,12 @@ dependencies {
     // Location services
     implementation 'com.google.android.gms:play-services-location:21.3.0'
 
-    // OpenMapView - Map library (Maven Central)
+    // OpenMapView - Map library (Maven Central) — kept for the legacy big map (openmapview.kt)
     implementation 'de.afarber:openmapview:0.21.0'
     implementation 'de.afarber:openmapview-compose:0.21.0'
+
+    // MapLibre GL Native — vector-tile big map (mapgl.kt), free tiles, no API key
+    implementation 'org.maplibre.gl:android-sdk:11.13.5'
 
     // File picker
     implementation 'com.github.nguyenhoanglam:ImagePicker:1.6.4'

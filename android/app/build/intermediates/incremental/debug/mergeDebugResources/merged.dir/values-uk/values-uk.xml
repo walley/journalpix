@@ -148,6 +148,13 @@
     <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"Спливаюча підказка"</string>
     <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"Закрити панель"</string>
     <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"Панель навігації"</string>
+    <string name="maplibre_attributionErrorNoBrowser">Веб-оглядач відсутній на цьому пристрої, неможливо відкрити веб-сторінку</string>
+    <string name="maplibre_attributionsDialogTitle">MapLibre Android</string>
+    <string name="maplibre_attributionsIconContentDescription">Значок атрибуції. Натисніть, щоб показати діалог атрибуції.</string>
+    <string name="maplibre_compassContentDescription">Компас. Натисніть щоб зорієнтувати мапу на північ.</string>
+    <string name="maplibre_mapActionDescription">Показує мапи створені за допомоги MapLibre. Пересувайте мапу двома пальцями. Змінюйте масштаб стуляючи/розводячи два пальці.</string>
+    <string name="maplibre_myLocationViewContentDescription">Визначення положення. Показує ваше місцеположення на мапі.</string>
+    <string name="maplibre_offline_error_region_definition_invalid">Межі ділянки для оффлайнового користування даними за межами світу: %s</string>
     <string name="material_clock_toggle_content_description">Виберіть ДП чи ПП</string>
     <string name="material_hour_24h_suffix">%1$s год</string>
     <string name="material_hour_selection">Вибрати годину</string>

@@ -146,6 +146,13 @@
     <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"Chú giải công cụ"</string>
     <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"Đóng dải điều hướng"</string>
     <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"Dải điều hướng"</string>
+    <string name="maplibre_attributionErrorNoBrowser">Không thể mở trang Web vì thiết bị thiếu trình duyệt.</string>
+    <string name="maplibre_attributionsDialogTitle">MapLibre Android</string>
+    <string name="maplibre_attributionsIconContentDescription">Biểu tượng ghi công. Kích hoạt để xem hộp thoại ghi công.</string>
+    <string name="maplibre_compassContentDescription">La bàn bản đồ. Kích hoạt để quay bản đồ lại hướng bắc.</string>
+    <string name="maplibre_mapActionDescription">Đang xem bản đồ được xây dựng dùng MapLibre. Kéo hai ngón tay để cuộn. Chụm các ngón tay lại để phóng to. Tách các ngón tay ra để thu nhỏ.</string>
+    <string name="maplibre_myLocationViewContentDescription">Cái chỉ vị trí. Cái này chỉ vị trí của bạn trên bản đồ.</string>
+    <string name="maplibre_offline_error_region_definition_invalid">OfflineRegionDefinition được cung cấp không vừa thế giới: %s</string>
     <string name="material_clock_toggle_content_description">Chọn SA hoặc CH</string>
     <string name="material_hour_24h_suffix">%1$s giờ</string>
     <string name="material_hour_selection">Chọn giờ</string>

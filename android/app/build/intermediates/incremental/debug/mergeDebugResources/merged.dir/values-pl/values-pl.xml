@@ -148,6 +148,13 @@
     <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"Etykietka"</string>
     <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"Zamknij kolumnę"</string>
     <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"Kolumna nawigacji"</string>
+    <string name="maplibre_attributionErrorNoBrowser">Nie potrafię otworzyć strony, brak przeglądarki internetowej zainstalowanej na urządzeniu.</string>
+    <string name="maplibre_attributionsDialogTitle">MapLibre Android</string>
+    <string name="maplibre_attributionsIconContentDescription">Atrybucja. Aktywuj, żeby pokazać więcej informacji.</string>
+    <string name="maplibre_compassContentDescription">Kompas. Naciśnij, żeby skierować mapę na północ.</string>
+    <string name="maplibre_mapActionDescription">Pokazuje mapę stworzoną za pomocą biblioteki MapLibre. Przesuń mapę za pomocą przeciągnięcia dwoma palcami. Przybliż za pomocą uszczypnięcia dwoma palcami. </string>
+    <string name="maplibre_myLocationViewContentDescription">Widok lokalizacji. Pokazuje twoją pozycję na mapie.</string>
+    <string name="maplibre_offline_error_region_definition_invalid">Wymagany region nie mieści się w granicach świata: %s</string>
     <string name="material_clock_toggle_content_description">Wybierz: przed południem czy po południu</string>
     <string name="material_hour_24h_suffix">%1$s godz.</string>
     <string name="material_hour_selection">Wybierz godzinę</string>

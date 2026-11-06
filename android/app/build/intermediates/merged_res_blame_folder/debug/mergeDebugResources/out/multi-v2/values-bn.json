@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.journalpix.app-mergeDebugResources-70:/values-bn/values-bn.xml",
+            "outputFile": "com.journalpix.app-mergeDebugResources-72:/values-bn/values-bn.xml",
             "map": [
                 {
                     "source": "/home/walley/.gradle/caches/9.6.0/transforms/6d02ed8a8b8413c236a941534f832fbd/transformed/preference-1.2.1/res/values-bn/values-bn.xml",
