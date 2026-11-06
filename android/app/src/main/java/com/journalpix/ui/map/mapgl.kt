@@ -42,6 +42,33 @@ private const val TAG_MAP_GL = "JPXMG"
 /** Free vector tiles (OpenFreeMap / OSM), no API key required. */
 private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 
+/** Move the camera to the device's last known location (zoom 17). */
+private fun centerOnCurrentLocation(
+    map: MapLibreMap?,
+    fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient
+) {
+    if (map == null) return
+    try {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                Log.i(TAG_MAP_GL, "Centering on current location: lat=${location.latitude} lon=${location.longitude}")
+                map.moveCamera(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.Builder()
+                            .target(LatLng(location.latitude, location.longitude))
+                            .zoom(17.0)
+                            .build()
+                    )
+                )
+            } else {
+                Log.w(TAG_MAP_GL, "Last known location is null")
+            }
+        }
+    } catch (e: SecurityException) {
+        Log.e(TAG_MAP_GL, "centerOnCurrentLocation: missing permission: ${e.message}")
+    }
+}
+
 /**
  * Big map implemented with MapLibre GL Native (vector tiles).
  * The old openmapview implementation lives in openmapview.kt (OpenMapViewScreen).
@@ -83,6 +110,31 @@ fun MapGlScreen(
     val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
     val editMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
+
+    // "Center on current location" — needs ACCESS_FINE_LOCATION at runtime
+    val fusedLocationClient = remember {
+        com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            Log.i(TAG_MAP_GL, "Location permission granted — centering on current location")
+            centerOnCurrentLocation(maplibreMap.value, fusedLocationClient)
+        } else {
+            Log.w(TAG_MAP_GL, "Location permission denied — cannot center on current location")
+        }
+    }
+    fun centerOnMyLocation() {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            centerOnCurrentLocation(maplibreMap.value, fusedLocationClient)
+        } else {
+            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
 
     // Handle map tap in add-place mode (not while editing an existing place)
     if (addPlaceMode && editPlaceId.isBlank() && mapViewModel.mapTapPoint.value != null) {
@@ -178,6 +230,12 @@ fun MapGlScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.Default.ZoomOut, contentDescription = "Zoom out")
+                }
+                FloatingActionButton(
+                    onClick = { centerOnMyLocation() },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = "Center on current location")
                 }
                 if (addPlaceMode && onPlaceAdded != null && editPlaceId.isBlank()) {
                     FloatingActionButton(
