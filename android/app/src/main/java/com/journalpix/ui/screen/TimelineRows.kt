@@ -44,7 +44,7 @@ fun PlaceTimelineRow(
     Row(
         modifier = modifier
           .fillMaxWidth()
-          .safeDrawingPadding()
+          .height(IntrinsicSize.Max)
           .padding(start = 12.dp, end = 12.dp)
     ) {
         Box(
