@@ -323,19 +323,39 @@ fun MapScreen(
                             // Skip the edited place's own point — the draggable pin already marks it
                             if (feature.properties["id"] == editPlaceId) return@forEach
                             val markerState = rememberMarkerState(LatLng(g.latitude, g.longitude))
+                            val label = buildString {
+                                feature.properties["position"]?.let { append("$it. ") }
+                                append(feature.properties["name"] ?: "")
+                            }
                             MarkerComposable(
                                 state = markerState,
                                 onClick = {
                                     Log.i(TAG_MAP, "GeoJSON point clicked: ${feature.properties}")
+                                    val pid = feature.properties["id"]
+                                    if (!pid.isNullOrBlank() && effectiveTripId.isNotBlank()) {
+                                        navController.navigate("place/$pid?tripId=$effectiveTripId")
+                                    }
                                     true
                                 }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = feature.properties["name"] ?: "GeoJSON point",
-                                    tint = Color.Blue,
-                                    modifier = Modifier.size(32.dp)
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationOn,
+                                        contentDescription = label,
+                                        tint = Color.Blue,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    if (label.isNotBlank()) {
+                                        Text(
+                                            text = label,
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier
+                                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                         is com.journalpix.geo.GeoJson.Geometry.LineString -> {

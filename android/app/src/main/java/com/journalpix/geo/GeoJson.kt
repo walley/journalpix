@@ -51,20 +51,33 @@ object GeoJson {
         return FeatureCollection(features).toJson()
     }
 
-    /** GeoJSON of a trip route: one LineString through all places that have coordinates, in order. */
+    /** GeoJSON of a trip route: one LineString through all places that have coordinates, in order,
+     *  plus a Point feature per place carrying its timeline position (1-based visit order) and name. */
     fun forTripRoute(places: List<PlaceWithPhotos>): String {
         Log.i(TAG, "forTripRoute: ${places.size} places")
-        val coords = places
-            .filter { it.latitude != null && it.longitude != null }
-            .map { Pair(it.longitude!!, it.latitude!!) } // GeoJSON order: (lon, lat)
-        val features = if (coords.size >= 2) {
-            listOf(
+        val withCoords = places.filter { it.latitude != null && it.longitude != null }
+        val features = mutableListOf<Feature>()
+        if (withCoords.size >= 2) {
+            features.add(
                 Feature(
-                    geometry = Geometry.LineString(coords),
+                    geometry = Geometry.LineString(withCoords.map { Pair(it.longitude!!, it.latitude!!) }), // (lon, lat)
                     properties = mapOf("kind" to "tripRoute")
                 )
             )
-        } else emptyList()
+        }
+        withCoords.forEachIndexed { index, place ->
+            features.add(
+                Feature(
+                    geometry = Geometry.Point(place.longitude!!, place.latitude!!),
+                    properties = mapOf(
+                        "kind" to "place",
+                        "id" to place.id,
+                        "name" to place.name,
+                        "position" to (index + 1).toString() // 1-based position on the timeline
+                    )
+                )
+            )
+        }
         return FeatureCollection(features).toJson()
     }
 
