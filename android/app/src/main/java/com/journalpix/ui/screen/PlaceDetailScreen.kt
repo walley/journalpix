@@ -600,6 +600,7 @@ fun PlaceDetailScreen(
                     val targetTripId = AppSession.validateTripId(effectiveTripId)
                     if (targetTripId != null) {
                       AppSession.mapEditPlaceId.value = placeId
+                      AppSession.mapGeoJson.value = currentPlace?.let { com.journalpix.geo.GeoJson.forPlace(it) }
                       navController.navigate("map/$targetTripId?addPlaceMode=true")
                     } else {
                       Log.e(TAG_PLACE_DETAIL, "Select on map blocked: tripId is BLANK — invalid trip")
@@ -647,6 +648,7 @@ fun PlaceDetailScreen(
                       val targetTripId = AppSession.validateTripId(effectiveTripId)
                       if (targetTripId != null) {
                         AppSession.mapEditPlaceId.value = placeId
+                        AppSession.mapGeoJson.value = currentPlace?.let { com.journalpix.geo.GeoJson.forPlace(it) }
                         navController.navigate("map/$targetTripId?addPlaceMode=true")
                       } else {
                         android.widget.Toast.makeText(

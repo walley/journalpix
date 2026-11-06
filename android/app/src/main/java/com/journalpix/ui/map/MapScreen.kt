@@ -309,6 +309,54 @@ fun MapScreen(
                     }
                 }
 
+                // GeoJSON passed from the calling view (points, lines, polygons)
+                val geoJsonFeatures = remember {
+                    val parsed = AppSession.mapGeoJson.value?.let { com.journalpix.geo.GeoJson.parse(it) }
+                    parsed?.features ?: emptyList()
+                }
+                DisposableEffect(Unit) {
+                    onDispose { AppSession.mapGeoJson.value = null }
+                }
+                geoJsonFeatures.forEach { feature ->
+                    when (val g = feature.geometry) {
+                        is com.journalpix.geo.GeoJson.Geometry.Point -> {
+                            // Skip the edited place's own point — the draggable pin already marks it
+                            if (feature.properties["id"] == editPlaceId) return@forEach
+                            val markerState = rememberMarkerState(LatLng(g.latitude, g.longitude))
+                            MarkerComposable(
+                                state = markerState,
+                                onClick = {
+                                    Log.i(TAG_MAP, "GeoJSON point clicked: ${feature.properties}")
+                                    true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = feature.properties["name"] ?: "GeoJSON point",
+                                    tint = Color.Blue,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                        is com.journalpix.geo.GeoJson.Geometry.LineString -> {
+                            Polyline(
+                                points = g.coordinates.map { LatLng(it.second, it.first) },
+                                strokeColor = Color.Blue,
+                                strokeWidth = 6f
+                            )
+                        }
+                        is com.journalpix.geo.GeoJson.Geometry.Polygon -> {
+                            g.rings.firstOrNull()?.let { ring ->
+                                de.afarber.openmapview.compose.Polygon(
+                                    points = ring.map { LatLng(it.second, it.first) },
+                                    strokeColor = Color.Blue,
+                                    fillColor = Color.Blue.copy(alpha = 0.25f)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Draggable pin for the place being edited — drag it to fine-tune the location
                 if (editPlaceId.isNotBlank() && hasEditTarget) {
                     val editMarkerState = rememberMarkerState(

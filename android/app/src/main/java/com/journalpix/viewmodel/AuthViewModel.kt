@@ -35,6 +35,9 @@ object AppSession {
     /** Place ID being edited on the map (set before navigating to map screen). */
     val mapEditPlaceId = mutableStateOf<String?>(null)
 
+    /** GeoJSON FeatureCollection passed from a view to the big map (consumed by MapScreen). */
+    val mapGeoJson = mutableStateOf<String?>(null)
+
     /** Currently open trip — used by the bottom nav bar for timeline/map destinations. */
     val currentTripId = mutableStateOf("")
 
