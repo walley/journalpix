@@ -89,59 +89,105 @@ object OfflineStore {
             return
         }
         try {
-            // Parse into TEMP collections first — only swap in on full success so a
-            // single bad entry can never wipe the in-memory (and later persisted) data
-            val newTrips = HashMap<String, TripResponse>()
-            val newPlaces = HashMap<String, MutableList<PlaceWithPhotos>>()
-            val newPhotos = HashMap<String, MutableList<PhotoResponse>>()
-            val newUnassigned = HashMap<String, PhotoResponse>()
-            val newAddresses = HashMap<String, String>()
-            val newPending = HashSet<String>()
-
-            val root = JSONObject(file.readText())
-            val tripsArr = root.optJSONArray("trips") ?: JSONArray()
-            for (i in 0 until tripsArr.length()) {
-                val o = tripsArr.getJSONObject(i)
-                val t = tripFromJson(o)
-                newTrips[t.id] = t
-            }
-            val placesArr = root.optJSONArray("places") ?: JSONArray()
-            for (i in 0 until placesArr.length()) {
-                val o = placesArr.getJSONObject(i)
-                val p = placeFromJson(o)
-                newPlaces.getOrPut(p.tripId) { mutableListOf() }.add(p)
-            }
-            val photosArr = root.optJSONArray("photos") ?: JSONArray()
-            for (i in 0 until photosArr.length()) {
-                val o = photosArr.getJSONObject(i)
-                val ph = photoFromJson(o)
-                if (ph.placeId == null || ph.placeId.isEmpty()) {
-                    newUnassigned[ph.id] = ph
-                } else {
-                    newPhotos.getOrPut(ph.placeId) { mutableListOf() }.add(ph)
-                }
-            }
-            val addr = root.optJSONObject("addresses")
-            if (addr != null) {
-                addr.keys().forEach { k -> newAddresses[k] = addr.getString(k) }
-            }
-            val pending = root.optJSONArray("syncPending")
-            if (pending != null) {
-                for (i in 0 until pending.length()) newPending.add(pending.getString(i))
-            }
-
-            trips.clear(); trips.putAll(newTrips)
-            placesByTrip.clear(); placesByTrip.putAll(newPlaces)
-            photosByPlace.clear(); photosByPlace.putAll(newPhotos)
-            unassignedPhotos.clear(); unassignedPhotos.putAll(newUnassigned)
-            addresses.clear(); addresses.putAll(newAddresses)
-            syncPending.clear(); syncPending.addAll(newPending)
+            parseAndSwap(JSONObject(file.readText()))
             cleanupDemoLeftovers()
             android.util.Log.i(TAG, "loadFromDisk: restored trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }}, pending=${syncPending.size}")
         } catch (e: Exception) {
             // Never clear live data on a parse failure — keep whatever is in memory
             android.util.Log.e(TAG, "loadFromDisk: failed to parse store.json, keeping in-memory data: ${e.message}", e)
         }
+    }
+
+    /** Serialize the whole store to a JSON string (same format as store.json). Used by ZIP export. */
+    fun snapshotJson(): String {
+        android.util.Log.i(TAG, "snapshotJson: exporting trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}")
+        return buildJson().toString(2)
+    }
+
+    /** Replace the whole in-memory store from a JSON string (used by ZIP import). Returns success. */
+    fun restoreFromJson(json: String): Boolean {
+        return try {
+            parseAndSwap(JSONObject(json))
+            persist()
+            android.util.Log.i(TAG, "restoreFromJson: imported trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "restoreFromJson: failed, keeping current data: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun buildJson(): JSONObject {
+        val root = JSONObject()
+        val tripsArr = JSONArray()
+        trips.values.forEach { tripsArr.put(tripToJson(it)) }
+        root.put("trips", tripsArr)
+
+        val placesArr = JSONArray()
+        placesByTrip.values.flatten().forEach { placesArr.put(placeToJson(it)) }
+        root.put("places", placesArr)
+
+        val photosArr = JSONArray()
+        photosByPlace.values.flatten().forEach { photosArr.put(photoToJson(it)) }
+        unassignedPhotos.values.forEach { photosArr.put(photoToJson(it)) }
+        root.put("photos", photosArr)
+
+        val addr = JSONObject()
+        addresses.forEach { (k, v) -> addr.put(k, v) }
+        root.put("addresses", addr)
+
+        val pending = JSONArray()
+        syncPending.forEach { pending.put(it) }
+        root.put("syncPending", pending)
+        return root
+    }
+
+    /** Parse into TEMP collections first — only swap in on full success. Throws on bad data. */
+    private fun parseAndSwap(root: JSONObject) {
+        val newTrips = HashMap<String, TripResponse>()
+        val newPlaces = HashMap<String, MutableList<PlaceWithPhotos>>()
+        val newPhotos = HashMap<String, MutableList<PhotoResponse>>()
+        val newUnassigned = HashMap<String, PhotoResponse>()
+        val newAddresses = HashMap<String, String>()
+        val newPending = HashSet<String>()
+
+        val tripsArr = root.optJSONArray("trips") ?: JSONArray()
+        for (i in 0 until tripsArr.length()) {
+            val o = tripsArr.getJSONObject(i)
+            val t = tripFromJson(o)
+            newTrips[t.id] = t
+        }
+        val placesArr = root.optJSONArray("places") ?: JSONArray()
+        for (i in 0 until placesArr.length()) {
+            val o = placesArr.getJSONObject(i)
+            val p = placeFromJson(o)
+            newPlaces.getOrPut(p.tripId) { mutableListOf() }.add(p)
+        }
+        val photosArr = root.optJSONArray("photos") ?: JSONArray()
+        for (i in 0 until photosArr.length()) {
+            val o = photosArr.getJSONObject(i)
+            val ph = photoFromJson(o)
+            if (ph.placeId == null || ph.placeId.isEmpty()) {
+                newUnassigned[ph.id] = ph
+            } else {
+                newPhotos.getOrPut(ph.placeId) { mutableListOf() }.add(ph)
+            }
+        }
+        val addr = root.optJSONObject("addresses")
+        if (addr != null) {
+            addr.keys().forEach { k -> newAddresses[k] = addr.getString(k) }
+        }
+        val pending = root.optJSONArray("syncPending")
+        if (pending != null) {
+            for (i in 0 until pending.length()) newPending.add(pending.getString(i))
+        }
+
+        trips.clear(); trips.putAll(newTrips)
+        placesByTrip.clear(); placesByTrip.putAll(newPlaces)
+        photosByPlace.clear(); photosByPlace.putAll(newPhotos)
+        unassignedPhotos.clear(); unassignedPhotos.putAll(newUnassigned)
+        addresses.clear(); addresses.putAll(newAddresses)
+        syncPending.clear(); syncPending.addAll(newPending)
     }
 
     /** Remove leftover demo-testing artifacts (old "Demo Place", trip-title-named places, demo trips). */
@@ -194,35 +240,13 @@ object OfflineStore {
     fun persist() {
         val ctx = appContext ?: return
         try {
-            val root = JSONObject()
-            val tripsArr = JSONArray()
-            trips.values.forEach { tripsArr.put(tripToJson(it)) }
-            root.put("trips", tripsArr)
-
-            val placesArr = JSONArray()
-            placesByTrip.values.flatten().forEach { placesArr.put(placeToJson(it)) }
-            root.put("places", placesArr)
-
-            val photosArr = JSONArray()
-            photosByPlace.values.flatten().forEach { photosArr.put(photoToJson(it)) }
-            unassignedPhotos.values.forEach { photosArr.put(photoToJson(it)) }
-            root.put("photos", photosArr)
-
-            val addr = JSONObject()
-            addresses.forEach { (k, v) -> addr.put(k, v) }
-            root.put("addresses", addr)
-
-            val pending = JSONArray()
-            syncPending.forEach { pending.put(it) }
-            root.put("syncPending", pending)
-
             // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
             val file = storeFile(ctx)
             val tmp = File(file.parentFile, "store.json.tmp")
-            tmp.writeText(root.toString(2))
+            tmp.writeText(buildJson().toString(2))
             if (!tmp.renameTo(file)) {
                 // rename can fail across filesystems — fall back to direct copy
-                file.writeText(root.toString(2))
+                file.writeText(buildJson().toString(2))
                 tmp.delete()
             }
             android.util.Log.i(TAG, "persist: wrote store.json (trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }})")
