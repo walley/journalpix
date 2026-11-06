@@ -1,8 +1,8 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 3    package="com.journalpix"
-4    android:versionCode="82"
-5    android:versionName="1.0.82" >
+4    android:versionCode="83"
+5    android:versionName="1.0.83" >
 6
 7    <uses-sdk
 7-->INJECTED
@@ -53,80 +53,80 @@
 28        </intent>
 29    </queries>
 30
-31    <permission
-31-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:22:5-24:47
-32        android:name="com.journalpix.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-32-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:23:9-81
-33        android:protectionLevel="signature" />
-33-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:24:9-44
+31    <uses-feature
+31-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:7:5-9:36
+32        android:name="android.hardware.wifi"
+32-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:8:9-45
+33        android:required="false" />
+33-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:9:9-33
 34
-35    <uses-permission android:name="com.journalpix.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-35-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:26:5-97
-35-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:26:22-94
-36
-37    <application
-37-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:15:5-45:19
-38        android:name="com.journalpix.MainApplication"
-38-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:16:9-40
-39        android:allowBackup="true"
-39-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:17:9-35
-40        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-40-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:28:18-86
-41        android:debuggable="true"
-42        android:enableOnBackInvokedCallback="true"
-42-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:23:9-51
-43        android:extractNativeLibs="false"
-43-->INJECTED
-44        android:icon="@mipmap/ic_launcher"
-44-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:18:9-43
-45        android:label="@string/app_name"
-45-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:19:9-41
-46        android:roundIcon="@mipmap/ic_launcher_round"
-46-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:20:9-54
-47        android:supportsRtl="true"
-47-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:21:9-35
-48        android:testOnly="true"
-49        android:theme="@style/Theme.JournalPix" >
-49-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:22:9-48
-50        <activity
-50-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:24:9-43:20
-51            android:name="com.journalpix.MainActivity"
-51-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:25:13-41
-52            android:exported="true"
-52-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:26:13-36
-53            android:label="@string/app_name"
-53-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:27:13-45
-54            android:theme="@style/Theme.JournalPix" >
-54-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:28:13-52
-55            <intent-filter>
-55-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:29:13-32:29
-56                <action android:name="android.intent.action.MAIN" />
-56-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:30:17-69
-56-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:30:25-66
-57
-58                <category android:name="android.intent.category.LAUNCHER" />
-58-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:31:17-77
-58-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:31:27-74
-59            </intent-filter>
-60            <intent-filter>
-60-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:33:13-37:29
-61                <action android:name="android.intent.action.SEND" />
-61-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:34:17-69
-61-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:34:25-66
-62
-63                <category android:name="android.intent.category.DEFAULT" />
-63-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:35:17-76
-63-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:35:27-73
+35    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+35-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:12:5-79
+35-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:12:22-76
+36    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+36-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:13:5-76
+36-->[org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:13:22-73
+37
+38    <permission
+38-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:22:5-24:47
+39        android:name="com.journalpix.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+39-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:23:9-81
+40        android:protectionLevel="signature" />
+40-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:24:9-44
+41
+42    <uses-permission android:name="com.journalpix.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+42-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:26:5-97
+42-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:26:22-94
+43
+44    <application
+44-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:15:5-45:19
+45        android:name="com.journalpix.MainApplication"
+45-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:16:9-40
+46        android:allowBackup="true"
+46-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:17:9-35
+47        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+47-->[androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:28:18-86
+48        android:debuggable="true"
+49        android:enableOnBackInvokedCallback="true"
+49-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:23:9-51
+50        android:extractNativeLibs="false"
+50-->INJECTED
+51        android:icon="@mipmap/ic_launcher"
+51-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:18:9-43
+52        android:label="@string/app_name"
+52-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:19:9-41
+53        android:roundIcon="@mipmap/ic_launcher_round"
+53-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:20:9-54
+54        android:supportsRtl="true"
+54-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:21:9-35
+55        android:testOnly="true"
+56        android:theme="@style/Theme.JournalPix" >
+56-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:22:9-48
+57        <activity
+57-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:24:9-43:20
+58            android:name="com.journalpix.MainActivity"
+58-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:25:13-41
+59            android:exported="true"
+59-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:26:13-36
+60            android:label="@string/app_name"
+60-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:27:13-45
+61            android:theme="@style/Theme.JournalPix" >
+61-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:28:13-52
+62            <intent-filter>
+62-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:29:13-32:29
+63                <action android:name="android.intent.action.MAIN" />
+63-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:30:17-69
+63-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:30:25-66
 64
-65                <data android:mimeType="image/*" />
-65-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:17-52
-65-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:23-49
+65                <category android:name="android.intent.category.LAUNCHER" />
+65-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:31:17-77
+65-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:31:27-74
 66            </intent-filter>
 67            <intent-filter>
-67-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:38:13-42:29
-68                <action android:name="android.intent.action.SEND_MULTIPLE" />
-68-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:39:17-78
-68-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:39:25-75
+67-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:33:13-37:29
+68                <action android:name="android.intent.action.SEND" />
+68-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:34:17-69
+68-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:34:25-66
 69
 70                <category android:name="android.intent.category.DEFAULT" />
 70-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:35:17-76
@@ -136,170 +136,184 @@
 72-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:17-52
 72-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:23-49
 73            </intent-filter>
-74        </activity>
-75        <activity
-75-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:25:9-29:67
-76            android:name="com.nguyenhoanglam.imagepicker.ui.imagepicker.ImagePickerActivity"
-76-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:26:13-93
-77            android:configChanges="orientation|screenSize"
-77-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:27:13-59
-78            android:exported="true"
-78-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:28:13-36
-79            android:theme="@style/imagepicker_ImagePickerTheme" />
-79-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:29:13-64
-80        <activity
-80-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:30:9-34:62
-81            android:name="com.nguyenhoanglam.imagepicker.ui.camera.CameraActivity"
-81-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:31:13-83
-82            android:exported="true"
-82-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:32:13-36
-83            android:screenOrientation="unspecified"
-83-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:33:13-52
-84            android:theme="@style/imagepicker_CameraTheme" />
-84-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:34:13-59
-85
-86        <provider
-86-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:36:9-44:20
-87            android:name="androidx.core.content.FileProvider"
-87-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:37:13-62
-88            android:authorities="com.journalpix.fileprovider"
-88-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:38:13-64
-89            android:exported="false"
-89-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:39:13-37
-90            android:grantUriPermissions="true" >
-90-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:40:13-47
-91            <meta-data
-91-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:41:13-43:66
-92                android:name="android.support.FILE_PROVIDER_PATHS"
-92-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:42:17-67
-93                android:resource="@xml/imagepicker_file_paths" />
-93-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:43:17-63
-94        </provider>
-95
-96        <service
-96-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
-97            android:name="androidx.room.MultiInstanceInvalidationService"
-97-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
-98            android:directBootAware="true"
-98-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
-99            android:exported="false" />
-99-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
-100
-101        <activity
-101-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:27:9-29:72
-102            android:name="com.karumi.dexter.DexterActivity"
-102-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:28:13-60
-103            android:theme="@style/Dexter.Internal.Theme.Transparent" />
-103-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:29:13-69
-104        <activity
-104-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
-105            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-105-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
-106            android:exported="false"
-106-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
-107            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-107-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
-108
-109        <meta-data
-109-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
-110            android:name="com.google.android.gms.version"
-110-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
-111            android:value="@integer/google_play_services_version" />
-111-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
+74            <intent-filter>
+74-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:38:13-42:29
+75                <action android:name="android.intent.action.SEND_MULTIPLE" />
+75-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:39:17-78
+75-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:39:25-75
+76
+77                <category android:name="android.intent.category.DEFAULT" />
+77-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:35:17-76
+77-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:35:27-73
+78
+79                <data android:mimeType="image/*" />
+79-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:17-52
+79-->/home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:36:23-49
+80            </intent-filter>
+81        </activity>
+82        <activity
+82-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:25:9-29:67
+83            android:name="com.nguyenhoanglam.imagepicker.ui.imagepicker.ImagePickerActivity"
+83-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:26:13-93
+84            android:configChanges="orientation|screenSize"
+84-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:27:13-59
+85            android:exported="true"
+85-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:28:13-36
+86            android:theme="@style/imagepicker_ImagePickerTheme" />
+86-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:29:13-64
+87        <activity
+87-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:30:9-34:62
+88            android:name="com.nguyenhoanglam.imagepicker.ui.camera.CameraActivity"
+88-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:31:13-83
+89            android:exported="true"
+89-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:32:13-36
+90            android:screenOrientation="unspecified"
+90-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:33:13-52
+91            android:theme="@style/imagepicker_CameraTheme" />
+91-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:34:13-59
+92
+93        <provider
+93-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:36:9-44:20
+94            android:name="androidx.core.content.FileProvider"
+94-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:37:13-62
+95            android:authorities="com.journalpix.fileprovider"
+95-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:38:13-64
+96            android:exported="false"
+96-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:39:13-37
+97            android:grantUriPermissions="true" >
+97-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:40:13-47
+98            <meta-data
+98-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:41:13-43:66
+99                android:name="android.support.FILE_PROVIDER_PATHS"
+99-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:42:17-67
+100                android:resource="@xml/imagepicker_file_paths" />
+100-->[com.github.nguyenhoanglam:ImagePicker:1.6.4] /home/walley/.gradle/caches/9.6.0/transforms/75b6ee8e3f96296b39477bb27d585de3/transformed/ImagePicker-1.6.4/AndroidManifest.xml:43:17-63
+101        </provider>
+102
+103        <service
+103-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+104            android:name="androidx.room.MultiInstanceInvalidationService"
+104-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+105            android:directBootAware="true"
+105-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+106            android:exported="false" />
+106-->[androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+107
+108        <activity
+108-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+109            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+109-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+110            android:exported="false"
+110-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+111            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+111-->[com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
 112
-113        <activity
-113-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:23:9-26:79
-114            android:name="androidx.activity.ComponentActivity"
-114-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:24:13-63
-115            android:exported="true"
-115-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:25:13-36
-116            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
-116-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:26:13-76
+113        <meta-data
+113-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
+114            android:name="com.google.android.gms.version"
+114-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
+115            android:value="@integer/google_play_services_version" />
+115-->[com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
+116
 117        <activity
-117-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
-118            android:name="androidx.compose.ui.tooling.PreviewActivity"
-118-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:24:13-71
-119            android:exported="true" />
-119-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:25:13-36
-120
-121        <provider
-121-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
-122            android:name="androidx.startup.InitializationProvider"
-122-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
-123            android:authorities="com.journalpix.androidx-startup"
-123-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
-124            android:exported="false" >
-124-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
-125            <meta-data
-125-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
-126                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-126-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
-127                android:value="androidx.startup" />
-127-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
-128            <meta-data
-128-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:29:13-31:52
-129                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-129-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:30:17-78
-130                android:value="androidx.startup" />
-130-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:31:17-49
-131            <meta-data
-131-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
-132                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-132-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
-133                android:value="androidx.startup" />
-133-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
-134        </provider>
-135
-136        <uses-library
-136-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:23:9-25:40
-137            android:name="androidx.window.extensions"
-137-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:24:13-54
-138            android:required="false" />
-138-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:25:13-37
-139        <uses-library
-139-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:26:9-28:40
-140            android:name="androidx.window.sidecar"
-140-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:27:13-51
-141            android:required="false" />
-141-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:28:13-37
+117-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:27:9-29:72
+118            android:name="com.karumi.dexter.DexterActivity"
+118-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:28:13-60
+119            android:theme="@style/Dexter.Internal.Theme.Transparent" />
+119-->[com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:29:13-69
+120        <activity
+120-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:23:9-26:79
+121            android:name="androidx.activity.ComponentActivity"
+121-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:24:13-63
+122            android:exported="true"
+122-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:25:13-36
+123            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+123-->[androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:26:13-76
+124        <activity
+124-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
+125            android:name="androidx.compose.ui.tooling.PreviewActivity"
+125-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:24:13-71
+126            android:exported="true" />
+126-->[androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:25:13-36
+127
+128        <provider
+128-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
+129            android:name="androidx.startup.InitializationProvider"
+129-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
+130            android:authorities="com.journalpix.androidx-startup"
+130-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
+131            android:exported="false" >
+131-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
+132            <meta-data
+132-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
+133                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+133-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
+134                android:value="androidx.startup" />
+134-->[androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
+135            <meta-data
+135-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:29:13-31:52
+136                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+136-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:30:17-78
+137                android:value="androidx.startup" />
+137-->[androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:31:17-49
+138            <meta-data
+138-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+139                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+139-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+140                android:value="androidx.startup" />
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+141        </provider>
 142
-143        <receiver
-143-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-144            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-145            android:directBootAware="false"
-145-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-146            android:enabled="true"
-146-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-147            android:exported="true"
-147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-148            android:permission="android.permission.DUMP" >
-148-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
-149            <intent-filter>
-149-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-150                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
-151            </intent-filter>
-152            <intent-filter>
-152-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-153                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-154            </intent-filter>
-155            <intent-filter>
-155-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-156                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-157            </intent-filter>
-158            <intent-filter>
-158-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-159                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-160            </intent-filter>
-161        </receiver>
-162    </application>
-163
-164</manifest>
+143        <uses-library
+143-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:23:9-25:40
+144            android:name="androidx.window.extensions"
+144-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:24:13-54
+145            android:required="false" />
+145-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:25:13-37
+146        <uses-library
+146-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:26:9-28:40
+147            android:name="androidx.window.sidecar"
+147-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:27:13-51
+148            android:required="false" />
+148-->[androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:28:13-37
+149
+150        <receiver
+150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+151            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+151-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+152            android:directBootAware="false"
+152-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+153            android:enabled="true"
+153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+154            android:exported="true"
+154-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+155            android:permission="android.permission.DUMP" >
+155-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+156            <intent-filter>
+156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+157                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+157-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+157-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+158            </intent-filter>
+159            <intent-filter>
+159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+160                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+160-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+160-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+161            </intent-filter>
+162            <intent-filter>
+162-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+163                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+163-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+163-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+164            </intent-filter>
+165            <intent-filter>
+165-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+166                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+166-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+166-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+167            </intent-filter>
+168        </receiver>
+169    </application>
+170
+171</manifest>

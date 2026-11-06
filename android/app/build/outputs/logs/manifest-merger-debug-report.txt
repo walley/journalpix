@@ -18,24 +18,29 @@ MERGED from [androidx.room:room-ktx:2.6.1] /home/walley/.gradle/caches/9.6.0/tra
 MERGED from [com.google.android.gms:play-services-location:21.3.0] /home/walley/.gradle/caches/9.6.0/transforms/d1b7ba7bf3593122458abc8868e11db9/transformed/play-services-location-21.3.0/AndroidManifest.xml:2:1-8:12
 MERGED from [de.afarber:openmapview-compose:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/565249e7efbcf7978871cbc772c4baa3/transformed/openmapview-compose-0.21.0/AndroidManifest.xml:2:1-7:12
 MERGED from [de.afarber:openmapview:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/7205d0e7623f62579467c87da32480d3/transformed/openmapview-0.21.0/AndroidManifest.xml:2:1-9:12
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:2:1-17:12
 MERGED from [androidx.preference:preference-ktx:1.2.1] /home/walley/.gradle/caches/9.6.0/transforms/5425fbebee9f45d1b0f53df229db852c/transformed/preference-ktx-1.2.1/AndroidManifest.xml:17:1-24:12
 MERGED from [io.coil-kt:coil-compose-base:2.7.0] /home/walley/.gradle/caches/9.6.0/transforms/c792bb4441c6cd8232c1aa8fa332362c/transformed/coil-compose-base-2.7.0/AndroidManifest.xml:2:1-7:12
 MERGED from [io.coil-kt:coil:2.7.0] /home/walley/.gradle/caches/9.6.0/transforms/793563e15a05bcab41e0346ae86bae90/transformed/coil-2.7.0/AndroidManifest.xml:2:1-7:12
 MERGED from [io.coil-kt:coil-base:2.7.0] /home/walley/.gradle/caches/9.6.0/transforms/21df6c7eed438d39d8c0dbcdcb8f9231/transformed/coil-base-2.7.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.sqlite:sqlite-framework:2.4.0] /home/walley/.gradle/caches/9.6.0/transforms/6673d54fc5fb1d6f03c92fd7917a33be/transformed/sqlite-framework-2.4.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.sqlite:sqlite:2.4.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1839bf579b1643dbbfc72c2e979f3f/transformed/sqlite-2.4.0/AndroidManifest.xml:17:1-22:12
+MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:2:1-5:12
+MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:2:1-9:12
 MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:17:1-32:12
 MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/0b1f9885509e4aeaa9f85239bc26491b/transformed/constraintlayout-2.2.0/AndroidManifest.xml:2:1-9:12
 MERGED from [androidx.preference:preference:1.2.1] /home/walley/.gradle/caches/9.6.0/transforms/6d02ed8a8b8413c236a941534f832fbd/transformed/preference-1.2.1/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/walley/.gradle/caches/9.6.0/transforms/5938fa3a2896608ea9de00f63486c305/transformed/appcompat-resources-1.7.1/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.appcompat:appcompat:1.7.1] /home/walley/.gradle/caches/9.6.0/transforms/a49ab7856cf1a9a5d54d13566cb49920/transformed/appcompat-1.7.1/AndroidManifest.xml:2:1-7:12
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:2:1-7:12
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:2:1-5:12
-MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:2:1-9:12
-MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:2:1-7:12
-MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:17:1-27:12
 MERGED from [com.github.bumptech.glide:glide:5.0.5] /home/walley/.gradle/caches/9.6.0/transforms/fac5265aee2c2c30d6b7f449bd96fb32/transformed/glide-5.0.5/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.fragment:fragment-ktx:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/f43ca2e2ebdb2d65a26a13a65848a4e1/transformed/fragment-ktx-1.8.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.fragment:fragment:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/7f1e8f5ffdb1a11e584922ce07ffcaa9/transformed/fragment-1.8.2/AndroidManifest.xml:2:1-7:12
+MERGED from [org.maplibre.gl:maplibre-android-gestures:0.0.4] /home/walley/.gradle/caches/9.6.0/transforms/0fb35ed2b807cddaaa6f9c464a863293/transformed/maplibre-android-gestures-0.0.4/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/bc8850a77e115fa0515fa015f89be734/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/62a9277d1ff4263ca0e37ee593243c0d/transformed/vectordrawable-1.1.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.compose.material:material-ripple-android:1.9.3] /home/walley/.gradle/caches/9.6.0/transforms/40bfc9933e12c38e79ed5a85aecf38cc/transformed/material-ripple/AndroidManifest.xml:2:1-7:12
@@ -53,9 +58,6 @@ MERGED from [androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/c
 MERGED from [androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:17:1-28:12
 MERGED from [androidx.compose.material3:material3-android:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/f54a65262a8e9d23c54cbec78b3ae85f/transformed/material3/AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.accompanist:accompanist-drawablepainter:0.32.0] /home/walley/.gradle/caches/9.6.0/transforms/1d1d6fe519abd4217576908f782bea35/transformed/accompanist-drawablepainter-0.32.0/AndroidManifest.xml:17:1-23:12
-MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:17:1-27:12
-MERGED from [androidx.fragment:fragment-ktx:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/6f6e4f778c5c8ff86f3abdddb34b93f0/transformed/fragment-ktx-1.6.1/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.fragment:fragment:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/7f4d9d27fb46d5e7cef7111379eca6ef/transformed/fragment-1.6.1/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.activity:activity:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/7efafa75e041d5317fed19c000ea915a/transformed/activity-1.11.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.activity:activity-ktx:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/851a2d1561a50c23b0243783e8fd365b/transformed/activity-ktx-1.11.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.activity:activity-compose:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/b14e83beb726ee853f23d3a818fd808c/transformed/activity-compose-1.11.0/AndroidManifest.xml:2:1-7:12
@@ -75,19 +77,20 @@ MERGED from [androidx.savedstate:savedstate-ktx:1.4.0] /home/walley/.gradle/cach
 MERGED from [androidx.savedstate:savedstate-android:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/78a877fee0231c7d7bc9910d473d0477/transformed/savedstate/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-runtime:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/c1a0d2463c54cb9e94366fe17128de3d/transformed/lifecycle-runtime-2.11.0/AndroidManifest.xml:2:1-5:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/b10b7616e37c2c187c8741480bbca1e3/transformed/lifecycle-runtime/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/d151c2551c0c3811c469ae16ca312f79/transformed/lifecycle-viewmodel-ktx-2.11.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-service:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/35b3bb8f564487b3baa991fe2df06571/transformed/lifecycle-service-2.11.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.emoji2:emoji2-views-helper:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/b96c4dce29b606ba0c452ee24b1e3e4b/transformed/emoji2-views-helper-1.4.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.lifecycle:lifecycle-livedata-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/e750438c859e000bc8fc4beaeb9e8c4a/transformed/lifecycle-livedata-ktx-2.11.0/AndroidManifest.xml:2:1-7:12
-MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-livedata:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/347fc388bcd7d96525735ed4adf7d8b0/transformed/lifecycle-livedata-2.11.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/5e7434aa10e5f8f5f385a0d4e57309a3/transformed/lifecycle-runtime-ktx/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/f2f42f7bb8bba264f3e8b6f9172ec84b/transformed/lifecycle-runtime-compose/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.ui:ui-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/8a877af68e0261b0acdee73b1065e6d9/transformed/ui/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.ui:ui-graphics-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/4c7db69ad207fb2eb082c7184369942d/transformed/ui-graphics/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/26d55562345b14d6658e28b895126716/transformed/drawerlayout-1.1.1/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.slidingpanelayout:slidingpanelayout:1.2.0] /home/walley/.gradle/caches/9.6.0/transforms/ce7b12448d51eb8489e8218443f7f36d/transformed/slidingpanelayout-1.2.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.transition:transition:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/26a612f2948680512b3b5e58318ff607/transformed/transition-1.5.0/AndroidManifest.xml:2:1-7:12
@@ -97,12 +100,12 @@ MERGED from [androidx.graphics:graphics-path:1.0.1] /home/walley/.gradle/caches/
 MERGED from [androidx.autofill:autofill:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/88e33c98a106e09a8dd6c1cfb8e4e6c6/transformed/autofill-1.0.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.window:window-core-android:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/dfddf553d8352a217c6bf01f69a94d34/transformed/window-core/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:17:1-31:12
-MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.customview:customview:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/58c6efde1754821897c85511837b1348/transformed/customview-1.1.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:17:1-30:12
 MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/1862f128f169ca1b8c2490f5b511084c/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:17:1-23:12
 MERGED from [androidx.graphics:graphics-shapes-android:1.0.1] /home/walley/.gradle/caches/9.6.0/transforms/a140ba4aff31b4c47e4173dd73704761/transformed/graphics-shapes-release/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.core:core-ktx:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/9d59ab6b123fb36d780eb402b984224b/transformed/core-ktx-1.19.1/AndroidManifest.xml:2:1-7:12
+MERGED from [com.jakewharton.timber:timber:5.0.1] /home/walley/.gradle/caches/9.6.0/transforms/1bbc73fe1fbbb66254c7bb7651c3279e/transformed/timber-5.0.1/AndroidManifest.xml:2:1-9:12
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/walley/.gradle/caches/9.6.0/transforms/4f6c25b38f4198c5a607c4729bdf4985/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.core:core-viewtree:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/ff1c9ca027b8da17a709d7350b400833/transformed/core-viewtree-1.0.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/75ee17fe630d69dbbf07dd0ab7e40e9a/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
@@ -131,14 +134,20 @@ uses-permission#android.permission.INTERNET
 ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:5:5-67
 MERGED from [de.afarber:openmapview:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/7205d0e7623f62579467c87da32480d3/transformed/openmapview-0.21.0/AndroidManifest.xml:7:5-67
 MERGED from [de.afarber:openmapview:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/7205d0e7623f62579467c87da32480d3/transformed/openmapview-0.21.0/AndroidManifest.xml:7:5-67
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:11:5-67
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:11:5-67
 	android:name
 		ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:5:22-64
 uses-permission#android.permission.ACCESS_FINE_LOCATION
 ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:6:5-79
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:15:5-79
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:15:5-79
 	android:name
 		ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:6:22-76
 uses-permission#android.permission.ACCESS_COARSE_LOCATION
 ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:7:5-81
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:14:5-81
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:14:5-81
 	android:name
 		ADDED from /home/walley/git/journalpix/android/app/src/main/AndroidManifest.xml:7:22-78
 uses-permission#android.permission.ACCESS_MEDIA_LOCATION
@@ -180,24 +189,24 @@ MERGED from [androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0
 MERGED from [androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:23:5-29:19
 MERGED from [com.google.android.gms:play-services-location:21.3.0] /home/walley/.gradle/caches/9.6.0/transforms/d1b7ba7bf3593122458abc8868e11db9/transformed/play-services-location-21.3.0/AndroidManifest.xml:6:5-20
 MERGED from [com.google.android.gms:play-services-location:21.3.0] /home/walley/.gradle/caches/9.6.0/transforms/d1b7ba7bf3593122458abc8868e11db9/transformed/play-services-location-21.3.0/AndroidManifest.xml:6:5-20
-MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:26:5-30:19
-MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:26:5-30:19
-MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:22:5-20
-MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:22:5-20
-MERGED from [androidx.constraintlayout:constraintlayout:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/0b1f9885509e4aeaa9f85239bc26491b/transformed/constraintlayout-2.2.0/AndroidManifest.xml:7:5-20
-MERGED from [androidx.constraintlayout:constraintlayout:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/0b1f9885509e4aeaa9f85239bc26491b/transformed/constraintlayout-2.2.0/AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:4:5-6:19
 MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:4:5-6:19
 MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
 MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
 MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:5:5-7:19
 MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:5:5-7:19
+MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:26:5-30:19
+MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:26:5-30:19
+MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:22:5-20
+MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:22:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/0b1f9885509e4aeaa9f85239bc26491b/transformed/constraintlayout-2.2.0/AndroidManifest.xml:7:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/0b1f9885509e4aeaa9f85239bc26491b/transformed/constraintlayout-2.2.0/AndroidManifest.xml:7:5-20
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:22:5-27:19
 MERGED from [androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:22:5-27:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/1e83b7ee56ede002960aa4b26926d8cd/transformed/ui-tooling/AndroidManifest.xml:22:5-26:19
-MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:24:5-25:19
-MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/9fdf5803076813facb1143b63de2a58a/transformed/emoji2-1.4.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:23:5-33:19
@@ -206,6 +215,8 @@ MERGED from [androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/tra
 MERGED from [androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:22:5-29:19
 MERGED from [androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:28:5-89
 MERGED from [androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:28:5-89
+MERGED from [com.jakewharton.timber:timber:5.0.1] /home/walley/.gradle/caches/9.6.0/transforms/1bbc73fe1fbbb66254c7bb7651c3279e/transformed/timber-5.0.1/AndroidManifest.xml:7:5-20
+MERGED from [com.jakewharton.timber:timber:5.0.1] /home/walley/.gradle/caches/9.6.0/transforms/1bbc73fe1fbbb66254c7bb7651c3279e/transformed/timber-5.0.1/AndroidManifest.xml:7:5-20
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/75ee17fe630d69dbbf07dd0ab7e40e9a/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/75ee17fe630d69dbbf07dd0ab7e40e9a/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/02ce112d6f511e5a3b0d43e77f9fd688/transformed/profileinstaller-1.4.0/AndroidManifest.xml:23:5-53:19
@@ -306,6 +317,8 @@ MERGED from [de.afarber:openmapview-compose:0.21.0] /home/walley/.gradle/caches/
 MERGED from [de.afarber:openmapview-compose:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/565249e7efbcf7978871cbc772c4baa3/transformed/openmapview-compose-0.21.0/AndroidManifest.xml:5:5-44
 MERGED from [de.afarber:openmapview:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/7205d0e7623f62579467c87da32480d3/transformed/openmapview-0.21.0/AndroidManifest.xml:5:5-44
 MERGED from [de.afarber:openmapview:0.21.0] /home/walley/.gradle/caches/9.6.0/transforms/7205d0e7623f62579467c87da32480d3/transformed/openmapview-0.21.0/AndroidManifest.xml:5:5-44
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:5:5-44
+MERGED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:5:5-44
 MERGED from [androidx.preference:preference-ktx:1.2.1] /home/walley/.gradle/caches/9.6.0/transforms/5425fbebee9f45d1b0f53df229db852c/transformed/preference-ktx-1.2.1/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.preference:preference-ktx:1.2.1] /home/walley/.gradle/caches/9.6.0/transforms/5425fbebee9f45d1b0f53df229db852c/transformed/preference-ktx-1.2.1/AndroidManifest.xml:20:5-22:41
 MERGED from [io.coil-kt:coil-compose-base:2.7.0] /home/walley/.gradle/caches/9.6.0/transforms/c792bb4441c6cd8232c1aa8fa332362c/transformed/coil-compose-base-2.7.0/AndroidManifest.xml:5:5-44
@@ -318,6 +331,12 @@ MERGED from [androidx.sqlite:sqlite-framework:2.4.0] /home/walley/.gradle/caches
 MERGED from [androidx.sqlite:sqlite-framework:2.4.0] /home/walley/.gradle/caches/9.6.0/transforms/6673d54fc5fb1d6f03c92fd7917a33be/transformed/sqlite-framework-2.4.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.sqlite:sqlite:2.4.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1839bf579b1643dbbfc72c2e979f3f/transformed/sqlite-2.4.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.sqlite:sqlite:2.4.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1839bf579b1643dbbfc72c2e979f3f/transformed/sqlite-2.4.0/AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:3:5-44
 MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:22:5-24:41
 MERGED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:22:5-24:41
 MERGED from [com.google.android.material:material:1.13.0] /home/walley/.gradle/caches/9.6.0/transforms/8e1c707815a1cc9692959a50479bf208/transformed/material-1.13.0/AndroidManifest.xml:20:5-44
@@ -330,18 +349,20 @@ MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/walley/.gradle/
 MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/walley/.gradle/caches/9.6.0/transforms/5938fa3a2896608ea9de00f63486c305/transformed/appcompat-resources-1.7.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.appcompat:appcompat:1.7.1] /home/walley/.gradle/caches/9.6.0/transforms/a49ab7856cf1a9a5d54d13566cb49920/transformed/appcompat-1.7.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.appcompat:appcompat:1.7.1] /home/walley/.gradle/caches/9.6.0/transforms/a49ab7856cf1a9a5d54d13566cb49920/transformed/appcompat-1.7.1/AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/walley/.gradle/caches/9.6.0/transforms/3c57d76ae45cb7d0ea2e28057df162fd/transformed/play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:3:5-44
-MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:5:5-44
-MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:5:5-44
-MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:5:5-44
-MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:20:5-22:41
 MERGED from [com.github.bumptech.glide:glide:5.0.5] /home/walley/.gradle/caches/9.6.0/transforms/fac5265aee2c2c30d6b7f449bd96fb32/transformed/glide-5.0.5/AndroidManifest.xml:5:5-44
 MERGED from [com.github.bumptech.glide:glide:5.0.5] /home/walley/.gradle/caches/9.6.0/transforms/fac5265aee2c2c30d6b7f449bd96fb32/transformed/glide-5.0.5/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment-ktx:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/f43ca2e2ebdb2d65a26a13a65848a4e1/transformed/fragment-ktx-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment-ktx:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/f43ca2e2ebdb2d65a26a13a65848a4e1/transformed/fragment-ktx-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.recyclerview:recyclerview:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/bb450cbf173cafc83608bb7606957ec6/transformed/recyclerview-1.4.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:5:5-44
+MERGED from [androidx.viewpager2:viewpager2:1.1.0-beta02] /home/walley/.gradle/caches/9.6.0/transforms/cc9cdc0b46a164ba27552e22c4eba662/transformed/viewpager2-1.1.0-beta02/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/7f1e8f5ffdb1a11e584922ce07ffcaa9/transformed/fragment-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment:1.8.2] /home/walley/.gradle/caches/9.6.0/transforms/7f1e8f5ffdb1a11e584922ce07ffcaa9/transformed/fragment-1.8.2/AndroidManifest.xml:5:5-44
+MERGED from [org.maplibre.gl:maplibre-android-gestures:0.0.4] /home/walley/.gradle/caches/9.6.0/transforms/0fb35ed2b807cddaaa6f9c464a863293/transformed/maplibre-android-gestures-0.0.4/AndroidManifest.xml:5:5-44
+MERGED from [org.maplibre.gl:maplibre-android-gestures:0.0.4] /home/walley/.gradle/caches/9.6.0/transforms/0fb35ed2b807cddaaa6f9c464a863293/transformed/maplibre-android-gestures-0.0.4/AndroidManifest.xml:5:5-44
 MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/bc8850a77e115fa0515fa015f89be734/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/bc8850a77e115fa0515fa015f89be734/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/62a9277d1ff4263ca0e37ee593243c0d/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
@@ -376,12 +397,6 @@ MERGED from [androidx.compose.material3:material3-android:1.4.0] /home/walley/.g
 MERGED from [androidx.compose.material3:material3-android:1.4.0] /home/walley/.gradle/caches/9.6.0/transforms/f54a65262a8e9d23c54cbec78b3ae85f/transformed/material3/AndroidManifest.xml:20:5-44
 MERGED from [com.google.accompanist:accompanist-drawablepainter:0.32.0] /home/walley/.gradle/caches/9.6.0/transforms/1d1d6fe519abd4217576908f782bea35/transformed/accompanist-drawablepainter-0.32.0/AndroidManifest.xml:21:5-44
 MERGED from [com.google.accompanist:accompanist-drawablepainter:0.32.0] /home/walley/.gradle/caches/9.6.0/transforms/1d1d6fe519abd4217576908f782bea35/transformed/accompanist-drawablepainter-0.32.0/AndroidManifest.xml:21:5-44
-MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:20:5-22:41
-MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] /home/walley/.gradle/caches/9.6.0/transforms/8c4998298c8c4d7ba6aa3a3d6161cedf/transformed/lifecycle-extensions-2.2.0/AndroidManifest.xml:20:5-22:41
-MERGED from [androidx.fragment:fragment-ktx:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/6f6e4f778c5c8ff86f3abdddb34b93f0/transformed/fragment-ktx-1.6.1/AndroidManifest.xml:20:5-44
-MERGED from [androidx.fragment:fragment-ktx:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/6f6e4f778c5c8ff86f3abdddb34b93f0/transformed/fragment-ktx-1.6.1/AndroidManifest.xml:20:5-44
-MERGED from [androidx.fragment:fragment:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/7f4d9d27fb46d5e7cef7111379eca6ef/transformed/fragment-1.6.1/AndroidManifest.xml:20:5-44
-MERGED from [androidx.fragment:fragment:1.6.1] /home/walley/.gradle/caches/9.6.0/transforms/7f4d9d27fb46d5e7cef7111379eca6ef/transformed/fragment-1.6.1/AndroidManifest.xml:20:5-44
 MERGED from [androidx.activity:activity:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/7efafa75e041d5317fed19c000ea915a/transformed/activity-1.11.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.activity:activity:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/7efafa75e041d5317fed19c000ea915a/transformed/activity-1.11.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.activity:activity-ktx:1.11.0] /home/walley/.gradle/caches/9.6.0/transforms/851a2d1561a50c23b0243783e8fd365b/transformed/activity-ktx-1.11.0/AndroidManifest.xml:5:5-44
@@ -420,8 +435,8 @@ MERGED from [androidx.lifecycle:lifecycle-runtime:2.11.0] /home/walley/.gradle/c
 MERGED from [androidx.lifecycle:lifecycle-runtime:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/c1a0d2463c54cb9e94366fe17128de3d/transformed/lifecycle-runtime-2.11.0/AndroidManifest.xml:4:5-43
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/b10b7616e37c2c187c8741480bbca1e3/transformed/lifecycle-runtime/AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/b10b7616e37c2c187c8741480bbca1e3/transformed/lifecycle-runtime/AndroidManifest.xml:20:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/d151c2551c0c3811c469ae16ca312f79/transformed/lifecycle-viewmodel-ktx-2.11.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/d151c2551c0c3811c469ae16ca312f79/transformed/lifecycle-viewmodel-ktx-2.11.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-service:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/35b3bb8f564487b3baa991fe2df06571/transformed/lifecycle-service-2.11.0/AndroidManifest.xml:5:5-44
@@ -434,8 +449,8 @@ MERGED from [androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/c
 MERGED from [androidx.lifecycle:lifecycle-process:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/afbbc826b4ee3a6999f161c06fcbbd32/transformed/lifecycle-process-2.11.0/AndroidManifest.xml:21:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/e750438c859e000bc8fc4beaeb9e8c4a/transformed/lifecycle-livedata-ktx-2.11.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/e750438c859e000bc8fc4beaeb9e8c4a/transformed/lifecycle-livedata-ktx-2.11.0/AndroidManifest.xml:5:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:5:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/68c9d08fc68263963425aa26a3faba7b/transformed/lifecycle-livedata-core-ktx-2.11.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/a663e9a10a8262d7c8efe0d0fa791087/transformed/lifecycle-livedata-core-2.11.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/347fc388bcd7d96525735ed4adf7d8b0/transformed/lifecycle-livedata-2.11.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/347fc388bcd7d96525735ed4adf7d8b0/transformed/lifecycle-livedata-2.11.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.11.0] /home/walley/.gradle/caches/9.6.0/transforms/5e7434aa10e5f8f5f385a0d4e57309a3/transformed/lifecycle-runtime-ktx/AndroidManifest.xml:5:5-44
@@ -446,6 +461,8 @@ MERGED from [androidx.compose.ui:ui-android:1.12.1] /home/walley/.gradle/caches/
 MERGED from [androidx.compose.ui:ui-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/8a877af68e0261b0acdee73b1065e6d9/transformed/ui/AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.ui:ui-graphics-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/4c7db69ad207fb2eb082c7184369942d/transformed/ui-graphics/AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.ui:ui-graphics-android:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/4c7db69ad207fb2eb082c7184369942d/transformed/ui-graphics/AndroidManifest.xml:5:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/26d55562345b14d6658e28b895126716/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /home/walley/.gradle/caches/9.6.0/transforms/26d55562345b14d6658e28b895126716/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.slidingpanelayout:slidingpanelayout:1.2.0] /home/walley/.gradle/caches/9.6.0/transforms/ce7b12448d51eb8489e8218443f7f36d/transformed/slidingpanelayout-1.2.0/AndroidManifest.xml:20:5-22:41
@@ -464,8 +481,6 @@ MERGED from [androidx.window:window-core-android:1.5.0] /home/walley/.gradle/cac
 MERGED from [androidx.window:window-core-android:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/dfddf553d8352a217c6bf01f69a94d34/transformed/window-core/AndroidManifest.xml:5:5-44
 MERGED from [androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.window:window:1.5.0] /home/walley/.gradle/caches/9.6.0/transforms/4108cb08fdff8e33e083474f90b211dc/transformed/window-1.5.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.viewpager:viewpager:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/dc081f03f679e45b6a3e737f0bd5cd44/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.customview:customview:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/58c6efde1754821897c85511837b1348/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.customview:customview:1.1.0] /home/walley/.gradle/caches/9.6.0/transforms/58c6efde1754821897c85511837b1348/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.core:core:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/ad819130570de38cb299b62d14071a72/transformed/core-1.19.1/AndroidManifest.xml:20:5-44
@@ -476,6 +491,8 @@ MERGED from [androidx.graphics:graphics-shapes-android:1.0.1] /home/walley/.grad
 MERGED from [androidx.graphics:graphics-shapes-android:1.0.1] /home/walley/.gradle/caches/9.6.0/transforms/a140ba4aff31b4c47e4173dd73704761/transformed/graphics-shapes-release/AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-ktx:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/9d59ab6b123fb36d780eb402b984224b/transformed/core-ktx-1.19.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-ktx:1.19.1] /home/walley/.gradle/caches/9.6.0/transforms/9d59ab6b123fb36d780eb402b984224b/transformed/core-ktx-1.19.1/AndroidManifest.xml:5:5-44
+MERGED from [com.jakewharton.timber:timber:5.0.1] /home/walley/.gradle/caches/9.6.0/transforms/1bbc73fe1fbbb66254c7bb7651c3279e/transformed/timber-5.0.1/AndroidManifest.xml:5:5-44
+MERGED from [com.jakewharton.timber:timber:5.0.1] /home/walley/.gradle/caches/9.6.0/transforms/1bbc73fe1fbbb66254c7bb7651c3279e/transformed/timber-5.0.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/walley/.gradle/caches/9.6.0/transforms/4f6c25b38f4198c5a607c4729bdf4985/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/walley/.gradle/caches/9.6.0/transforms/4f6c25b38f4198c5a607c4729bdf4985/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-viewtree:1.0.0] /home/walley/.gradle/caches/9.6.0/transforms/ff1c9ca027b8da17a709d7350b400833/transformed/core-viewtree-1.0.0/AndroidManifest.xml:5:5-44
@@ -562,12 +579,20 @@ ADDED from [androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/
 		ADDED from [androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
 	android:name
 		ADDED from [androidx.room:room-runtime:2.6.1] /home/walley/.gradle/caches/9.6.0/transforms/de9e6a17482fd815e506b1b993a91045/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
-activity#com.karumi.dexter.DexterActivity
-ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:27:9-29:72
-	android:theme
-		ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:29:13-69
+uses-feature#android.hardware.wifi
+ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:7:5-9:36
+	android:required
+		ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:9:9-33
 	android:name
-		ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:28:13-60
+		ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:8:9-45
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:12:5-79
+	android:name
+		ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:12:22-76
+uses-permission#android.permission.ACCESS_WIFI_STATE
+ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:13:5-76
+	android:name
+		ADDED from [org.maplibre.gl:android-sdk:11.13.5] /home/walley/.gradle/caches/9.6.0/transforms/6005e5073abe1e79d8867fd71e86ff9f/transformed/android-sdk-11.13.5/AndroidManifest.xml:13:22-73
 activity#com.google.android.gms.common.api.GoogleApiActivity
 ADDED from [com.google.android.gms:play-services-base:18.5.0] /home/walley/.gradle/caches/9.6.0/transforms/199b727e3ec910eb17063b7f5a2ed726/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
 	android:exported
@@ -582,6 +607,12 @@ ADDED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.
 		ADDED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
 	android:name
 		ADDED from [com.google.android.gms:play-services-basement:18.4.0] /home/walley/.gradle/caches/9.6.0/transforms/727750f35b8ce9b210c6ae486b90e4d5/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
+activity#com.karumi.dexter.DexterActivity
+ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:27:9-29:72
+	android:theme
+		ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:29:13-69
+	android:name
+		ADDED from [com.karumi:dexter:6.2.3] /home/walley/.gradle/caches/9.6.0/transforms/48930a50510d607f2c8e2abcc4f42e91/transformed/dexter-6.2.3/AndroidManifest.xml:28:13-60
 activity#androidx.activity.ComponentActivity
 ADDED from [androidx.compose.ui:ui-test-manifest:1.12.1] /home/walley/.gradle/caches/9.6.0/transforms/aaff52b06c8b7361d027fc4d2f986cf9/transformed/ui-test-manifest-1.12.1/AndroidManifest.xml:23:9-26:79
 	android:exported

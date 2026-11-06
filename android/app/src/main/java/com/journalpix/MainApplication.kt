@@ -10,6 +10,14 @@ class MainApplication : Application() {
         // Offline-first: load persisted trips / places / photo paths from filesDir
         OfflineStore.init(this)
 
+        // MapLibre GL must be initialized before any MapView is created.
+        // Empty API key + MapLibre tile server: we use our own free style URL (OpenFreeMap), no key needed.
+        org.maplibre.android.MapLibre.getInstance(
+            this,
+            "",
+            org.maplibre.android.WellKnownTileServer.MapLibre
+        )
+
         // Workaround for openmapview crash on view detach:
         // MapController.onDestroy -> cancelChildren throws during teardown,
         // which propagates as an uncaught exception and kills the process.
