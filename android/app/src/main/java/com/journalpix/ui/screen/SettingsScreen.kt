@@ -26,33 +26,6 @@ fun isSyncEnabled(context: android.content.Context): Boolean {
 
 /** Native Android settings fragment (PreferenceFragmentCompat). */
 class SettingsFragment : PreferenceFragmentCompat() {
-
-  private val exportLauncher = registerForActivityResult(
-    androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip")
-  ) { uri ->
-    if (uri != null) {
-      val ok = com.journalpix.data.ExportImport.exportToZip(requireContext(), uri)
-      android.widget.Toast.makeText(
-        requireContext(),
-        if (ok) "Journal exported" else "Export failed",
-        android.widget.Toast.LENGTH_LONG
-      ).show()
-    }
-  }
-
-  private val importLauncher = registerForActivityResult(
-    androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-  ) { uri ->
-    if (uri != null) {
-      val ok = com.journalpix.data.ExportImport.importFromZip(requireContext(), uri)
-      android.widget.Toast.makeText(
-        requireContext(),
-        if (ok) "Journal imported — restart to see changes" else "Import failed",
-        android.widget.Toast.LENGTH_LONG
-      ).show()
-    }
-  }
-
   override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
     Log.i(TAG_SETTINGS, "onCreatePreferences: building native settings screen, rootKey='$rootKey'")
     val screen = preferenceManager.createPreferenceScreen(requireContext())
@@ -63,31 +36,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
       setDefaultValue(false)
       isIconSpaceReserved = false
     }.also { screen.addPreference(it) }
-
-    androidx.preference.Preference(requireContext()).apply {
-      key = "export_zip"
-      title = "Export journal (ZIP)"
-      summary = "Save all trips, places and photos to a ZIP file"
-      isIconSpaceReserved = false
-      onPreferenceClickListener = androidx.preference.Preference.OnPreferenceClickListener {
-        Log.i(TAG_SETTINGS, "Export tapped — launching file picker")
-        exportLauncher.launch("journalpix-export.zip")
-        true
-      }
-    }.also { screen.addPreference(it) }
-
-    androidx.preference.Preference(requireContext()).apply {
-      key = "import_zip"
-      title = "Import journal (ZIP)"
-      summary = "Replace the current journal with a ZIP backup (photos included)"
-      isIconSpaceReserved = false
-      onPreferenceClickListener = androidx.preference.Preference.OnPreferenceClickListener {
-        Log.i(TAG_SETTINGS, "Import tapped — launching file picker")
-        importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
-        true
-      }
-    }.also { screen.addPreference(it) }
-
     preferenceScreen = screen
   }
 }

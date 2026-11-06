@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.journalpix.viewmodel.AppSession
@@ -24,6 +27,24 @@ private const val TAG_PROFILE = "JPXPS"
 fun ProfileScreen(navController: NavController) {
   Log.i(TAG_PROFILE, "ProfileScreen: rendering, isLoggedIn=${AppSession.isLoggedIn.value}, user=${AppSession.currentUser.value?.user?.email}")
   val user = AppSession.currentUser.value
+  val context = LocalContext.current
+
+  val exportLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.CreateDocument("application/zip")
+  ) { uri ->
+    if (uri != null) {
+      val ok = com.journalpix.data.ExportImport.exportToZip(context, uri)
+      android.widget.Toast.makeText(context, if (ok) "Journal exported" else "Export failed", android.widget.Toast.LENGTH_LONG).show()
+    }
+  }
+  val importLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.OpenDocument()
+  ) { uri ->
+    if (uri != null) {
+      val ok = com.journalpix.data.ExportImport.importFromZip(context, uri)
+      android.widget.Toast.makeText(context, if (ok) "Journal imported" else "Import failed", android.widget.Toast.LENGTH_LONG).show()
+    }
+  }
 
   Column(
     modifier = Modifier
@@ -57,5 +78,19 @@ fun ProfileScreen(navController: NavController) {
         Text("Log in")
       }
     }
+     Spacer(Modifier.height(32.dp))
+     Button(onClick = {
+       Log.i(TAG_PROFILE, "Export tapped — launching file picker")
+       exportLauncher.launch("journalpix-export.zip")
+     }) {
+       Text("Export journal (ZIP)")
+     }
+     Spacer(Modifier.height(12.dp))
+     Button(onClick = {
+       Log.i(TAG_PROFILE, "Import tapped — launching file picker")
+       importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
+     }) {
+       Text("Import journal (ZIP)")
+     }
   }
 }
