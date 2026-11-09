@@ -271,8 +271,27 @@ fun PlaceDetailScreen(
   LaunchedEffect(photoViewModel.resolvedAddresses["temp"]) {
     val addr = photoViewModel.resolvedAddresses["temp"]
     if (addr != null && addr.isNotBlank()) {
-      Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address: $addr")
+      Log.i(TAG_PLACE_DETAIL, "Reverse geocoded address after map move: $addr")
       editAddress = addr
+      // Persist the new address on the place (map move changed lat/lon → new address)
+      placeViewModel.updatePlace(
+        placeId = placeId,
+        request = UpdatePlaceRequest(
+          name = null,
+          description = null,
+          latitude = currentPlace?.latitude,
+          longitude = currentPlace?.longitude,
+          address = addr,
+          day = null,
+          visitDate = null,
+          orderIndex = null,
+          transportFromPrevious = null
+        ),
+        onSuccess = {
+          Log.i(TAG_PLACE_DETAIL, "Address saved to place after map move: $addr")
+          placeViewModel.refreshLocalPlace(placeId)
+        }
+      )
     }
     photoViewModel.resolvedAddresses.remove("temp")
   }
