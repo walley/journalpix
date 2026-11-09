@@ -96,7 +96,44 @@ fun MapGlScreen(
 
     LaunchedEffect(effectiveTripId) {
         if (effectiveTripId.isNotEmpty()) {
-            mapViewModel.loadTripRoute(effectiveTripId, places)
+            // Load places from the offline store (the route param may be empty)
+            val tripPlaces = places.ifEmpty { com.journalpix.data.OfflineStore.placesForTrip(effectiveTripId) }
+            mapViewModel.loadTripRoute(effectiveTripId, tripPlaces)
+            // Fallback: if no GeoJSON was handed over, draw the route from the store directly
+            val map = maplibreMap.value
+            val style = styleRef.value
+            if (map != null && style != null && AppSession.mapGeoJson.value.isNullOrBlank()) {
+                val routeJson = com.journalpix.geo.GeoJson.forTripRoute(tripPlaces)
+                runCatching {
+                    if (style.getSource("geojson") == null) style.addSource(GeoJsonSource("geojson", routeJson))
+                    else (style.getSource("geojson") as GeoJsonSource).setGeoJson(routeJson)
+                    if (style.getLayer("route-line") == null) {
+                        style.addLayer(
+                            LineLayer("route-line", "geojson")
+                                .withProperties(
+                                    PropertyFactory.lineColor(android.graphics.Color.BLUE),
+                                    PropertyFactory.lineWidth(6f)
+                                )
+                                .withFilter(Expression.eq(Expression.get("kind"), Expression.literal("tripRoute")))
+                        )
+                    }
+                    if (style.getLayer("places") == null) {
+                        style.addLayer(
+                            SymbolLayer("places", "geojson")
+                                .withProperties(
+                                    PropertyFactory.textField("{label}"),
+                                    PropertyFactory.textSize(14f),
+                                    PropertyFactory.textColor(android.graphics.Color.BLUE),
+                                    PropertyFactory.textHaloColor(android.graphics.Color.WHITE),
+                                    PropertyFactory.textHaloWidth(1.5f),
+                                    PropertyFactory.textAllowOverlap(true)
+                                )
+                                .withFilter(Expression.eq(Expression.get("kind"), Expression.literal("place")))
+                        )
+                    }
+                    Log.i(TAG_MAP_GL, "Fallback route source added from store (${tripPlaces.size} places)")
+                }.onFailure { Log.e(TAG_MAP_GL, "Fallback route failed: ${it.message}") }
+            }
         } else {
             Log.e(TAG_MAP_GL, "MapGlScreen: effectiveTripId is BLANK — invalid trip, nothing to load")
         }
@@ -109,6 +146,7 @@ fun MapGlScreen(
     val hasEditTarget = editPlace?.latitude != null && editPlace.longitude != null
 
     val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
+    val styleRef = remember { mutableStateOf<Style?>(null) }
     val editMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
     val homeMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
@@ -304,8 +342,10 @@ fun MapGlScreen(
                             maplibreMap.value = map
                             Log.i(TAG_MAP_GL, "MapLibre map ready")
                             map.setStyle(MAP_STYLE_URL) { style ->
+                                styleRef.value = style
                                 // GeoJSON passed from the calling view (route polyline + place points)
                                 val geoJson = AppSession.mapGeoJson.value
+                                Log.i(TAG_MAP_GL, "Style loaded: geoJson=${if (geoJson.isNullOrBlank()) "NONE" else "${geoJson.length} chars"}, routePoints=${mapViewModel.mapRoute.value?.routePoints?.size ?: 0}")
                                 if (!geoJson.isNullOrBlank()) {
                                     val parsed = com.journalpix.geo.GeoJson.parse(geoJson)
                                     if (parsed != null) {
