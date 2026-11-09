@@ -94,15 +94,20 @@ fun MapGlScreen(
     val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
     Log.i(TAG_MAP_GL, "MapGlScreen opened: route tripId='$tripId', effectiveTripId='$effectiveTripId', addPlaceMode=$addPlaceMode, placeIdForUpdate='$placeIdForUpdate'")
 
+    val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
+    val styleRef = remember { mutableStateOf<Style?>(null) }
+    val editMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
+    val homeMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+
     LaunchedEffect(effectiveTripId) {
         if (effectiveTripId.isNotEmpty()) {
             // Load places from the offline store (the route param may be empty)
             val tripPlaces = places.ifEmpty { com.journalpix.data.OfflineStore.placesForTrip(effectiveTripId) }
             mapViewModel.loadTripRoute(effectiveTripId, tripPlaces)
             // Fallback: if no GeoJSON was handed over, draw the route from the store directly
-            val map = maplibreMap.value
             val style = styleRef.value
-            if (map != null && style != null && AppSession.mapGeoJson.value.isNullOrBlank()) {
+            if (style != null && AppSession.mapGeoJson.value.isNullOrBlank()) {
                 val routeJson = com.journalpix.geo.GeoJson.forTripRoute(tripPlaces)
                 runCatching {
                     if (style.getSource("geojson") == null) style.addSource(GeoJsonSource("geojson", routeJson))
@@ -144,12 +149,6 @@ fun MapGlScreen(
     val editPlace = editPlaceId.takeIf { it.isNotBlank() }
         ?.let { com.journalpix.data.OfflineStore.findPlaceWithPhotos(it) }
     val hasEditTarget = editPlace?.latitude != null && editPlace.longitude != null
-
-    val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
-    val styleRef = remember { mutableStateOf<Style?>(null) }
-    val editMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
-    val homeMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
-    var mapView by remember { mutableStateOf<MapView?>(null) }
 
     // "Center on current location" — needs ACCESS_FINE_LOCATION at runtime
     val fusedLocationClient = remember {
