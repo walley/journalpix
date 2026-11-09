@@ -75,8 +75,9 @@ fun ProfileScreen(navController: NavController) {
     val result = com.journalpix.util.NominatimClient.reverseGeocode(loc.first, loc.second)
     val addr = result.getOrNull()
     if (!addr.isNullOrBlank()) {
-      AppSession.saveHomeAddress(context, addr)
-      android.widget.Toast.makeText(context, "Home set: $addr", android.widget.Toast.LENGTH_LONG).show()
+      // Transfer the resolved address into the edit input box for confirmation
+      homeEditText = addr
+      showHomeEditDialog = true
     } else {
       android.widget.Toast.makeText(context, "Could not resolve address for that location", android.widget.Toast.LENGTH_LONG).show()
     }

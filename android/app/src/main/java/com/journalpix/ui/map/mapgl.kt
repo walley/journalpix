@@ -110,6 +110,7 @@ fun MapGlScreen(
 
     val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
     val editMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
+    val homeMarker = remember { mutableStateOf<org.maplibre.android.annotations.Marker?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
 
     // "Center on current location" — needs ACCESS_FINE_LOCATION at runtime
@@ -401,6 +402,19 @@ fun MapGlScreen(
                                     mapViewModel.setMapSelectionPoint(latLng.latitude, latLng.longitude)
                                 } else {
                                     mapViewModel.setMapSelectionPoint(latLng.latitude, latLng.longitude)
+                                    // Pick-home mode: drop/move a marker at the tapped point
+                                    if (AppSession.mapPickHome.value) {
+                                        val existing = homeMarker.value
+                                        if (existing != null) {
+                                            existing.position = latLng
+                                        } else {
+                                            homeMarker.value = map.addMarker(
+                                                MarkerOptions()
+                                                    .position(latLng)
+                                                    .title("Home")
+                                            )
+                                        }
+                                    }
                                     // Tap on a labeled place point → open its detail
                                     val screenPoint = map.projection.toScreenLocation(latLng)
                                     val features = map.queryRenderedFeatures(

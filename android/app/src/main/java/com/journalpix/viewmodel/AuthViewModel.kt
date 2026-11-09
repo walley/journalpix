@@ -47,6 +47,15 @@ object AppSession {
     /** Lat/lon picked on the big map for the home address. */
     val pendingHomeLocation = mutableStateOf<Pair<Double, Double>?>(null)
 
+    /** A place named "Home"/"home" uses the saved home address. */
+    fun isHomePlace(name: String?): Boolean =
+        name?.trim()?.matches(Regex("[Hh]ome")) == true
+
+    /** Address to display for a place: home address for Home places, otherwise the place's own. */
+    fun effectiveAddress(placeName: String?, placeAddress: String?): String? =
+        if (isHomePlace(placeName)) homeAddress.value?.takeIf { it.isNotBlank() } ?: placeAddress
+        else placeAddress
+
     fun loadHomeAddress(context: android.content.Context) {
         homeAddress.value = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             .getString("home_address", null)

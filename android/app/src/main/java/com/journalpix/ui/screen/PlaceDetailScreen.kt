@@ -206,7 +206,7 @@ fun PlaceDetailScreen(
   LaunchedEffect(currentPlace) {
     if (currentPlace != null) {
       editName = currentPlace.name
-      editAddress = currentPlace.address ?: ""
+      editAddress = AppSession.effectiveAddress(currentPlace.name, currentPlace.address) ?: ""
     }
   }
 
@@ -470,7 +470,7 @@ fun PlaceDetailScreen(
                   TextButton(
                     onClick = {
                       editName = currentPlace?.name ?: ""
-                      editAddress = currentPlace?.address ?: ""
+                      editAddress = AppSession.effectiveAddress(currentPlace?.name, currentPlace?.address) ?: ""
                       editMode = false
                     }
                   ) { Text("Cancel") }
@@ -552,7 +552,7 @@ fun PlaceDetailScreen(
                   )
                   Spacer(Modifier.width(4.dp))
                   Text(
-                    text = currentPlace.address ?: "unknown",
+                    text = AppSession.effectiveAddress(currentPlace.name, currentPlace.address) ?: "unknown",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                   )
@@ -859,7 +859,7 @@ fun PlaceDetailScreen(
                           }
                         },
                         resolvedAddress = photoViewModel.resolvedAddresses[photo.id]
-                          ?: currentPlace.address,
+                          ?: AppSession.effectiveAddress(currentPlace?.name, currentPlace?.address),
                         isGeocoding = photoViewModel.geocodeLoadingIds[photo.id] == true,
                         geocodeError = photoViewModel.geocodeErrors[photo.id],
                         onImageClick = {
