@@ -70,16 +70,21 @@ fun ProfileScreen(navController: NavController) {
 
   LaunchedEffect(AppSession.pendingHomeLocation.value) {
     val loc = AppSession.pendingHomeLocation.value ?: return@LaunchedEffect
-    AppSession.pendingHomeLocation.value = null
     Log.i(TAG_PROFILE, "Home location picked on map: lat=${loc.first} lon=${loc.second} — reverse geocoding")
     val result = com.journalpix.util.NominatimClient.reverseGeocode(loc.first, loc.second)
     val addr = result.getOrNull()
+    Log.i(TAG_PROFILE, "Home reverse geocode result: success=${result.isSuccess}, addr='$addr', error=${result.exceptionOrNull()?.message}")
+    // Clear only AFTER the geocode finished — clearing first would change the
+    // LaunchedEffect key and cancel this very coroutine
+    AppSession.pendingHomeLocation.value = null
     if (!addr.isNullOrBlank()) {
       // Transfer the resolved address into the edit input box for confirmation
       homeEditText = addr
       showHomeEditDialog = true
     } else {
-      android.widget.Toast.makeText(context, "Could not resolve address for that location", android.widget.Toast.LENGTH_LONG).show()
+      android.widget.Toast.makeText(context, "Could not resolve address — enter it manually", android.widget.Toast.LENGTH_LONG).show()
+      homeEditText = ""
+      showHomeEditDialog = true
     }
   }
 
