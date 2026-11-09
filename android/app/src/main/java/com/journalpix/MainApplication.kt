@@ -10,6 +10,9 @@ class MainApplication : Application() {
         // Offline-first: load persisted trips / places / photo paths from filesDir
         OfflineStore.init(this)
 
+        // Load the saved home address for the Profile page
+        com.journalpix.viewmodel.AppSession.loadHomeAddress(this)
+
         // MapLibre GL must be initialized before any MapView is created.
         // Empty API key + MapLibre tile server: we use our own free style URL (OpenFreeMap), no key needed.
         org.maplibre.android.MapLibre.getInstance(

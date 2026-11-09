@@ -38,6 +38,26 @@ object AppSession {
     /** GeoJSON FeatureCollection passed from a view to the big map (consumed by MapScreen). */
     val mapGeoJson = mutableStateOf<String?>(null)
 
+    /** Home address (persisted in SharedPreferences), shown/editable on the Profile page. */
+    val homeAddress = mutableStateOf<String?>(null)
+
+    /** When set, the big map is in "pick home location" mode: checkmark returns lat/lon here. */
+    val mapPickHome = mutableStateOf(false)
+
+    /** Lat/lon picked on the big map for the home address. */
+    val pendingHomeLocation = mutableStateOf<Pair<Double, Double>?>(null)
+
+    fun loadHomeAddress(context: android.content.Context) {
+        homeAddress.value = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("home_address", null)
+    }
+
+    fun saveHomeAddress(context: android.content.Context, address: String) {
+        homeAddress.value = address
+        context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putString("home_address", address).apply()
+    }
+
     /** Currently open trip — used by the bottom nav bar for timeline/map destinations. */
     val currentTripId = mutableStateOf("")
 

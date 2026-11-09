@@ -151,9 +151,14 @@ fun MapGlScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    // When opened from a place view, inherit the place name as the title
-                    val placeTitle = editPlace?.name?.takeIf { it.isNotBlank() }
-                    Text(placeTitle ?: mapViewModel.mapRoute.value?.tripTitle ?: "Map View")
+                    // Pick-home mode → fixed title; place view → inherit the place name
+                    when {
+                        AppSession.mapPickHome.value -> "Set home location"
+                        else -> {
+                            val placeTitle = editPlace?.name?.takeIf { it.isNotBlank() }
+                            Text(placeTitle ?: mapViewModel.mapRoute.value?.tripTitle ?: "Map View")
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -255,7 +260,13 @@ fun MapGlScreen(
                 mapViewModel.mapSelectionPoint.value?.let { point ->
                     FloatingActionButton(
                         onClick = {
-                            Log.i(TAG_MAP_GL, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, editPlaceId='$editPlaceId'")
+                            Log.i(TAG_MAP_GL, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, editPlaceId='$editPlaceId', pickHome=${AppSession.mapPickHome.value}")
+                            if (AppSession.mapPickHome.value) {
+                                AppSession.pendingHomeLocation.value = Pair(point.latitude, point.longitude)
+                                AppSession.mapPickHome.value = false
+                                navController.popBackStack()
+                                return@FloatingActionButton
+                            }
                             if (editPlaceId.isNotBlank()) {
                                 // Name must stay as entered by the user — only lat/lon change here
                                 AppSession.pendingMapPlaceUpdate.value = Triple(point.latitude, point.longitude, "")
@@ -428,6 +439,7 @@ fun MapGlScreen(
                 onDispose {
                     lifecycleOwner.lifecycle.removeObserver(observer)
                     AppSession.mapGeoJson.value = null
+                    AppSession.mapPickHome.value = false
                     mapView?.onDestroy()
                 }
             }
