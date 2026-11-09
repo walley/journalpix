@@ -78,9 +78,9 @@ fun ProfileScreen(navController: NavController) {
     // LaunchedEffect key and cancel this very coroutine
     AppSession.pendingHomeLocation.value = null
     if (!addr.isNullOrBlank()) {
-      // Transfer the resolved address into the edit input box for confirmation
-      homeEditText = addr
-      showHomeEditDialog = true
+      // Save the geocoded address directly — it shows in the Home row immediately
+      AppSession.saveHomeAddress(context, addr)
+      android.widget.Toast.makeText(context, "Home set: $addr", android.widget.Toast.LENGTH_LONG).show()
     } else {
       android.widget.Toast.makeText(context, "Could not resolve address — enter it manually", android.widget.Toast.LENGTH_LONG).show()
       homeEditText = ""
