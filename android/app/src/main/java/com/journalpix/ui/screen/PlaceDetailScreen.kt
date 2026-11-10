@@ -630,7 +630,8 @@ fun PlaceDetailScreen(
                     if (targetTripId != null) {
                       AppSession.mapEditPlaceId.value = placeId
                       AppSession.mapGeoJson.value = currentPlace?.let { com.journalpix.geo.GeoJson.forPlace(it) }
-                      navController.navigate("map/$targetTripId?addPlaceMode=true")
+                      // Carry the edit target in the route too — deterministic, not just session state
+                      navController.navigate("map/$targetTripId?addPlaceMode=true&placeIdForUpdate=$placeId")
                     } else {
                       Log.e(TAG_PLACE_DETAIL, "Select on map blocked: tripId is BLANK — invalid trip")
                       android.widget.Toast.makeText(
@@ -678,7 +679,8 @@ fun PlaceDetailScreen(
                       if (targetTripId != null) {
                         AppSession.mapEditPlaceId.value = placeId
                         AppSession.mapGeoJson.value = currentPlace?.let { com.journalpix.geo.GeoJson.forPlace(it) }
-                        navController.navigate("map/$targetTripId?addPlaceMode=true")
+                        // Carry the edit target in the route too — deterministic, not just session state
+                        navController.navigate("map/$targetTripId?addPlaceMode=true&placeIdForUpdate=$placeId")
                       } else {
                         android.widget.Toast.makeText(
                           context,

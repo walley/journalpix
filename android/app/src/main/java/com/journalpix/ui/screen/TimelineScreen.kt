@@ -229,9 +229,13 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     val pending = AppSession.pendingMapPlace.value
     if (pending != null) {
       val (lat, lon, name) = pending
-      Log.i(TAG_TIMELINE, "Pending map place received: lat=$lat, lon=$lon, name='$name', showCreatePlaceDialog=$showCreatePlaceDialog")
+      Log.i(TAG_TIMELINE, "Pending map place received: lat=$lat, lon=$lon, name='$name', showCreatePlaceDialog=$showCreatePlaceDialog, updateInFlight=${AppSession.pendingMapPlaceUpdate.value != null}")
       AppSession.clearPendingMapPlace()
-      if (showCreatePlaceDialog) {
+      // An update in flight means this pending creation is stale (edit-mode race) —
+      // creating here would duplicate the place being edited
+      if (AppSession.pendingMapPlaceUpdate.value != null) {
+        Log.w(TAG_TIMELINE, "Skipping pending map place creation — a place update is in flight, no duplicate will be created")
+      } else if (showCreatePlaceDialog) {
         // Populate the add-place dialog with the map selection
         Log.d(TAG_TIMELINE, "Populating add-place dialog with map selection: lat=$lat, lon=$lon")
         mapSelectedLat = lat
