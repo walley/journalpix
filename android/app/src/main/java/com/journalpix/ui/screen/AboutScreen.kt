@@ -1,5 +1,6 @@
 package com.journalpix.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,11 +28,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.journalpix.BuildConfig
 import com.journalpix.ui.theme.JournalPixTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(navController: NavController) {
+    Log.i("JPXAS", "AboutScreen opened")
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = runCatching { BuildConfig.VERSION_NAME }.getOrElse {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull()
+    } ?: "unknown"
+    Log.i("JPXAS", "AboutScreen versionName=$versionName")
     val scrollState = rememberScrollState()
 
     Scaffold(
@@ -85,7 +95,7 @@ fun AboutScreen(navController: NavController) {
 
             // Version
             Text(
-                text = "Version 1.0.0",
+                text = "Version $versionName",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
