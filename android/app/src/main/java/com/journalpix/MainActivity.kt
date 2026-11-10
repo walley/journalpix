@@ -186,19 +186,22 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                             "place_new",
                             arguments = listOf(
                                 navArgument("tripId") { defaultValue = "" },
-                                navArgument("lat") { defaultValue = "0.0" },
-                                navArgument("lon") { defaultValue = "0.0" }
+                                navArgument("lat") { defaultValue = "" },
+                                navArgument("lon") { defaultValue = "" },
+                                navArgument("day") { defaultValue = "" }
                             )
                         ) { backStackEntry ->
                             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-                            val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
-                            val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
+                            val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+                            val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
+                            val day = backStackEntry.arguments?.getString("day")?.ifBlank { null }
                             PlaceDetailScreen(
                                 navController,
                                 placeId = "",
                                 tripId = tripId,
                                 newPlaceLat = lat,
-                                newPlaceLon = lon
+                                newPlaceLon = lon,
+                                newPlaceDay = day
                             )
                         }
                         composable(

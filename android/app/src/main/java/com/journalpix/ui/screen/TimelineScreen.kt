@@ -101,15 +101,10 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   val photoViewModel:PhotoViewModel = remember {PhotoViewModel()}
 
   var selectedPlace by remember {mutableStateOf<PlaceWithPhotos?>(null)}
-  var showCreatePlaceDialog by remember {mutableStateOf(false)}
   var showEditDatesDialog by remember {mutableStateOf(false)}
   var showEditTitleDialog by remember {mutableStateOf(false)}
   var showEditDescriptionDialog by remember {mutableStateOf(false)}
   var editTransportPlaceId by remember {mutableStateOf<String?>(null)}
-  var createPlaceDay by remember {mutableStateOf<String?>(null)}
-  var newPlaceName by remember {mutableStateOf("")}
-  var mapSelectedLat by remember {mutableStateOf<Double?>(null)}
-  var mapSelectedLon by remember {mutableStateOf<Double?>(null)}
   var uploadTargetPlaceId by remember {mutableStateOf<String?>(null)}
   val expandedDays = remember {mutableStateMapOf<String, Boolean>()}
 
@@ -612,8 +607,14 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                     TextButton(
                       onClick = {
                         Log.i(TAG_TIMELINE, "onClick: 'Add a place' button for day=$rawDate — opening create place dialog")
-                        createPlaceDay = rawDate
-                        showCreatePlaceDialog = true
+                        // No dialog — hand off to placeview create mode, which asks for the name
+                        val valid = AppSession.validateTripId(effectiveTripId)
+                        if (valid != null) {
+                          Log.i(TAG_TIMELINE, "onClick: 'Add a place' for day=$rawDate — navigating to place_new (placeview), no dialog")
+                          navController.navigate("place_new?tripId=$valid&day=$rawDate")
+                        } else {
+                          android.widget.Toast.makeText(context, AppSession.tripIdError.value ?: "Invalid trip", android.widget.Toast.LENGTH_LONG).show()
+                        }
                       }, modifier = Modifier.padding(
                         start = 48.dp, bottom = 8.dp
                       )
@@ -835,151 +836,6 @@ fun TimelineScreen(navController:NavController, tripId:String) {
       selectedPlace = null
     }
 
-    if (showCreatePlaceDialog) {
-      var placeDateText by remember(createPlaceDay) {
-        mutableStateOf(createPlaceDay ?: LocalDate.now().toString())
-      }
-      var isAddingPlace by remember {mutableStateOf(false)}
-
-      LaunchedEffect(placeViewModel.isLoading.value) {
-        if (!placeViewModel.isLoading.value && placeViewModel.errorMessage.value != null) {
-          isAddingPlace = false
-        }
-      }
-
-      AlertDialog(onDismissRequest = {
-        if (!isAddingPlace && !placeViewModel.isLoading.value) {
-          Log.w(TAG_TIMELINE, "Add place dialog dismissed via back/system")
-          showCreatePlaceDialog = false
-          newPlaceName = ""
-          createPlaceDay = null
-          mapSelectedLat = null
-          mapSelectedLon = null
-          placeViewModel.errorMessage.value = null
-        }
-      }, title = {Text("Add a place")}, text = {
-        Column {
-          OutlinedTextField(
-            value = newPlaceName,
-                            onValueChange = {newPlaceName = it},
-                            label = {Text("Place name")},
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = !isAddingPlace && !placeViewModel.isLoading.value
-          )
-          Spacer(Modifier.height(12.dp))
-          OutlinedTextField(
-            value = placeDateText,
-                            onValueChange = {placeDateText = it},
-                            label = {Text("Date (yyyy-MM-dd)")},
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isAddingPlace && !placeViewModel.isLoading.value,
-                            trailingIcon = {
-                              IconButton(
-                                onClick = {
-                                  showDatePicker(placeDateText) {selectedDate ->
-                                    placeDateText = selectedDate.toString()
-                                  }
-                                }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
-                              ) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Select date")
-                              }
-                            })
-          placeViewModel.errorMessage.value?.let {error ->
-            Spacer(Modifier.height(8.dp))
-            Text(
-              text = error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall
-            )
-          }
-
-          // Map location picker
-          val mapLocationText = buildString {
-            append("Location: ")
-            if (mapSelectedLat != null && mapSelectedLon != null) {
-              append("%.6f, %.6f".format(mapSelectedLat, mapSelectedLon))
-            } else {
-              append("not selected")
-            }
-          }
-          Row(
-            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(
-              text = mapLocationText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f)
-            )
-            Button(
-              onClick = {
-                Log.i(TAG_TIMELINE, "Pick on map clicked: closing dialog, navigating to map for trip $effectiveTripId — place detail will create the place")
-                showCreatePlaceDialog = false
-                navigateToMap(addPlaceMode = true)
-              }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
-            ) {
-              Text("Pick on map")
-            }
-          }
-        }
-      }, confirmButton = {
-        val isAdding = isAddingPlace || placeViewModel.isLoading.value
-        Button(
-          onClick = {
-            if (newPlaceName.isNotBlank() && !isAdding) {
-              isAddingPlace = true
-              placeViewModel.errorMessage.value = null
-              val request = com.journalpix.models.CreatePlaceRequest(
-                tripId = effectiveTripId,
-                name = newPlaceName.trim(),
-                description = null,
-                latitude = mapSelectedLat,
-                longitude = mapSelectedLon,
-                address = null,
-                visitDate = ZonedTimeInput(
-                  local = placeDateText.trim().ifBlank {
-                  LocalDate.now().atStartOfDay().toString()
-                }.let {d ->
-                  if (d.contains("T")) d else "${d}T00:00:00"
-                }, timezone = ZoneId.systemDefault().id
-                ),
-                orderIndex = null
-              )
-              placeViewModel.createPlace(effectiveTripId, request) {
-                isAddingPlace = false
-                showCreatePlaceDialog = false
-                newPlaceName = ""
-                createPlaceDay = null
-                val createdLat = mapSelectedLat
-                val createdLon = mapSelectedLon
-                mapSelectedLat = null
-                mapSelectedLon = null
-                Log.i(TAG_TIMELINE, "Place created successfully from dialog: tripId=$effectiveTripId, name='${newPlaceName.trim()}', lat=$createdLat, lon=$createdLon")
-                refresh()
-              }
-            }
-          }, enabled = !isAdding && newPlaceName.isNotBlank()
-        ) {
-          if (isAdding) {
-            CircularProgressIndicator(
-              modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary
-            )
-            Spacer(Modifier.width(8.dp))
-          }
-          Text("Add")
-        }
-      }, dismissButton = {
-        val isAdding = isAddingPlace || placeViewModel.isLoading.value
-        TextButton(
-          onClick = {
-            Log.w(TAG_TIMELINE, "Add place dialog cancelled by user")
-            showCreatePlaceDialog = false
-            newPlaceName = ""
-            createPlaceDay = null
-            mapSelectedLat = null
-            mapSelectedLon = null
-            placeViewModel.errorMessage.value = null
-          }, enabled = !isAdding
-        ) {Text("Cancel")}
-      })
-    }
   }
 }
 

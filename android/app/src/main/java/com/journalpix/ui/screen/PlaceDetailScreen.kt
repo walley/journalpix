@@ -170,7 +170,8 @@ fun PlaceDetailScreen(
   placeId: String,
   tripId: String = "",
   newPlaceLat: Double? = null,
-  newPlaceLon: Double? = null
+  newPlaceLon: Double? = null,
+  newPlaceDay: String? = null
 ) {
   val context = LocalContext.current
   // No token here — offline-first; SyncManager is the only place that uses the auth token
@@ -178,9 +179,10 @@ fun PlaceDetailScreen(
   // The nav route may not carry tripId — fall back to the currently open trip
   val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
 
-  // Create mode: opened from the map with picked coords and no place id yet —
-  // this screen asks for a name, creates the place, then stays open for editing
-  val isCreateMode = placeId.isBlank() && newPlaceLat != null && newPlaceLon != null
+  // Create mode: opened via the place_new route (no place id yet) — from the map with
+  // picked coords, or straight from the timeline. This screen asks for a name, creates
+  // the place, then stays open for editing
+  val isCreateMode = placeId.isBlank()
   Log.i(TAG_PLACE_DETAIL, "PlaceDetailScreen: placeId='$placeId', tripId='$effectiveTripId', isCreateMode=$isCreateMode, newLat=$newPlaceLat, newLon=$newPlaceLon")
 
   val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
@@ -468,11 +470,20 @@ fun PlaceDetailScreen(
           verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
           Text("New place", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-          Text(
-            text = "Location: $newPlaceLat, $newPlaceLon",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+          if (newPlaceLat != null && newPlaceLon != null) {
+            Text(
+              text = "Location: $newPlaceLat, $newPlaceLon",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+          if (newPlaceDay != null) {
+            Text(
+              text = "Day: $newPlaceDay",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
           Button(onClick = { showNameDialog = true }) { Text("Set name") }
         }
       } else if (showSkeleton) {
@@ -947,12 +958,14 @@ fun PlaceDetailScreen(
         title = { Text("Name the place") },
         text = {
           Column {
-            Text(
-              text = "Location: $newPlaceLat, $newPlaceLon",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(12.dp))
+            if (newPlaceLat != null && newPlaceLon != null) {
+              Text(
+                text = "Location: $newPlaceLat, $newPlaceLon",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+              Spacer(Modifier.height(12.dp))
+            }
             OutlinedTextField(
               value = newPlaceName,
               onValueChange = { newPlaceName = it },
@@ -967,7 +980,7 @@ fun PlaceDetailScreen(
             onClick = {
               val name = newPlaceName.trim()
               if (name.isBlank()) return@Button
-              Log.i(TAG_PLACE_DETAIL, "Creating place from map pick: name='$name', lat=$newPlaceLat, lon=$newPlaceLon, tripId='$effectiveTripId'")
+              Log.i(TAG_PLACE_DETAIL, "Creating place: name='$name', lat=$newPlaceLat, lon=$newPlaceLon, day=$newPlaceDay, tripId='$effectiveTripId'")
               showNameDialog = false
               placeViewModel.createPlace(
                 effectiveTripId,
@@ -975,7 +988,13 @@ fun PlaceDetailScreen(
                   tripId = effectiveTripId,
                   name = name,
                   latitude = newPlaceLat,
-                  longitude = newPlaceLon
+                  longitude = newPlaceLon,
+                  visitDate = newPlaceDay?.let { d ->
+                    com.journalpix.models.ZonedTimeInput(
+                      local = if (d.contains("T")) d else "${d}T00:00:00",
+                      timezone = java.time.ZoneId.systemDefault().id
+                    )
+                  }
                 )
               ) { created ->
                 Log.i(TAG_PLACE_DETAIL, "Place created: id=${created.id} — opening it for editing")
