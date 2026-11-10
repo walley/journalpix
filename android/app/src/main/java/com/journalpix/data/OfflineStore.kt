@@ -239,6 +239,8 @@ object OfflineStore {
 
     fun persist() {
         val ctx = appContext ?: return
+        // Every mutation ends here — notify observers (timeline reloads, never mutates)
+        com.journalpix.viewmodel.AppSession.notifyDataChanged()
         try {
             // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
             val file = storeFile(ctx)

@@ -163,17 +163,29 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                                 addPlaceMode = addPlaceMode,
                                 placeIdForUpdate = placeIdForUpdate,
                                 onPlaceAdded = { lat, lon, name ->
-                                    // Edit target may come from AppSession (place detail navigates
-                                    // without the placeIdForUpdate route arg) — an edit must never
-                                    // create a new place
+                                    // Edit target may come from AppSession or the route — an edit must
+                                    // never create a new place
                                     val targetEditId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
                                     Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name', placeIdForUpdate=$placeIdForUpdate, targetEditId='$targetEditId'")
                                     if (targetEditId.isNotBlank()) {
+                                        // Edit: handled by the place detail screen (the editor)
                                         AppSession.pendingMapPlaceUpdate.value = Triple(lat, lon, name)
                                         AppSession.mapEditPlaceId.value = null
                                         AppSession.clearPendingMapPlace()
-                                    } else {
+                                    } else if (AppSession.mapPickForCreateDialog.value) {
+                                        // Map was opened from the timeline's open create-place dialog —
+                                        // hand coords+name over; the dialog creates on explicit confirm
                                         AppSession.pendingMapPlace.value = Triple(lat, lon, name)
+                                    } else {
+                                        // New place: create directly in the offline store (offline-first);
+                                        // the timeline reloads via placesVersion, it never creates places
+                                        Log.i(TAG_MAIN, "Creating place directly from map in trip $tripId: lat=$lat, lon=$lon, name='$name'")
+                                        com.journalpix.data.OfflineStore.addPlace(
+                                            tripId,
+                                            name,
+                                            latitude = lat,
+                                            longitude = lon
+                                        )
                                     }
                                     navController.popBackStack()
                                 }

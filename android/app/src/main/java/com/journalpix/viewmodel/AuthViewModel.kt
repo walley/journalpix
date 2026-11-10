@@ -29,6 +29,19 @@ object AppSession {
     /** Place pending creation from map selection: lat, lon, name. */
     val pendingMapPlace = mutableStateOf<Triple<Double, Double, String>?>(null)
 
+    /**
+     * Bumped by OfflineStore on every local mutation (persist). Screens that list data
+     * (e.g. the timeline) observe this and reload — they never mutate places themselves.
+     */
+    val placesVersion = mutableStateOf(0)
+
+    fun notifyDataChanged() {
+        placesVersion.value = placesVersion.value + 1
+    }
+
+    /** True while the map was opened to pick a location for the timeline's open create-place dialog. */
+    val mapPickForCreateDialog = mutableStateOf(false)
+
     /** Place pending coordinate/address update from map selection: lat, lon, name. */
     val pendingMapPlaceUpdate = mutableStateOf<Triple<Double, Double, String>?>(null)
 

@@ -324,8 +324,13 @@ fun MapGlScreen(
                                 AppSession.mapEditPlaceId.value = null
                                 // Defensive: a pending creation must never survive an edit
                                 AppSession.clearPendingMapPlace()
-                            } else {
+                            } else if (AppSession.mapPickForCreateDialog.value) {
+                                // Hand the tapped coords to the timeline's open create-place dialog
                                 AppSession.pendingMapPlace.value = Triple(point.latitude, point.longitude, "")
+                            } else {
+                                // View mode: the checkmark never creates a place — creation only
+                                // happens via the add-place dialog (onPlaceAdded) or the editor
+                                Log.i(TAG_MAP_GL, "Checkmark in non-edit mode — no place created, closing map")
                             }
                             navController.popBackStack()
                         },
