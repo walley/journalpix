@@ -116,6 +116,51 @@ class PhotoViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Mass-upload helper: read EXIF (GPS + taken-at) and store the picture as an
+     * UNASSIGNED photo (shown in the pool under the timeline minimap) until the user
+     * moves it to a day.
+     */
+    fun addUnassignedPhotoOffline(
+        context: Context,
+        uri: Uri,
+        onDone: (PhotoResponse?) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    ExifLocation.readMeta(context, uri)
+                }
+                val pathForDisplay = result.localFilePath ?: uri.toString()
+                val photo = OfflineStore.addUnassignedPhoto(
+                    uriString = pathForDisplay,
+                    latitude = result.gps?.latitude,
+                    longitude = result.gps?.longitude,
+                    takenAt = ZonedTime.parseLegacy(result.gps?.takenAt ?: result.takenAt),
+                    caption = null
+                )
+                if (result.gps == null) {
+                    lastExifNote.value = result.note
+                }
+                onDone(photo)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to add photo: ${e.message}"
+                onDone(null)
+            }
+        }
+    }
+
+    /** Move a photo into a trip day's pool (assigns it to that day's place). */
+    fun assignPhotoToDay(tripId: String, photoId: String, dayIso: String, onDone: () -> Unit = {}) {
+        val target = OfflineStore.assignPhotoToDay(tripId, photoId, dayIso)
+        if (target != null) {
+            android.util.Log.i("JPXPV", "assignPhotoToDay: photo $photoId moved to place ${target.id} for day $dayIso")
+        } else {
+            errorMessage.value = "Could not move photo to day"
+        }
+        onDone()
+    }
+
     fun uploadPhoto(placeId: String, bitmap: Bitmap, onSuccess: () -> Unit) {
       // Local-only: photos are stored offline; SyncManager uploads them when sync is enabled
       errorMessage.value = "Use gallery picker for photos"

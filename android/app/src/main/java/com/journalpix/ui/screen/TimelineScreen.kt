@@ -15,6 +15,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -39,6 +41,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -106,6 +109,9 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   var showEditDescriptionDialog by remember {mutableStateOf(false)}
   var editTransportPlaceId by remember {mutableStateOf<String?>(null)}
   var uploadTargetPlaceId by remember {mutableStateOf<String?>(null)}
+  // Unassigned-pool photo dialog + move-to-day picker
+  var selectedUnassignedPhoto by remember {mutableStateOf<PhotoResponse?>(null)}
+  var showMoveToDayPicker by remember {mutableStateOf(false)}
   val expandedDays = remember {mutableStateMapOf<String, Boolean>()}
 
   // Drag-and-drop state for reordering places within a day
@@ -191,8 +197,25 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     contract = ActivityResultContracts.RequestMultiplePermissions()
   ) {_ -> pickImageLauncher.launch("image/*")}
 
-  fun startAddPhoto(placeId:String) {
-    uploadTargetPlaceId = placeId
+  // Mass upload: multiple pictures at once → all land in the unassigned pool under the minimap
+  val pickMultipleImagesLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.GetMultipleContents()
+  ) { uris: List<Uri> ->
+    Log.i(TAG_TIMELINE, "Mass upload: ${uris.size} picture(s) selected — adding to unassigned pool")
+    uris.forEach { uri ->
+      runCatching {
+        context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      }
+      photoViewModel.addUnassignedPhotoOffline(context, uri)
+    }
+    refresh()
+  }
+
+  val massUploadPermissionLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestMultiplePermissions()
+  ) {_ -> pickMultipleImagesLauncher.launch("image/*")}
+
+  fun requiredMediaPermissions(): List<String> {
     val needed = mutableListOf<String>()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION) != PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.ACCESS_MEDIA_LOCATION)
@@ -202,6 +225,18 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     } else {
       if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
+    return needed
+  }
+
+  fun startMassUpload() {
+    val needed = requiredMediaPermissions()
+    if (needed.isNotEmpty()) massUploadPermissionLauncher.launch(needed.toTypedArray())
+    else pickMultipleImagesLauncher.launch("image/*")
+  }
+
+  fun startAddPhoto(placeId:String) {
+    uploadTargetPlaceId = placeId
+    val needed = requiredMediaPermissions()
     if (needed.isNotEmpty()) permissionLauncher.launch(needed.toTypedArray())
     else pickImageLauncher.launch("image/*")
   }
@@ -252,11 +287,10 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         Icon(Icons.Default.Edit, contentDescription = "Edit trip name")
       }
       IconButton(onClick = {
-        Log.i(TAG_TIMELINE, "onClick: 'Add place on map' TopBar button — navigating to map addPlaceMode for trip $effectiveTripId")
-        AppSession.clearPendingMapPlace()
-        navigateToMap(addPlaceMode = true)
+        Log.i(TAG_TIMELINE, "onClick: '+' TopBar button — mass upload of pictures to the unassigned pool for trip $effectiveTripId")
+        startMassUpload()
       }) {
-        Icon(Icons.Default.Add, contentDescription = "Add place on map")
+        Icon(Icons.Default.PhotoLibrary, contentDescription = "Upload photos")
       }
     })
   }, floatingActionButton = {
@@ -454,6 +488,10 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                         modifier = Modifier
                           .size(80.dp)
                           .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+                          .clickable {
+                            Log.i(TAG_TIMELINE, "Unassigned photo tapped: " + photo.id + " — showing EXIF dialog")
+                            selectedUnassignedPhoto = photo
+                          }
                       ) {
                         Box(
                           modifier = Modifier
@@ -529,6 +567,29 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                     refresh()
                     startAddPhoto(newPlace.id)
                   })
+              }
+              // Day photo pool — all photos of this day's places, right under the day title bar
+              val dayPhotos = dayItem.places.flatMap { it.photos }
+              if (dayPhotos.isNotEmpty()) {
+                item(key = "day-photos-$dayKey") {
+                  LazyRow(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                  ) {
+                    items(items = dayPhotos, key = { "dayphoto_" + it.id }) { photo ->
+                      AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(photoImageUrl(photo)).crossfade(true).build(),
+                        contentDescription = photo.caption ?: "Photo",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                          .size(56.dp)
+                          .clip(RoundedCornerShape(8.dp))
+                      )
+                    }
+                  }
+                }
               }
               if (expanded) {
                 itemsIndexed(
@@ -834,6 +895,79 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         navController.navigate("place/${place.id}?tripId=$effectiveTripId")
       }
       selectedPlace = null
+    }
+
+    // Unassigned photo tapped → EXIF info + Move to a day / Cancel
+    selectedUnassignedPhoto?.let { photo ->
+      val addr = OfflineStore.addresses[photo.id]
+      AlertDialog(
+        onDismissRequest = { selectedUnassignedPhoto = null },
+        title = { Text("Photo") },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            AsyncImage(
+              model = ImageRequest.Builder(LocalContext.current).data(photoImageUrl(photo)).crossfade(true).build(),
+              contentDescription = photo.caption ?: "Photo",
+              contentScale = ContentScale.Crop,
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .clip(RoundedCornerShape(8.dp))
+            )
+            Text("Taken: " + (photo.takenLabel() ?: "unknown"), style = MaterialTheme.typography.bodySmall)
+            Text(
+              text = if (photo.latitude != null && photo.longitude != null)
+                "GPS: %.6f, %.6f".format(photo.latitude, photo.longitude)
+              else "No GPS in EXIF",
+              style = MaterialTheme.typography.bodySmall
+            )
+            if (!addr.isNullOrBlank()) {
+              Text("Address: $addr", style = MaterialTheme.typography.bodySmall)
+            }
+          }
+        },
+        confirmButton = {
+          Button(onClick = {
+            Log.i(TAG_TIMELINE, "Move to a day tapped for photo ${photo.id}")
+            showMoveToDayPicker = true
+          }) { Text("Move to a day") }
+        },
+        dismissButton = {
+          TextButton(onClick = { selectedUnassignedPhoto = null }) { Text("Cancel") }
+        }
+      )
+    }
+
+    // Day picker: choose the day whose photo pool receives the selected photo
+    if (showMoveToDayPicker) {
+      val photo = selectedUnassignedPhoto
+      AlertDialog(
+        onDismissRequest = { showMoveToDayPicker = false },
+        title = { Text("Move to which day?") },
+        text = {
+          Column(Modifier.verticalScroll(rememberScrollState())) {
+            timeline?.timeline?.forEach { d ->
+              val label = d.date ?: "Day ${d.day}"
+              TextButton(
+                onClick = {
+                  Log.i(TAG_TIMELINE, "Moving photo ${photo?.id} to day $label")
+                  if (photo != null) {
+                    photoViewModel.assignPhotoToDay(effectiveTripId, photo.id, d.date ?: "") {
+                      refresh()
+                    }
+                  }
+                  showMoveToDayPicker = false
+                  selectedUnassignedPhoto = null
+                },
+                modifier = Modifier.fillMaxWidth()
+              ) { Text(label, modifier = Modifier.fillMaxWidth()) }
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = { showMoveToDayPicker = false }) { Text("Cancel") }
+        }
+      )
     }
 
   }

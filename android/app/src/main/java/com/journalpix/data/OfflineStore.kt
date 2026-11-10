@@ -792,6 +792,46 @@ object OfflineStore {
         return unassignedPhotos.values.toList()
     }
 
+    /**
+     * Move a photo into the pool of a given trip day: assigns it to the first place whose
+     * visit date is that day, or creates a "Photos <day>" place for it. Returns the target place.
+     */
+    fun assignPhotoToDay(tripId: String, photoId: String, dayIso: String): PlaceWithPhotos? {
+        android.util.Log.i(TAG, "assignPhotoToDay: tripId=$tripId, photoId=$photoId, day=$dayIso")
+        val trip = trips[tripId]
+        if (trip == null || trip.id.isBlank()) {
+            android.util.Log.e(TAG, "assignPhotoToDay: tripId is BLANK/unknown — refusing")
+            return null
+        }
+        val photo = findPhoto(photoId) ?: return null
+        val targetDay = runCatching { LocalDate.parse(dayIso) }.getOrNull()
+        val existing = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
+            targetDay != null && p.visitDate?.localDate == targetDay
+        }
+        val target = existing ?: addPlace(
+            tripId = trip.id,
+            name = if (dayIso.isNotBlank()) "Photos $dayIso" else "Photos",
+            visitDate = targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
+        )
+        // Move the photo to the target place (from unassigned or another place)
+        val oldPlaceId = photo.placeId
+        if (oldPlaceId != null && oldPlaceId != target.id) {
+            photosByPlace[oldPlaceId]?.removeAll { it.id == photoId }
+        }
+        unassignedPhotos.remove(photoId)
+        val moved = photo.copy(placeId = target.id)
+        val dest = photosByPlace.getOrPut(target.id) { mutableListOf() }
+        if (dest.none { it.id == photoId }) dest.add(moved)
+        else {
+            val i = dest.indexOfFirst { it.id == photoId }
+            if (i >= 0) dest[i] = moved
+        }
+        sortPhotosInPlace(target.id)
+        markPending(photoId)
+        persist()
+        return target
+    }
+
     fun addPhoto(
         placeId: String,
         uriString: String,
