@@ -85,16 +85,21 @@ object SyncManager {
      * may touch it. All network access goes through this function.
      */
     suspend fun performSyncSuspend() {
-        // Global gate: synchronization OFF in Settings means no sync, no network access at all
+        // Global gate: synchronization OFF in Settings (the default) means no sync,
+        // no network access at all — also when context is unavailable
         val ctx = appContextRef?.get()
-        if (ctx != null && !com.journalpix.ui.screen.isSyncEnabled(ctx)) {
+        if (ctx == null || !com.journalpix.ui.screen.isSyncEnabled(ctx)) {
             Log.i(TAG, "performSyncSuspend: synchronization is OFF in Settings — aborting, no network access")
             return
         }
         val token = AppSession.currentUser.value?.token
-            ?: ctx?.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)?.getString("auth_token", null)
+            ?: ctx.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).getString("auth_token", null)
             ?: ""
-        val bearerToken = if (token.isBlank()) "" else "Bearer $token"
+        if (token.isBlank()) {
+            Log.i(TAG, "performSyncSuspend: not logged in (blank token) — aborting, fully offline")
+            return
+        }
+        val bearerToken = "Bearer $token"
         val errors = mutableListOf<String>()
 
         Log.d(TAG, "Sync started")

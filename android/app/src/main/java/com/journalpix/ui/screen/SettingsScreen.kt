@@ -53,10 +53,17 @@ fun SettingsScreen(navController: NavController) {
     update = { container ->
       val fm = (container.context as? androidx.fragment.app.FragmentActivity)
         ?.supportFragmentManager
-      if (fm != null && fm.findFragmentById(R.id.settings_fragment_container) == null) {
-        fm.beginTransaction()
-          .replace(R.id.settings_fragment_container, SettingsFragment())
-          .commit()
+      if (fm != null && fm.findFragmentByTag("settings") == null) {
+        // Commit only once the container is attached to the window, otherwise
+        // the transaction is silently dropped and the settings screen stays empty
+        container.post {
+          if (fm.findFragmentByTag("settings") == null) {
+            Log.i(TAG_SETTINGS, "Attaching SettingsFragment to container")
+            fm.beginTransaction()
+              .replace(R.id.settings_fragment_container, SettingsFragment(), "settings")
+              .commitAllowingStateLoss()
+          }
+        }
       }
     }
   )
