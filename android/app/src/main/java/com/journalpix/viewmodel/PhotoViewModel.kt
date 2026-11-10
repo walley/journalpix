@@ -156,6 +156,7 @@ class PhotoViewModel : ViewModel() {
         if (target != null) {
             android.util.Log.i("JPXPV", "assignPhotoToDay: photo $photoId moved to place ${target.id} for day $dayIso")
         } else {
+            android.util.Log.e("JPXPV", "assignPhotoToDay: FAILED — photo $photoId not moved to day '$dayIso' (trip=$tripId)")
             errorMessage.value = "Could not move photo to day"
         }
         onDone()

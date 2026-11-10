@@ -997,7 +997,8 @@ object OfflineStore {
             val found = photos.find { it.id == photoId }
             if (found != null) return found
         }
-        return null
+        // Also look in the unassigned pool (photos not yet moved to a day)
+        return unassignedPhotos[photoId]
     }
 
     private fun shortPlaceName(address: String): String {
