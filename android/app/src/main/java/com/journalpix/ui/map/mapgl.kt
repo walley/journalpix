@@ -110,14 +110,24 @@ fun MapGlScreen(
             if (style != null && AppSession.mapGeoJson.value.isNullOrBlank()) {
                 val routeJson = com.journalpix.geo.GeoJson.forTripRoute(tripPlaces)
                 runCatching {
-                    if (style.getSource("geojson") == null) style.addSource(GeoJsonSource("geojson", routeJson))
+                    if (style.getSource("geojson") == null) style.addSource(GeoJsonSource("geojson", routeJson, org.maplibre.android.style.sources.GeoJsonOptions().withMaxZoom(22).withTolerance(0.1f)))
                     else (style.getSource("geojson") as GeoJsonSource).setGeoJson(routeJson)
                     if (style.getLayer("route-line") == null) {
                         style.addLayer(
                             LineLayer("route-line", "geojson")
                                 .withProperties(
                                     PropertyFactory.lineColor(android.graphics.Color.BLUE),
-                                    PropertyFactory.lineWidth(6f)
+                                    PropertyFactory.lineWidth(
+                                        Expression.interpolate(
+                                            Expression.Interpolator.linear(),
+                                            Expression.zoom(),
+                                            Expression.stop(8.0, 2.0),
+                                            Expression.stop(14.0, 5.0),
+                                            Expression.stop(18.0, 10.0)
+                                        )
+                                    ),
+                                    PropertyFactory.lineCap(org.maplibre.android.style.layers.Property.LINE_CAP_ROUND),
+                                    PropertyFactory.lineJoin(org.maplibre.android.style.layers.Property.LINE_JOIN_ROUND)
                                 )
                                 .withFilter(Expression.eq(Expression.get("kind"), Expression.literal("tripRoute")))
                         )
@@ -348,13 +358,23 @@ fun MapGlScreen(
                                 if (!geoJson.isNullOrBlank()) {
                                     val parsed = com.journalpix.geo.GeoJson.parse(geoJson)
                                     if (parsed != null) {
-                                        style.addSource(GeoJsonSource("geojson", parsed.toJson()))
+                                        style.addSource(GeoJsonSource("geojson", parsed.toJson(), org.maplibre.android.style.sources.GeoJsonOptions().withMaxZoom(22).withTolerance(0.1f)))
                                         // Route polyline
                                         style.addLayer(
                                             LineLayer("route-line", "geojson")
                                                 .withProperties(
                                                     PropertyFactory.lineColor(android.graphics.Color.BLUE),
-                                                    PropertyFactory.lineWidth(6f)
+                                                    PropertyFactory.lineWidth(
+                                                        Expression.interpolate(
+                                                            Expression.Interpolator.linear(),
+                                                            Expression.zoom(),
+                                                            Expression.stop(8.0, 2.0),
+                                                            Expression.stop(14.0, 5.0),
+                                                            Expression.stop(18.0, 10.0)
+                                                        )
+                                                    ),
+                                                    PropertyFactory.lineCap(org.maplibre.android.style.layers.Property.LINE_CAP_ROUND),
+                                                    PropertyFactory.lineJoin(org.maplibre.android.style.layers.Property.LINE_JOIN_ROUND)
                                                 )
                                                 .withFilter(
                                                     Expression.eq(
