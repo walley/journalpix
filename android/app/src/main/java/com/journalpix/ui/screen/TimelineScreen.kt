@@ -109,6 +109,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   // Unassigned-pool photo dialog + move-to-day picker
   var selectedUnassignedPhoto by remember {mutableStateOf<PhotoResponse?>(null)}
   var showMoveToDayPicker by remember {mutableStateOf(false)}
+  // Day-pool photo dialog: detect existing place within 50m, or offer to create one
+  var selectedDayPhoto by remember {mutableStateOf<PhotoResponse?>(null)}
   val expandedDays = remember {mutableStateMapOf<String, Boolean>()}
 
   // Drag-and-drop state for reordering places within a day
@@ -612,6 +614,10 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                         modifier = Modifier
                           .size(56.dp)
                           .clip(RoundedCornerShape(8.dp))
+                          .clickable {
+                            Log.i(TAG_TIMELINE, "Day-pool photo tapped: ${photo.id} — checking for a place within 50m")
+                            selectedDayPhoto = photo
+                          }
                       )
                     }
                   }
@@ -921,6 +927,54 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         navController.navigate("place/${place.id}?tripId=$effectiveTripId")
       }
       selectedPlace = null
+    }
+
+    // Day-pool photo tapped → existing place within 50m? move there : ask to create a new place
+    selectedDayPhoto?.let { photo ->
+      val nearPlace = if (photo.latitude != null && photo.longitude != null) {
+        OfflineStore.placeNear(effectiveTripId, photo.latitude!!, photo.longitude!!, 50.0, excludePlaceId = photo.placeId)
+      } else null
+      AlertDialog(
+        onDismissRequest = { selectedDayPhoto = null },
+        title = { Text(if (nearPlace != null) "Place nearby" else if (photo.latitude != null) "No place nearby" else "Photo") },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Taken: " + (photo.takenLabel() ?: "unknown"), style = MaterialTheme.typography.bodySmall)
+            Text(
+              text = if (photo.latitude != null && photo.longitude != null)
+                "GPS: %.6f, %.6f".format(photo.latitude, photo.longitude)
+              else "No GPS in EXIF",
+              style = MaterialTheme.typography.bodySmall
+            )
+            if (nearPlace != null) {
+              Text("Place '${nearPlace.name}' is already added within 50 m.", style = MaterialTheme.typography.bodySmall)
+            } else if (photo.latitude != null && photo.longitude != null) {
+              Text("No place within 50 m of this photo.", style = MaterialTheme.typography.bodySmall)
+            }
+          }
+        },
+        confirmButton = {
+          when {
+            nearPlace != null -> Button(onClick = {
+              Log.i(TAG_TIMELINE, "Moving photo ${photo.id} to existing nearby place '${nearPlace.name}' (${nearPlace.id})")
+              OfflineStore.movePhotoToPlace(photo.id, nearPlace.id)
+              refresh()
+              selectedDayPhoto = null
+            }) { Text("Move to '${nearPlace.name}'") }
+            photo.latitude != null && photo.longitude != null -> Button(onClick = {
+              Log.i(TAG_TIMELINE, "User confirmed: create a new place for photo ${photo.id} and move the photo to it")
+              photoViewModel.createPlaceForPhoto(effectiveTripId, photo) {
+                refresh()
+                selectedDayPhoto = null
+              }
+            }) { Text("Create place") }
+            else -> {}
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { selectedDayPhoto = null }) { Text("Cancel") }
+        }
+      )
     }
 
     // Unassigned photo tapped → EXIF info + Move to a day / Cancel

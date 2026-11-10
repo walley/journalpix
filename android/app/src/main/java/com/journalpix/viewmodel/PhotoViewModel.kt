@@ -3,6 +3,7 @@ package com.journalpix.viewmodel
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -147,6 +148,39 @@ class PhotoViewModel : ViewModel() {
                 errorMessage.value = "Failed to add photo: ${e.message}"
                 onDone(null)
             }
+        }
+    }
+
+    /**
+     * Create a new place at the photo's GPS for a day-pool photo and move the photo into it.
+     * The place name comes from a reverse-geocode of the coordinates when available.
+     */
+    fun createPlaceForPhoto(tripId: String, photo: PhotoResponse, onDone: (PlaceWithPhotos?) -> Unit = {}) {
+        viewModelScope.launch {
+            Log.i("JPXPV", "createPlaceForPhoto: photo ${photo.id} (trip=$tripId)")
+            val lat = photo.latitude
+            val lon = photo.longitude
+            if (lat == null || lon == null) {
+                Log.e("JPXPV", "createPlaceForPhoto: photo ${photo.id} has no GPS — cannot create place")
+                errorMessage.value = "No GPS in this photo"
+                onDone(null)
+                return@launch
+            }
+            val address = withContext(Dispatchers.IO) {
+                NominatimClient.reverseGeocode(lat, lon).getOrNull()
+            }
+            if (address != null) {
+                resolvedAddresses[photo.id] = address
+                OfflineStore.addresses[photo.id] = address
+            }
+            val place = OfflineStore.createPlaceForPhoto(tripId, photo.id, address)
+            if (place != null) {
+                Log.i("JPXPV", "createPlaceForPhoto: created place ${place.id} ('${place.name}') for photo ${photo.id}")
+            } else {
+                Log.e("JPXPV", "createPlaceForPhoto: FAILED for photo ${photo.id}")
+                errorMessage.value = "Could not create place for photo"
+            }
+            onDone(place)
         }
     }
 

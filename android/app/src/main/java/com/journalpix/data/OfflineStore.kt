@@ -1006,6 +1006,80 @@ object OfflineStore {
         return first.ifBlank { address.take(40) }
     }
 
+    /**
+     * Find a place of the trip within [radiusMeters] of the given coordinates
+     * (excluding [excludePlaceId], e.g. the place the photo already belongs to).
+     */
+    fun placeNear(tripId: String, lat: Double, lon: Double, radiusMeters: Double = 50.0, excludePlaceId: String? = null): PlaceWithPhotos? {
+        android.util.Log.i(TAG, "placeNear: tripId=$tripId, lat=$lat, lon=$lon, radius=${radiusMeters}m, exclude=$excludePlaceId")
+        return placesByTrip[tripId].orEmpty().firstOrNull { p ->
+            p.id != excludePlaceId && p.latitude != null && p.longitude != null &&
+                haversineMeters(lat, lon, p.latitude!!, p.longitude!!) <= radiusMeters
+        }
+    }
+
+    /** Move a photo (from any place or the unassigned pool) into the given place. */
+    fun movePhotoToPlace(photoId: String, targetPlaceId: String): Boolean {
+        android.util.Log.i(TAG, "movePhotoToPlace: photoId=$photoId, targetPlaceId=$targetPlaceId")
+        val photo = findPhoto(photoId)
+        if (photo == null) {
+            android.util.Log.e(TAG, "movePhotoToPlace: photo $photoId NOT FOUND")
+            return false
+        }
+        val target = placesByTrip.values.flatten().firstOrNull { it.id == targetPlaceId }
+        if (target == null) {
+            android.util.Log.e(TAG, "movePhotoToPlace: target place $targetPlaceId NOT FOUND")
+            return false
+        }
+        val oldPlaceId = photo.placeId
+        if (oldPlaceId != null && oldPlaceId != target.id) {
+            photosByPlace[oldPlaceId]?.removeAll { it.id == photoId }
+        }
+        unassignedPhotos.remove(photoId)
+        val moved = photo.copy(placeId = target.id)
+        val dest = photosByPlace.getOrPut(target.id) { mutableListOf() }
+        if (dest.none { it.id == photoId }) dest.add(moved)
+        else {
+            val i = dest.indexOfFirst { it.id == photoId }
+            if (i >= 0) dest[i] = moved
+        }
+        sortPhotosInPlace(target.id)
+        markPending(photoId)
+        persist()
+        return true
+    }
+
+    /**
+     * Create a NEW place at the photo's GPS (named from the reverse-geocoded address when
+     * available) with the photo's taken-at as visit date, and move the photo into it.
+     */
+    fun createPlaceForPhoto(tripId: String, photoId: String, address: String?): PlaceWithPhotos? {
+        android.util.Log.i(TAG, "createPlaceForPhoto: tripId=$tripId, photoId=$photoId, address=$address")
+        val trip = trips[tripId]
+        if (trip == null || trip.id.isBlank()) {
+            android.util.Log.e(TAG, "createPlaceForPhoto: tripId is BLANK/unknown — refusing")
+            return null
+        }
+        val photo = findPhoto(photoId)
+        if (photo == null || photo.latitude == null || photo.longitude == null) {
+            android.util.Log.e(TAG, "createPlaceForPhoto: photo $photoId missing or has no GPS — refusing")
+            return null
+        }
+        if (address != null) addresses[photoId] = address
+        val name = address?.let { shortPlaceName(it) } ?: "Photo location"
+        val visit = photo.takenAt ?: ZonedTime.fromInstant(Instant.now(), ZoneId.systemDefault().id)
+        val target = addPlace(
+            tripId = trip.id,
+            name = name,
+            visitDate = visit,
+            address = address,
+            latitude = photo.latitude,
+            longitude = photo.longitude
+        )
+        movePhotoToPlace(photoId, target.id)
+        return target
+    }
+
     private fun haversineMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371000.0
         val dLat = Math.toRadians(lat2 - lat1)
