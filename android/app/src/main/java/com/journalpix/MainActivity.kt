@@ -172,23 +172,33 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                                         AppSession.pendingMapPlaceUpdate.value = Triple(lat, lon, name)
                                         AppSession.mapEditPlaceId.value = null
                                         AppSession.clearPendingMapPlace()
-                                    } else if (AppSession.mapPickForCreateDialog.value) {
-                                        // Map was opened from the timeline's open create-place dialog —
-                                        // hand coords+name over; the dialog creates on explicit confirm
-                                        AppSession.pendingMapPlace.value = Triple(lat, lon, name)
+                                        navController.popBackStack()
                                     } else {
-                                        // New place: create directly in the offline store (offline-first);
-                                        // the timeline reloads via placesVersion, it never creates places
-                                        Log.i(TAG_MAIN, "Creating place directly from map in trip $tripId: lat=$lat, lon=$lon, name='$name'")
-                                        com.journalpix.data.OfflineStore.addPlace(
-                                            tripId,
-                                            name,
-                                            latitude = lat,
-                                            longitude = lon
-                                        )
+                                        // New place: open place detail in create mode with the picked
+                                        // coords — it asks for the name, creates, then stays open for editing
+                                        Log.i(TAG_MAIN, "Opening place detail in create mode: tripId=$tripId, lat=$lat, lon=$lon")
+                                        navController.navigate("place_new?tripId=$tripId&lat=$lat&lon=$lon")
                                     }
-                                    navController.popBackStack()
                                 }
+                            )
+                        }
+                        composable(
+                            "place_new",
+                            arguments = listOf(
+                                navArgument("tripId") { defaultValue = "" },
+                                navArgument("lat") { defaultValue = "0.0" },
+                                navArgument("lon") { defaultValue = "0.0" }
+                            )
+                        ) { backStackEntry ->
+                            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                            val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
+                            val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
+                            PlaceDetailScreen(
+                                navController,
+                                placeId = "",
+                                tripId = tripId,
+                                newPlaceLat = lat,
+                                newPlaceLon = lon
                             )
                         }
                         composable(

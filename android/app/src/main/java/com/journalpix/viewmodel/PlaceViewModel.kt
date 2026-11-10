@@ -41,10 +41,10 @@ class PlaceViewModel : ViewModel() {
         isLoading.value = false
     }
 
-    fun createPlace(tripId: String, request: CreatePlaceRequest, onSuccess: () -> Unit) {
+    fun createPlace(tripId: String, request: CreatePlaceRequest, onSuccess: (PlaceWithPhotos) -> Unit) {
         Log.i(TAG_PLACE_VM, "createPlace: tripId=$tripId, name='${request.name}', lat=${request.latitude}, lon=${request.longitude}, visitDate=${request.visitDate}")
         // Always create locally first; SyncManager uploads it when sync is enabled
-        OfflineStore.addPlace(
+        val place = OfflineStore.addPlace(
             tripId,
             request.name,
             visitDate = toZonedTime(request.visitDate),
@@ -54,8 +54,8 @@ class PlaceViewModel : ViewModel() {
         )
         isLoading.value = false
         errorMessage.value = null
-        onSuccess()
-        Log.d(TAG_PLACE_VM, "createPlace: local place added, queued for sync, onSuccess invoked")
+        onSuccess(place)
+        Log.d(TAG_PLACE_VM, "createPlace: local place added (id=${place.id}), queued for sync, onSuccess invoked")
     }
 
     /** Refresh currentPlace from the local OfflineStore only (no network). */

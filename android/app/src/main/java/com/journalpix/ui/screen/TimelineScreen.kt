@@ -224,30 +224,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     timelineViewModel.syncAndRefresh(effectiveTripId)
   }
 
-  // The timeline NEVER creates or edits places from map callbacks — it only:
-  //  a) feeds picked coords into its own OPEN create-place dialog (user confirms there), and
-  //  b) reloads from the offline store whenever the store changes (see placesVersion below)
-  LaunchedEffect(AppSession.pendingMapPlace.value) {
-    val pending = AppSession.pendingMapPlace.value
-    if (pending != null) {
-      val (lat, lon, name) = pending
-      Log.i(TAG_TIMELINE, "Pending map place received (dialog handoff only): lat=$lat, lon=$lon, name='$name', showCreatePlaceDialog=$showCreatePlaceDialog")
-      AppSession.clearPendingMapPlace()
-      AppSession.mapPickForCreateDialog.value = false
-      if (showCreatePlaceDialog) {
-        Log.d(TAG_TIMELINE, "Populating add-place dialog with map selection: lat=$lat, lon=$lon")
-        mapSelectedLat = lat
-        mapSelectedLon = lon
-        if (newPlaceName.isBlank()) {
-          newPlaceName = name
-        }
-      } else {
-        Log.w(TAG_TIMELINE, "Pending map place ignored — create dialog not open; timeline does not create places implicitly")
-      }
-    }
-  }
-
-  // Reload the timeline whenever the offline store changes (place added/edited/deleted elsewhere)
+  // The timeline NEVER creates or edits places from map callbacks — a map pick opens the
+  // place detail in create mode; this screen only reloads when the store changes:
   LaunchedEffect(AppSession.placesVersion.value) {
     Log.i(TAG_TIMELINE, "placesVersion=${AppSession.placesVersion.value} — reloading timeline from OfflineStore")
     refresh()
@@ -281,7 +259,6 @@ fun TimelineScreen(navController:NavController, tripId:String) {
       IconButton(onClick = {
         Log.i(TAG_TIMELINE, "onClick: 'Add place on map' TopBar button — navigating to map addPlaceMode for trip $effectiveTripId")
         AppSession.clearPendingMapPlace()
-        AppSession.mapPickForCreateDialog.value = false
         navigateToMap(addPlaceMode = true)
       }) {
         Icon(Icons.Default.Add, contentDescription = "Add place on map")
@@ -933,8 +910,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             )
             Button(
               onClick = {
-                Log.i(TAG_TIMELINE, "Pick on map clicked: navigating to map for trip $effectiveTripId")
-                AppSession.mapPickForCreateDialog.value = true
+                Log.i(TAG_TIMELINE, "Pick on map clicked: closing dialog, navigating to map for trip $effectiveTripId — place detail will create the place")
+                showCreatePlaceDialog = false
                 navigateToMap(addPlaceMode = true)
               }, enabled = !isAddingPlace && !placeViewModel.isLoading.value
             ) {

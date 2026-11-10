@@ -86,8 +86,6 @@ fun MapGlScreen(
     val mapViewModel: MapViewModel = remember { MapViewModel() }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var newPlaceName by remember { mutableStateOf("") }
-    var showAddPlaceDialog by remember { mutableStateOf(false) }
 
     // The route may carry a blank tripId — fall back to the currently open trip
     val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
@@ -182,16 +180,6 @@ fun MapGlScreen(
             centerOnCurrentLocation(maplibreMap.value, fusedLocationClient)
         } else {
             locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
-
-    // Handle map tap in add-place mode (not while editing an existing place)
-    if (addPlaceMode && editPlaceId.isBlank() && mapViewModel.mapTapPoint.value != null) {
-        val tapPoint = mapViewModel.mapTapPoint.value!!
-        LaunchedEffect(tapPoint) {
-            Log.i(TAG_MAP_GL, "Opening add-place dialog for tap at lat=${tapPoint.latitude}, lon=${tapPoint.longitude}")
-            showAddPlaceDialog = true
-            newPlaceName = ""
         }
     }
 
@@ -296,8 +284,8 @@ fun MapGlScreen(
                         onClick = {
                             val map = maplibreMap.value ?: return@FloatingActionButton
                             val target = map.cameraPosition.target ?: return@FloatingActionButton
-                            Log.i(TAG_MAP_GL, "Add place at current location: lat=${target.latitude}, lon=${target.longitude}")
-                            mapViewModel.setMapTapPoint(target.latitude, target.longitude)
+                            Log.i(TAG_MAP_GL, "Add place at current location: lat=${target.latitude}, lon=${target.longitude} — handing to place detail (it asks for the name)")
+                            onPlaceAdded!!(target.latitude, target.longitude, "")
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -324,15 +312,16 @@ fun MapGlScreen(
                                 AppSession.mapEditPlaceId.value = null
                                 // Defensive: a pending creation must never survive an edit
                                 AppSession.clearPendingMapPlace()
-                            } else if (AppSession.mapPickForCreateDialog.value) {
-                                // Hand the tapped coords to the timeline's open create-place dialog
-                                AppSession.pendingMapPlace.value = Triple(point.latitude, point.longitude, "")
+                                navController.popBackStack()
+                            } else if (addPlaceMode && onPlaceAdded != null) {
+                                // Add-place mode: open place detail in create mode with these coords
+                                Log.i(TAG_MAP_GL, "Checkmark in add-place mode: lat=${point.latitude} lon=${point.longitude} — opening place detail in create mode")
+                                onPlaceAdded!!(point.latitude, point.longitude, "")
                             } else {
-                                // View mode: the checkmark never creates a place — creation only
-                                // happens via the add-place dialog (onPlaceAdded) or the editor
-                                Log.i(TAG_MAP_GL, "Checkmark in non-edit mode — no place created, closing map")
+                                // View mode: the checkmark never creates a place
+                                Log.i(TAG_MAP_GL, "Checkmark in view mode — no place created, closing map")
+                                navController.popBackStack()
                             }
-                            navController.popBackStack()
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -475,7 +464,10 @@ fun MapGlScreen(
                                         Log.i(TAG_MAP_GL, "Place label tapped: placeId=$placeId")
                                         navController.navigate("place/$placeId?tripId=$effectiveTripId")
                                     } else if (addPlaceMode && onPlaceAdded != null) {
-                                        mapViewModel.setMapTapPoint(latLng.latitude, latLng.longitude)
+                                        // Add-place mode: hand the tapped location straight to the
+                                        // place detail screen — it asks for the name and creates
+                                        Log.i(TAG_MAP_GL, "Map tap in add-place mode: lat=${latLng.latitude} lon=${latLng.longitude} — opening place detail in create mode")
+                                        onPlaceAdded!!(latLng.latitude, latLng.longitude, "")
                                     }
                                 }
                                 true
@@ -517,56 +509,6 @@ fun MapGlScreen(
                 }
             }
 
-            // Add place dialog
-            if (showAddPlaceDialog && mapViewModel.mapTapPoint.value != null) {
-                val tapPoint = mapViewModel.mapTapPoint.value!!
-                AlertDialog(
-                    onDismissRequest = {
-                        showAddPlaceDialog = false
-                        mapViewModel.clearMapTapPoint()
-                    },
-                    title = { Text("Add place at location") },
-                    text = {
-                        Column {
-                            Text(
-                                text = "Lat: ${tapPoint.latitude}, Lon: ${tapPoint.longitude}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            OutlinedTextField(
-                                value = newPlaceName,
-                                onValueChange = { newPlaceName = it },
-                                label = { Text("Place name") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        Button(onClick = {
-                            if (newPlaceName.isNotBlank()) {
-                                Log.i(TAG_MAP_GL, "Add place confirmed: lat=${tapPoint.latitude}, lon=${tapPoint.longitude}, name=${newPlaceName.trim()}")
-                                onPlaceAdded!!(tapPoint.latitude, tapPoint.longitude, newPlaceName.trim())
-                                showAddPlaceDialog = false
-                                mapViewModel.clearMapTapPoint()
-                                newPlaceName = ""
-                            }
-                        }) {
-                            Text("Add")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            showAddPlaceDialog = false
-                            mapViewModel.clearMapTapPoint()
-                            newPlaceName = ""
-                        }) {
-                            Text("Cancel")
-                        }
-                    }
-                )
-            }
         }
     }
 }

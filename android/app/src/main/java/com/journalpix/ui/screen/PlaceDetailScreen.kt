@@ -168,13 +168,20 @@ private fun PlaceDetailSkeleton() {
 fun PlaceDetailScreen(
   navController: NavController,
   placeId: String,
-  tripId: String = ""
+  tripId: String = "",
+  newPlaceLat: Double? = null,
+  newPlaceLon: Double? = null
 ) {
   val context = LocalContext.current
   // No token here — offline-first; SyncManager is the only place that uses the auth token
 
   // The nav route may not carry tripId — fall back to the currently open trip
   val effectiveTripId = tripId.ifBlank { AppSession.currentTripId.value }
+
+  // Create mode: opened from the map with picked coords and no place id yet —
+  // this screen asks for a name, creates the place, then stays open for editing
+  val isCreateMode = placeId.isBlank() && newPlaceLat != null && newPlaceLon != null
+  Log.i(TAG_PLACE_DETAIL, "PlaceDetailScreen: placeId='$placeId', tripId='$effectiveTripId', isCreateMode=$isCreateMode, newLat=$newPlaceLat, newLon=$newPlaceLon")
 
   val placeViewModel: PlaceViewModel = remember { PlaceViewModel() }
   val photoViewModel: PhotoViewModel = remember { PhotoViewModel() }
@@ -189,6 +196,18 @@ fun PlaceDetailScreen(
   var editAddress by remember { mutableStateOf("") }
 
   var showDeleteDialog by remember { mutableStateOf(false) }
+
+  // Create-mode name prompt
+  var showNameDialog by remember { mutableStateOf(false) }
+  var newPlaceName by remember { mutableStateOf("") }
+
+  // Entering create mode → ask for the place name right away
+  LaunchedEffect(isCreateMode) {
+    if (isCreateMode) {
+      Log.i(TAG_PLACE_DETAIL, "Create mode entered with lat=$newPlaceLat lon=$newPlaceLon — asking for a name")
+      showNameDialog = true
+    }
+  }
 
   var showImageViewer by remember { mutableStateOf(false) }
   var currentImageUrl by remember { mutableStateOf("") }
@@ -211,6 +230,7 @@ fun PlaceDetailScreen(
   }
 
   LaunchedEffect(AppSession.pendingMapPlaceUpdate.value) {
+    if (isCreateMode) return@LaunchedEffect // create mode never applies location updates
     val pending = AppSession.pendingMapPlaceUpdate.value
     Log.i(
       TAG_PLACE_DETAIL,
@@ -299,6 +319,7 @@ fun PlaceDetailScreen(
   }
 
   LaunchedEffect(placeId) {
+    if (placeId.isBlank()) return@LaunchedEffect // create mode — nothing to load yet
     Log.i(
       TAG_PLACE_DETAIL,
       "Loading place: placeId=$placeId, tripId='$effectiveTripId', pendingUpdate=${AppSession.pendingMapPlaceUpdate.value != null}"
@@ -403,28 +424,32 @@ fun PlaceDetailScreen(
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
-        title = { Text(currentPlace?.name ?: "Place") },
+        title = { Text(if (isCreateMode) "New place" else currentPlace?.name ?: "Place") },
         navigationIcon = {
           IconButton(onClick = { navController.popBackStack() }) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
           }
         },
         actions = {
-          IconButton(onClick = {
-            Log.i(TAG_PLACE_DETAIL, "Delete place button tapped: placeId=$placeId — showing confirm dialog")
-            showDeleteDialog = true
-          }) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete place")
+          if (!isCreateMode) {
+            IconButton(onClick = {
+              Log.i(TAG_PLACE_DETAIL, "Delete place button tapped: placeId=$placeId — showing confirm dialog")
+              showDeleteDialog = true
+            }) {
+              Icon(Icons.Default.Delete, contentDescription = "Delete place")
+            }
           }
         }
       )
     },
     floatingActionButton = {
-      FloatingActionButton(
-        onClick = { startAddPhoto() },
-        modifier = Modifier.size(48.dp)
-      ) {
-        Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add photo")
+      if (!isCreateMode) {
+        FloatingActionButton(
+          onClick = { startAddPhoto() },
+          modifier = Modifier.size(48.dp)
+        ) {
+          Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add photo")
+        }
       }
     }
   ) { paddingValues ->
@@ -433,7 +458,24 @@ fun PlaceDetailScreen(
         .fillMaxSize()
         .padding(paddingValues)
     ) {
-      if (showSkeleton) {
+      if (isCreateMode) {
+        // Create mode: just show the picked location and ask for a name
+        Column(
+          modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Text("New place", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+          Text(
+            text = "Location: $newPlaceLat, $newPlaceLon",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+          Button(onClick = { showNameDialog = true }) { Text("Set name") }
+        }
+      } else if (showSkeleton) {
         PlaceDetailSkeleton()
       } else {
         key(placeRefreshKey) {
@@ -896,6 +938,67 @@ fun PlaceDetailScreen(
           }
         }
       }
+    }
+
+    // Create mode: ask for the place name, then create and open the new place for editing
+    if (showNameDialog && isCreateMode) {
+      AlertDialog(
+        onDismissRequest = { showNameDialog = false },
+        title = { Text("Name the place") },
+        text = {
+          Column {
+            Text(
+              text = "Location: $newPlaceLat, $newPlaceLon",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+              value = newPlaceName,
+              onValueChange = { newPlaceName = it },
+              label = { Text("Place name") },
+              singleLine = true,
+              modifier = Modifier.fillMaxWidth()
+            )
+          }
+        },
+        confirmButton = {
+          Button(
+            onClick = {
+              val name = newPlaceName.trim()
+              if (name.isBlank()) return@Button
+              Log.i(TAG_PLACE_DETAIL, "Creating place from map pick: name='$name', lat=$newPlaceLat, lon=$newPlaceLon, tripId='$effectiveTripId'")
+              showNameDialog = false
+              placeViewModel.createPlace(
+                effectiveTripId,
+                com.journalpix.models.CreatePlaceRequest(
+                  tripId = effectiveTripId,
+                  name = name,
+                  latitude = newPlaceLat,
+                  longitude = newPlaceLon
+                )
+              ) { created ->
+                Log.i(TAG_PLACE_DETAIL, "Place created: id=${created.id} — opening it for editing")
+                // Land on the new place's detail with the timeline below (drop map + place_new)
+                runCatching {
+                  navController.navigate("place/${created.id}?tripId=$effectiveTripId") {
+                    popUpTo("timeline/$effectiveTripId") { inclusive = false }
+                  }
+                }.onFailure {
+                  navController.navigate("place/${created.id}?tripId=$effectiveTripId")
+                }
+              }
+            }
+          ) {
+            Text("Create")
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showNameDialog = false }) {
+            Text("Cancel")
+          }
+        }
+      )
     }
 
     if (showDeleteDialog) {

@@ -39,9 +39,6 @@ object AppSession {
         placesVersion.value = placesVersion.value + 1
     }
 
-    /** True while the map was opened to pick a location for the timeline's open create-place dialog. */
-    val mapPickForCreateDialog = mutableStateOf(false)
-
     /** Place pending coordinate/address update from map selection: lat, lon, name. */
     val pendingMapPlaceUpdate = mutableStateOf<Triple<Double, Double, String>?>(null)
 
