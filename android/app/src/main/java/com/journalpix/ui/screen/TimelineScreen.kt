@@ -124,6 +124,34 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     timelineViewModel.refreshOffline(effectiveTripId)
   }
 
+  /**
+   * Auto-pick the target day for an unassigned photo from its EXIF taken-at date:
+   * exact timeline day if in range, "before" bucket if before trip start,
+   * "after" bucket if after trip end. Null when there is no EXIF date.
+   */
+  fun autoDayForPhoto(photo: PhotoResponse): String? {
+    val d = photo.takenAt?.localDate ?: return null
+    val tl = timelineViewModel.timeline.value
+    val days = tl?.timeline.orEmpty()
+    days.firstOrNull { it.date != null && it.date != OfflineStore.BEFORE_KEY && it.date != OfflineStore.AFTER_KEY && it.date == d.toString() }
+      ?.let { return it.date }
+    val start = tl?.trip?.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+    val end = tl?.trip?.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+    if (start != null && d.isBefore(start)) return OfflineStore.BEFORE_KEY
+    if (end != null && d.isAfter(end)) return OfflineStore.AFTER_KEY
+    if (start != null && end != null && !d.isBefore(start) && !d.isAfter(end)) return d.toString()
+    return null
+  }
+
+  fun moveUnassignedPhotoToDay(photo: PhotoResponse, dayKey: String) {
+    Log.i(TAG_TIMELINE, "Moving photo ${photo.id} to day '$dayKey'")
+    photoViewModel.assignPhotoToDay(effectiveTripId, photo.id, dayKey) {
+      refresh()
+    }
+    selectedUnassignedPhoto = null
+    showMoveToDayPicker = false
+  }
+
   // Guarded navigation to the map — never navigate with a blank/invalid tripId
   fun navigateToMap(addPlaceMode: Boolean) {
     val valid = AppSession.validateTripId(effectiveTripId)
@@ -926,8 +954,14 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         },
         confirmButton = {
           Button(onClick = {
-            Log.i(TAG_TIMELINE, "Move to a day tapped for photo ${photo.id}")
-            showMoveToDayPicker = true
+            val auto = autoDayForPhoto(photo)
+            if (auto != null) {
+              Log.i(TAG_TIMELINE, "Move to a day: EXIF date auto-picked day '$auto' for photo ${photo.id} — moving directly")
+              moveUnassignedPhotoToDay(photo, auto)
+            } else {
+              Log.i(TAG_TIMELINE, "Move to a day tapped for photo ${photo.id} — no EXIF date, showing day picker")
+              showMoveToDayPicker = true
+            }
           }) { Text("Move to a day") }
         },
         dismissButton = {
@@ -944,18 +978,21 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         title = { Text("Move to which day?") },
         text = {
           Column(Modifier.verticalScroll(rememberScrollState())) {
+            val dayEntries = mutableListOf<Pair<String, String>>() // label to dayKey
+            dayEntries.add("Before trip" to OfflineStore.BEFORE_KEY)
             timeline?.timeline?.forEach { d ->
-              val label = d.date ?: "Day ${d.day}"
+              if (d.date != null && d.date != OfflineStore.BEFORE_KEY && d.date != OfflineStore.AFTER_KEY) {
+                dayEntries.add((d.date ?: "Day ${d.day}") to d.date!!)
+              } else if (d.date == null) {
+                dayEntries.add("Day ${d.day}" to "")
+              }
+            }
+            dayEntries.add("After trip" to OfflineStore.AFTER_KEY)
+            dayEntries.forEach { (label, dayKey) ->
               TextButton(
                 onClick = {
-                  Log.i(TAG_TIMELINE, "Moving photo ${photo?.id} to day $label")
-                  if (photo != null) {
-                    photoViewModel.assignPhotoToDay(effectiveTripId, photo.id, d.date ?: "") {
-                      refresh()
-                    }
-                  }
-                  showMoveToDayPicker = false
-                  selectedUnassignedPhoto = null
+                  Log.i(TAG_TIMELINE, "Moving photo ${photo?.id} to '$label'")
+                  if (photo != null) moveUnassignedPhotoToDay(photo, dayKey)
                 },
                 modifier = Modifier.fillMaxWidth()
               ) { Text(label, modifier = Modifier.fillMaxWidth()) }

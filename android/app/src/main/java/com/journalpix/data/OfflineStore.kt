@@ -801,13 +801,26 @@ object OfflineStore {
             return null
         }
         val photo = findPhoto(photoId) ?: return null
-        val targetDay = runCatching { LocalDate.parse(dayIso) }.getOrNull()
+        val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        // "before"/"after" are the special timeline buckets outside the trip range —
+        // map them to a concrete date (day before trip start / day after trip end)
+        val targetDay = when (dayIso) {
+            BEFORE_KEY -> start?.minusDays(1) ?: LocalDate.now().minusDays(1)
+            AFTER_KEY -> end?.plusDays(1) ?: LocalDate.now()
+            else -> runCatching { LocalDate.parse(dayIso) }.getOrNull()
+        }
+        val label = when (dayIso) {
+            BEFORE_KEY -> "before trip"
+            AFTER_KEY -> "after trip"
+            else -> dayIso
+        }
         val existing = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
             targetDay != null && p.visitDate?.localDate == targetDay
         }
         val target = existing ?: addPlace(
             tripId = trip.id,
-            name = if (dayIso.isNotBlank()) "Photos $dayIso" else "Photos",
+            name = if (dayIso.isNotBlank()) "Photos $label" else "Photos",
             visitDate = targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
         )
         // Move the photo to the target place (from unassigned or another place)
