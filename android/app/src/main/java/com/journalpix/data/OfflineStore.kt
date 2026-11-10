@@ -237,23 +237,40 @@ object OfflineStore {
         persist()
     }
 
+    /**
+     * Serializes all disk writes onto one background thread — a synchronous write on the
+     * main thread blocked input dispatch for 10s+ on busy devices (ANR while deleting places).
+     */
+    private val writeExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "journalpix-store-writer").apply { isDaemon = true }
+    }
+
     fun persist() {
         val ctx = appContext ?: return
-        // Every mutation ends here — notify observers (timeline reloads, never mutates)
+        // Every mutation ends here — notify observers synchronously (cheap state bump,
+        // so the UI reloads immediately); only the disk write goes to the background
         com.journalpix.viewmodel.AppSession.notifyDataChanged()
-        try {
-            // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
-            val file = storeFile(ctx)
-            val tmp = File(file.parentFile, "store.json.tmp")
-            tmp.writeText(buildJson().toString(2))
-            if (!tmp.renameTo(file)) {
-                // rename can fail across filesystems — fall back to direct copy
-                file.writeText(buildJson().toString(2))
-                tmp.delete()
-            }
-            android.util.Log.i(TAG, "persist: wrote store.json (trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }})")
+        val json = try {
+            buildJson().toString(2)
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "persist: FAILED to write store.json: ${e.message}", e)
+            android.util.Log.e(TAG, "persist: failed to serialize store: ${e.message}", e)
+            return
+        }
+        writeExecutor.execute {
+            try {
+                // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
+                val file = storeFile(ctx)
+                val tmp = File(file.parentFile, "store.json.tmp")
+                tmp.writeText(json)
+                if (!tmp.renameTo(file)) {
+                    // rename can fail across filesystems — fall back to direct copy
+                    file.writeText(json)
+                    tmp.delete()
+                }
+                android.util.Log.i(TAG, "persist: wrote store.json in background (trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }})")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "persist: FAILED to write store.json: ${e.message}", e)
+            }
         }
     }
 
