@@ -120,24 +120,24 @@ object OfflineStore {
     private fun buildJson(): JSONObject {
         val root = JSONObject()
         val tripsArr = JSONArray()
-        trips.values.forEach { tripsArr.put(tripToJson(it)) }
+        trips.values.toList().forEach { tripsArr.put(tripToJson(it)) }
         root.put("trips", tripsArr)
 
         val placesArr = JSONArray()
-        placesByTrip.values.flatten().forEach { placesArr.put(placeToJson(it)) }
+        placesByTrip.values.map { it.toList() }.flatten().forEach { placesArr.put(placeToJson(it)) }
         root.put("places", placesArr)
 
         val photosArr = JSONArray()
-        photosByPlace.values.flatten().forEach { photosArr.put(photoToJson(it)) }
-        unassignedPhotos.values.forEach { photosArr.put(photoToJson(it)) }
+        photosByPlace.values.map { it.toList() }.flatten().forEach { photosArr.put(photoToJson(it)) }
+        unassignedPhotos.values.toList().forEach { photosArr.put(photoToJson(it)) }
         root.put("photos", photosArr)
 
         val addr = JSONObject()
-        addresses.forEach { (k, v) -> addr.put(k, v) }
+        addresses.toMap().forEach { (k, v) -> addr.put(k, v) }
         root.put("addresses", addr)
 
         val pending = JSONArray()
-        syncPending.forEach { pending.put(it) }
+        syncPending.toList().forEach { pending.put(it) }
         root.put("syncPending", pending)
         return root
     }
@@ -248,16 +248,13 @@ object OfflineStore {
     fun persist() {
         val ctx = appContext ?: return
         // Every mutation ends here — notify observers synchronously (cheap state bump,
-        // so the UI reloads immediately); only the disk write goes to the background
+        // so the UI reloads immediately); serialization AND the disk write both go to the
+        // background writer thread. Serializing the whole store on the main thread during
+        // mass photo upload blocked input dispatch for 10s+ (ANR).
         com.journalpix.viewmodel.AppSession.notifyDataChanged()
-        val json = try {
-            buildJson().toString(2)
-        } catch (e: Exception) {
-            android.util.Log.e(TAG, "persist: failed to serialize store: ${e.message}", e)
-            return
-        }
         writeExecutor.execute {
             try {
+                val json = buildJson().toString(2)
                 // Atomic write: temp file + rename, so a crash mid-write can't corrupt the store
                 val file = storeFile(ctx)
                 val tmp = File(file.parentFile, "store.json.tmp")
@@ -269,7 +266,7 @@ object OfflineStore {
                 }
                 android.util.Log.i(TAG, "persist: wrote store.json in background (trips=${trips.size}, places=${placesByTrip.values.sumOf { it.size }}, photos=${photosByPlace.values.sumOf { it.size }})")
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "persist: FAILED to write store.json: ${e.message}", e)
+                android.util.Log.e(TAG, "persist: FAILED to serialize/write store.json: ${e.message}", e)
             }
         }
     }
