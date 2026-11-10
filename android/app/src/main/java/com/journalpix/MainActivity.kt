@@ -52,7 +52,7 @@ import java.io.InputStream
 
 private const val TAG_MAIN = "JPXMA"
 
-class MainActivity : ComponentActivity() {
+class MainActivity : androidx.fragment.app.FragmentActivity() {
     private lateinit var photoViewModel: PhotoViewModel
     private lateinit var tripViewModel: TripViewModel
 

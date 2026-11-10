@@ -32,7 +32,6 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.style.expressions.Expression
-import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -112,26 +111,6 @@ fun MapGlScreen(
                 runCatching {
                     if (style.getSource("geojson") == null) style.addSource(GeoJsonSource("geojson", routeJson, org.maplibre.android.style.sources.GeoJsonOptions().withMaxZoom(22).withTolerance(0.1f)))
                     else (style.getSource("geojson") as GeoJsonSource).setGeoJson(routeJson)
-                    if (style.getLayer("route-line") == null) {
-                        style.addLayer(
-                            LineLayer("route-line", "geojson")
-                                .withProperties(
-                                    PropertyFactory.lineColor(android.graphics.Color.BLUE),
-                                    PropertyFactory.lineWidth(
-                                        Expression.interpolate(
-                                            Expression.Interpolator.linear(),
-                                            Expression.zoom(),
-                                            Expression.stop(8.0, 2.0),
-                                            Expression.stop(14.0, 5.0),
-                                            Expression.stop(18.0, 10.0)
-                                        )
-                                    ),
-                                    PropertyFactory.lineCap(org.maplibre.android.style.layers.Property.LINE_CAP_ROUND),
-                                    PropertyFactory.lineJoin(org.maplibre.android.style.layers.Property.LINE_JOIN_ROUND)
-                                )
-                                .withFilter(Expression.eq(Expression.get("kind"), Expression.literal("tripRoute")))
-                        )
-                    }
                     if (style.getLayer("places") == null) {
                         style.addLayer(
                             SymbolLayer("places", "geojson")
@@ -151,6 +130,26 @@ fun MapGlScreen(
             }
         } else {
             Log.e(TAG_MAP_GL, "MapGlScreen: effectiveTripId is BLANK — invalid trip, nothing to load")
+        }
+    }
+
+    // Route polyline as an annotation (not a tiled layer) — annotations always
+    // render fully across tile boundaries, unlike GeoJSON line layers
+    val routePolyline = remember { mutableStateOf<org.maplibre.android.annotations.Polyline?>(null) }
+    LaunchedEffect(mapViewModel.mapRoute.value?.routePoints, maplibreMap.value) {
+        val map = maplibreMap.value ?: return@LaunchedEffect
+        routePolyline.value?.let { map.removeAnnotation(it) }
+        routePolyline.value = null
+        val pts = mapViewModel.mapRoute.value?.routePoints.orEmpty()
+        if (pts.size >= 2) {
+            val poly = map.addPolyline(
+                org.maplibre.android.annotations.PolylineOptions()
+                    .addAll(pts.map { LatLng(it.latitude, it.longitude) })
+                    .color(android.graphics.Color.BLUE)
+                    .width(6f)
+            )
+            routePolyline.value = poly
+            Log.i(TAG_MAP_GL, "Route polyline annotation drawn with ${pts.size} points")
         }
     }
 
@@ -359,30 +358,6 @@ fun MapGlScreen(
                                     val parsed = com.journalpix.geo.GeoJson.parse(geoJson)
                                     if (parsed != null) {
                                         style.addSource(GeoJsonSource("geojson", parsed.toJson(), org.maplibre.android.style.sources.GeoJsonOptions().withMaxZoom(22).withTolerance(0.1f)))
-                                        // Route polyline
-                                        style.addLayer(
-                                            LineLayer("route-line", "geojson")
-                                                .withProperties(
-                                                    PropertyFactory.lineColor(android.graphics.Color.BLUE),
-                                                    PropertyFactory.lineWidth(
-                                                        Expression.interpolate(
-                                                            Expression.Interpolator.linear(),
-                                                            Expression.zoom(),
-                                                            Expression.stop(8.0, 2.0),
-                                                            Expression.stop(14.0, 5.0),
-                                                            Expression.stop(18.0, 10.0)
-                                                        )
-                                                    ),
-                                                    PropertyFactory.lineCap(org.maplibre.android.style.layers.Property.LINE_CAP_ROUND),
-                                                    PropertyFactory.lineJoin(org.maplibre.android.style.layers.Property.LINE_JOIN_ROUND)
-                                                )
-                                                .withFilter(
-                                                    Expression.eq(
-                                                        Expression.get("kind"),
-                                                        Expression.literal("tripRoute")
-                                                    )
-                                                )
-                                        )
                                         // Place points with "position. name" labels (skip the edited place)
                                         val pointFilter = if (editPlaceId.isNotBlank()) {
                                             Expression.all(
