@@ -116,6 +116,7 @@ fun MapGlScreen(
                             SymbolLayer("places", "geojson")
                                 .withProperties(
                                     PropertyFactory.textField("{label}"),
+                                    PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
                                     PropertyFactory.textSize(14f),
                                     PropertyFactory.textColor(android.graphics.Color.BLUE),
                                     PropertyFactory.textHaloColor(android.graphics.Color.WHITE),
@@ -307,17 +308,22 @@ fun MapGlScreen(
                 mapViewModel.mapSelectionPoint.value?.let { point ->
                     FloatingActionButton(
                         onClick = {
-                            Log.i(TAG_MAP_GL, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, editPlaceId='$editPlaceId', pickHome=${AppSession.mapPickHome.value}")
+                            // Read the edit target at CLICK time — the composition-time val may be
+                            // stale; editing a place must NEVER create a new place
+                            val targetEditId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
+                            Log.i(TAG_MAP_GL, "Apply selected location: lat=${point.latitude} lon=${point.longitude}, editPlaceId='$editPlaceId', targetEditId='$targetEditId', pickHome=${AppSession.mapPickHome.value}")
                             if (AppSession.mapPickHome.value) {
                                 AppSession.pendingHomeLocation.value = Pair(point.latitude, point.longitude)
                                 AppSession.mapPickHome.value = false
                                 navController.popBackStack()
                                 return@FloatingActionButton
                             }
-                            if (editPlaceId.isNotBlank()) {
+                            if (targetEditId.isNotBlank()) {
                                 // Name must stay as entered by the user — only lat/lon change here
                                 AppSession.pendingMapPlaceUpdate.value = Triple(point.latitude, point.longitude, "")
                                 AppSession.mapEditPlaceId.value = null
+                                // Defensive: a pending creation must never survive an edit
+                                AppSession.clearPendingMapPlace()
                             } else {
                                 AppSession.pendingMapPlace.value = Triple(point.latitude, point.longitude, "")
                             }
@@ -371,6 +377,7 @@ fun MapGlScreen(
                                             SymbolLayer("places", "geojson")
                                                 .withProperties(
                                                     PropertyFactory.textField("{label}"),
+                                                    PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
                                                     PropertyFactory.textSize(14f),
                                                     PropertyFactory.textColor(android.graphics.Color.BLUE),
                                                     PropertyFactory.textHaloColor(android.graphics.Color.WHITE),
@@ -426,11 +433,13 @@ fun MapGlScreen(
                             }
                             // Map taps: move the edit pin, navigate from place labels, or start add-place
                             map.addOnMapClickListener { latLng ->
-                                Log.d(TAG_MAP_GL, "Map clicked: lat=${latLng.latitude} lon=${latLng.longitude}")
-                                if (editPlaceId.isNotBlank()) {
+                                // Read the edit target at EVENT time (listener is registered once)
+                                val targetEditId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
+                                Log.d(TAG_MAP_GL, "Map clicked: lat=${latLng.latitude} lon=${latLng.longitude}, targetEditId='$targetEditId'")
+                                if (targetEditId.isNotBlank()) {
                                     val m = editMarker.value
                                     if (m != null) {
-                                        Log.i(TAG_MAP_GL, "Moving edit pin for place $editPlaceId to lat=${latLng.latitude} lon=${latLng.longitude}")
+                                        Log.i(TAG_MAP_GL, "Moving edit pin for place $targetEditId to lat=${latLng.latitude} lon=${latLng.longitude}")
                                         m.position = latLng
                                     }
                                     mapViewModel.setMapSelectionPoint(latLng.latitude, latLng.longitude)

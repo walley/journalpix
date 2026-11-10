@@ -223,6 +223,8 @@ fun PlaceDetailScreen(
         "Pending map place update: lat=$lat, lon=$lon, name='$name' for placeId=$placeId"
       )
       AppSession.clearPendingMapPlaceUpdate()
+      // Defensive: an edit consumes any stale pending creation so no duplicate place appears
+      AppSession.clearPendingMapPlace()
       AppSession.mapEditPlaceId.value = null
       editMode = true
       // A map location update must NEVER change the place name — keep the user-entered name

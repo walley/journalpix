@@ -163,9 +163,15 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                                 addPlaceMode = addPlaceMode,
                                 placeIdForUpdate = placeIdForUpdate,
                                 onPlaceAdded = { lat, lon, name ->
-                                    Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name', placeIdForUpdate=$placeIdForUpdate")
-                                    if (placeIdForUpdate.isNotBlank()) {
+                                    // Edit target may come from AppSession (place detail navigates
+                                    // without the placeIdForUpdate route arg) — an edit must never
+                                    // create a new place
+                                    val targetEditId = placeIdForUpdate.ifBlank { AppSession.mapEditPlaceId.value ?: "" }
+                                    Log.i(TAG_MAIN, "Map place added: tripId=$tripId, lat=$lat, lon=$lon, name='$name', placeIdForUpdate=$placeIdForUpdate, targetEditId='$targetEditId'")
+                                    if (targetEditId.isNotBlank()) {
                                         AppSession.pendingMapPlaceUpdate.value = Triple(lat, lon, name)
+                                        AppSession.mapEditPlaceId.value = null
+                                        AppSession.clearPendingMapPlace()
                                     } else {
                                         AppSession.pendingMapPlace.value = Triple(lat, lon, name)
                                     }
