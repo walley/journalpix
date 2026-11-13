@@ -57,6 +57,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.journalpix.api.ApiService
+import com.journalpix.ui.map.TripMinimap
 import com.journalpix.data.OfflineStore
 import com.journalpix.models.PhotoResponse
 import com.journalpix.models.PlaceWithPhotos
@@ -80,15 +81,6 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.journalpix.ui.theme.JournalPixTheme
-import de.afarber.openmapview.CameraPosition
-import de.afarber.openmapview.LatLng
-import de.afarber.openmapview.MapType
-import de.afarber.openmapview.compose.MapProperties
-import de.afarber.openmapview.compose.MapUiSettings
-import de.afarber.openmapview.compose.MarkerComposable
-import de.afarber.openmapview.compose.OpenMap
-import de.afarber.openmapview.compose.rememberCameraPositionState
-import de.afarber.openmapview.compose.rememberMarkerState
 
 private const val TAG_TIMELINE = "JPXTS"
 
@@ -420,50 +412,12 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   }
               ) {
                 if (positioned.isNotEmpty()) {
-                  val avgLat = positioned.map { it.latitude!! }.average()
-                  val avgLon = positioned.map { it.longitude!! }.average()
-                  val cameraState = rememberCameraPositionState {
-                    position = CameraPosition(LatLng(avgLat, avgLon), 11f)
-                  }
-                  OpenMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraState,
-                    properties = MapProperties(
-                      mapType = MapType.STANDARD,
-                      minZoomPreference = 3f,
-                      maxZoomPreference = 20f
-                    ),
-                    uiSettings = MapUiSettings(
-                      zoomControlsEnabled = false,
-                      scrollGesturesEnabled = false,
-                      zoomGesturesEnabled = false
-                    )
-                  ) {
-                    positioned.forEachIndexed { index, place ->
-                      MarkerComposable(
-                        state = rememberMarkerState(
-                          LatLng(place.latitude!!, place.longitude!!)
-                        )
-                      ) {
-                        Box(
-                          modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                              MaterialTheme.colorScheme.primary,
-                              CircleShape
-                            ),
-                          contentAlignment = Alignment.Center
-                        ) {
-                          Text(
-                            text = (index + 1).toString(),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                          )
-                        }
-                      }
-                    }
-                  }
+                  // Same MapLibre GL stack as the big map (mapgl.kt) — openmapview's
+                  // MarkerComposable crashed with "doesn't propagate ViewTreeLifecycleOwner"
+                  TripMinimap(
+                    places = positioned,
+                    modifier = Modifier.fillMaxSize()
+                  )
                 } else {
                   Box(
                     Modifier.fillMaxSize(),
