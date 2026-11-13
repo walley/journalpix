@@ -282,6 +282,25 @@ fun TimelineScreen(navController:NavController, tripId:String) {
 
   val timeline = timelineViewModel.timeline.value
 
+  // All per-day calculations are done ONCE per timeline reload (remember keyed on the
+  // timeline object) — the LazyColumn only reads these plain values while scrolling
+  val dayModels = remember(timeline) {
+    var inRangeSeen = 0
+    timeline?.timeline.orEmpty().mapIndexed { dayIndex, dayItem ->
+      val rawDate = dayItem.date ?: ""
+      val isBeforeAfter = rawDate == OfflineStore.BEFORE_KEY || rawDate == OfflineStore.AFTER_KEY
+      if (!isBeforeAfter) inRangeSeen++
+      DayUiModel(
+        dayKey = dayItem.date ?: "day-${dayItem.day}-$dayIndex",
+        rawDate = rawDate,
+        dayItem = dayItem,
+        isBeforeAfter = isBeforeAfter,
+        dayNumber = if (isBeforeAfter) 0 else inRangeSeen,
+        dayPhotos = dayItem.places.flatMap { it.photos }
+      )
+    }
+  }
+
   Scaffold(topBar = {
     CenterAlignedTopAppBar(title = {
       Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -481,7 +500,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                             .background(Color.Black.copy(alpha = 0.1f))
                         ) {
                           AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current).data(photoImageUrl(photo)).crossfade(true).build(),
+                            model = photoThumbRequest(LocalContext.current, photo, 240),
                             contentDescription = photo.caption ?: "Photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -519,17 +538,15 @@ fun TimelineScreen(navController:NavController, tripId:String) {
               }
             }
 
-            timeline.timeline.forEachIndexed {dayIndex, dayItem ->
-              val rawDate = dayItem.date ?: ""
-              val dayKey = dayItem.date ?: "day-${dayItem.day}-$dayIndex"
-              val isBefore = rawDate == OfflineStore.BEFORE_KEY
-              val isAfter = rawDate == OfflineStore.AFTER_KEY
-              val isBeforeAfter = isBefore || isAfter
+            dayModels.forEach { dm ->
+              val dayKey = dm.dayKey
+              val rawDate = dm.rawDate
+              val dayItem = dm.dayItem
+              val isBeforeAfter = dm.isBeforeAfter
               val expanded = expandedDays[dayKey] ?: true
-              val inRangeIndex = timeline.timeline.take(dayIndex).count {it.date != OfflineStore.BEFORE_KEY && it.date != OfflineStore.AFTER_KEY}
               item(key = "day-header-$dayKey") {
                 DayHeader(
-                  dayNumber = if (isBeforeAfter) 0 else inRangeIndex + 1,
+                  dayNumber = dm.dayNumber,
                   date = rawDate,
                   isBeforeAfter = isBeforeAfter,
                   placeCount = dayItem.places.size,
@@ -550,7 +567,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   })
               }
               // Day photo pool — all photos of this day's places, right under the day title bar
-              val dayPhotos = dayItem.places.flatMap { it.photos }
+              val dayPhotos = dm.dayPhotos
               if (dayPhotos.isNotEmpty()) {
                 item(key = "day-photos-$dayKey") {
                   LazyRow(
@@ -561,7 +578,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   ) {
                     items(items = dayPhotos, key = { "dayphoto_" + it.id }) { photo ->
                       AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current).data(photoImageUrl(photo)).crossfade(true).build(),
+                        model = photoThumbRequest(LocalContext.current, photo, 180),
                         contentDescription = photo.caption ?: "Photo",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -939,7 +956,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         text = {
           Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             AsyncImage(
-              model = ImageRequest.Builder(LocalContext.current).data(photoImageUrl(photo)).crossfade(true).build(),
+              model = photoThumbRequest(LocalContext.current, photo, 480),
               contentDescription = photo.caption ?: "Photo",
               contentScale = ContentScale.Crop,
               modifier = Modifier
@@ -1133,3 +1150,13 @@ fun DayHeaderPreview() {
     DayHeader(dayNumber = 1, date = "2025-05-15", isBeforeAfter = false, placeCount = 3, photoCount = 12, expanded = true, onToggle = {}, onAddPhoto = {})
   }
 }
+
+/** Precomputed per-day display values — computed once per timeline reload, never while scrolling. */
+private data class DayUiModel(
+  val dayKey: String,
+  val rawDate: String,
+  val dayItem: com.journalpix.models.TimelineItem,
+  val isBeforeAfter: Boolean,
+  val dayNumber: Int,
+  val dayPhotos: List<com.journalpix.models.PhotoResponse>
+)

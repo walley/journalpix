@@ -142,10 +142,7 @@ fun PlaceTimelineRow(
                     ) {
                         place.photos.take(4).forEach { photo ->
                             AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(photoImageUrl(photo))
-                                    .crossfade(true)
-                                    .build(),
+                                model = photoThumbRequest(LocalContext.current, photo, 180),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -319,6 +316,18 @@ fun PlaceTimelineRowPreview() {
  * server paths (e.g. `uploads/xxx.jpg`) are converted to public HTTPS URLs
  * via ApiService, which happens for externally-synced images.
  */
+/**
+ * Coil request for a small timeline thumbnail. Forces decoding at [targetPx] instead of
+ * full camera resolution — decoding multi-megapixel JPEGs during timeline scroll was the
+ * main scroll jank source.
+ */
+fun photoThumbRequest(context: android.content.Context, photo: PhotoResponse, targetPx: Int): ImageRequest =
+    ImageRequest.Builder(context)
+        .data(photoImageUrl(photo))
+        .size(targetPx)
+        .crossfade(true)
+        .build()
+
 fun photoImageUrl(photo: PhotoResponse): String {
     val path = photo.thumbnailPath.ifBlank { photo.filePath }
     val url = when {
