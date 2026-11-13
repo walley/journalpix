@@ -46,8 +46,15 @@ fun TripMinimap(
     val styleRef = remember { mutableStateOf<Style?>(null) }
     val polyline = remember { mutableStateOf<org.maplibre.android.annotations.Polyline?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
+    // Signature of the last applied places — the AndroidView update lambda runs on every
+    // recomposition, so without this gate forTripRoute+parse would run in a hot loop
+    val lastAppliedSig = remember { mutableStateOf("") }
 
     fun applyPlaces(map: MapLibreMap, style: Style, allPlaces: List<PlaceWithPhotos>) {
+        val sig = allPlaces.joinToString("|") { "${it.id}:${it.latitude}:${it.longitude}" }
+        if (sig == lastAppliedSig.value) return
+        lastAppliedSig.value = sig
+        Log.i(TAG_MINIMAP, "applyPlaces: applying ${allPlaces.size} places (sig changed)")
         val positioned = allPlaces.filter { it.latitude != null && it.longitude != null }
         // Place points with their 1-based timeline position as label
         val fc = GeoJson.parse(GeoJson.forTripRoute(allPlaces))

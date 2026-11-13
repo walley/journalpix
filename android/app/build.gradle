@@ -13,8 +13,8 @@ android {
         applicationId 'com.journalpix'
         minSdk 26
         targetSdk 37
-        versionCode 114
-        versionName '1.0.114'
+        versionCode 115
+        versionName '1.0.115'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
