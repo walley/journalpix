@@ -332,7 +332,8 @@ fun photoImageUrl(photo: PhotoResponse): String {
         photo.thumbnailPath.isNotBlank() -> ApiService.thumbnailUrl(path)
         else -> ApiService.uploadUrl(path)
     }
-    android.util.Log.d("JPXTR", "path=$path -> url=$url")
+    // No logging here — this runs per photo per recomposition while scrolling the
+    // timeline, and Log calls on the main thread during scroll cause jank
     return url
 }
 

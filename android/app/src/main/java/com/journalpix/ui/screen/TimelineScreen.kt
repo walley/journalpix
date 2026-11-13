@@ -398,7 +398,6 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             item {
               val allPlaces = timeline.timeline.flatMap { it.places }
               val positioned = allPlaces.filter { it.latitude != null && it.longitude != null }
-              Log.d(TAG_TIMELINE, "Minimap: ${positioned.size} positioned places out of ${allPlaces.size}")
               Box(
                 modifier = Modifier
                   .fillMaxWidth()

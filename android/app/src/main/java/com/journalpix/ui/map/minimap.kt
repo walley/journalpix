@@ -40,7 +40,6 @@ fun TripMinimap(
     places: List<PlaceWithPhotos>,
     modifier: Modifier = Modifier
 ) {
-    Log.i(TAG_MINIMAP, "TripMinimap: ${places.size} places")
     val lifecycleOwner = LocalLifecycleOwner.current
     val maplibreMap = remember { mutableStateOf<MapLibreMap?>(null) }
     val styleRef = remember { mutableStateOf<Style?>(null) }
