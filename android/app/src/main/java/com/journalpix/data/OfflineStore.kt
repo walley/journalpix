@@ -803,38 +803,28 @@ object OfflineStore {
         }
         val photo = findPhoto(photoId) ?: return null
 
-        // 1) If photo has GPS, first try to find an existing place within 50m
-        val nearbyPlace = if (photo.latitude != null && photo.longitude != null) {
-            placeNear(trip.id, photo.latitude!!, photo.longitude!!, 50.0)
-        } else null
-
-        // 2) If found nearby, use that place (regardless of the day selection)
-        val target = if (nearbyPlace != null) {
-            android.util.Log.i(TAG, "assignPhotoToDay: found existing place '${nearbyPlace.name}' within 50m — using it")
-            nearbyPlace
-        } else {
-            // 3) No nearby place — fall back to date-based logic
-            val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            val targetDay = when (dayIso) {
-                BEFORE_KEY -> start?.minusDays(1) ?: LocalDate.now().minusDays(1)
-                AFTER_KEY -> end?.plusDays(1) ?: LocalDate.now()
-                else -> runCatching { LocalDate.parse(dayIso) }.getOrNull()
-            }
-            val label = when (dayIso) {
-                BEFORE_KEY -> "before trip"
-                AFTER_KEY -> "after trip"
-                else -> dayIso
-            }
-            val existing = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
-                targetDay != null && p.visitDate?.localDate == targetDay
-            }
-            existing ?: addPlace(
-                tripId = trip.id,
-                name = if (dayIso.isNotBlank()) "Photos $label" else "Photos",
-                visitDate = targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
-            )
+        // EXPLICIT DAY PICKER FLOW — always use the selected day's place
+        // GPS-based matching happens ONLY when tapping a photo already in a day's strip
+        val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val targetDay = when (dayIso) {
+            BEFORE_KEY -> start?.minusDays(1) ?: LocalDate.now().minusDays(1)
+            AFTER_KEY -> end?.plusDays(1) ?: LocalDate.now()
+            else -> runCatching { LocalDate.parse(dayIso) }.getOrNull()
         }
+        val label = when (dayIso) {
+            BEFORE_KEY -> "before trip"
+            AFTER_KEY -> "after trip"
+            else -> dayIso
+        }
+        val existing = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
+            targetDay != null && p.visitDate?.localDate == targetDay
+        }
+        val target = existing ?: addPlace(
+            tripId = trip.id,
+            name = if (dayIso.isNotBlank()) "Photos $label" else "Photos",
+            visitDate = targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
+        )
 
         // Move the photo to the target place (from unassigned or another place)
         val oldPlaceId = photo.placeId
