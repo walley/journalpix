@@ -104,8 +104,9 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   // Day-pool photo dialog: detect existing place within 50m, or offer to create one
   var selectedDayPhoto by remember {mutableStateOf<PhotoResponse?>(null)}
   val expandedDays = remember {mutableStateMapOf<String, Boolean>()}
-  // Loading state for unassigned photos pool
-  var unassignedPhotosLoading by remember {mutableStateOf(false)}
+  // Loading state for unassigned photos pool — holds pending placeholder count
+  // that show as shimmering skeletons immediately while photos process
+  var pendingUnassignedCount by remember {mutableStateOf(0)}
 
   // Drag-and-drop state for reordering places within a day
   var draggedPlaceId by remember {mutableStateOf<String?>(null)}
@@ -223,16 +224,21 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     contract = ActivityResultContracts.GetMultipleContents()
   ) { uris: List<Uri> ->
     Log.i(TAG_TIMELINE, "Mass upload: ${uris.size} picture(s) selected — adding to unassigned pool")
+    // Show skeleton placeholders IMMEDIATELY for instant visual feedback
+    pendingUnassignedCount = uris.size
     val counter = java.util.concurrent.atomic.AtomicInteger(uris.size)
     uris.forEach { uri ->
       runCatching {
         context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
       }
       photoViewModel.addUnassignedPhotoOffline(context, uri) {
-        if (counter.decrementAndGet() == 0) {
-          // Last photo done — refresh on main thread
+        // Each photo done: decrement pending count, the real photo is now in store
+        if (counter.decrementAndGet() >= 0) {
+          pendingUnassignedCount = counter.get()
+        }
+        if (counter.get() == 0) {
+          // All done — force a refresh to sync with store
           refresh()
-          unassignedPhotosLoading = false
         }
       }
     }
@@ -256,7 +262,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   }
 
   fun startMassUpload() {
-    unassignedPhotosLoading = true
+    pendingUnassignedCount = 0  // will be set in callback after picker returns
     val needed = requiredMediaPermissions()
     if (needed.isNotEmpty()) massUploadPermissionLauncher.launch(needed.toTypedArray())
     else pickMultipleImagesLauncher.launch("image/*")
@@ -481,7 +487,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             }
             // Unassigned photos section
             val unassignedPhotos = OfflineStore.getUnassignedPhotos()
-            val showUnassignedSection = unassignedPhotos.isNotEmpty() || unassignedPhotosLoading
+            // Combine real photos from store + pending skeleton placeholders
+            val showUnassignedSection = unassignedPhotos.isNotEmpty() || pendingUnassignedCount > 0
             if (showUnassignedSection) {
               item {
                 Column(
@@ -498,7 +505,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                   ) {
                     items(
-                      items = if (unassignedPhotos.isNotEmpty()) unassignedPhotos else (1..4).map { "loading-" + it },
+                      items = unassignedPhotos + (1..pendingUnassignedCount).map { "pending-" + it },
                       key = { (it as Any).let { if (it is PhotoResponse) it.id else it.toString() } }) { item: Any ->
                       Column(
                         modifier = Modifier
@@ -524,15 +531,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                                 modifier = Modifier.fillMaxSize()
                               )
                             } else {
-                              // Loading placeholder
-                              Box(
-                                modifier = Modifier
-                                  .fillMaxSize()
-                                  .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(8.dp)
-                                  )
-                              )
+                              // Shimmering skeleton placeholder — shows immediately while photo processes
+                              ShimmerPlaceholder()
                             }
                           }
                         Spacer(Modifier.height(4.dp))
@@ -1190,3 +1190,16 @@ private data class DayUiModel(
   val dayNumber: Int,
   val dayPhotos: List<com.journalpix.models.PhotoResponse>
 )
+
+@Composable
+fun ShimmerPlaceholder() {
+    // Simple static placeholder (gray) - animation can be added later when API is confirmed
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(8.dp)
+            )
+    )
+}
