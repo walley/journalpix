@@ -223,14 +223,19 @@ fun TimelineScreen(navController:NavController, tripId:String) {
     contract = ActivityResultContracts.GetMultipleContents()
   ) { uris: List<Uri> ->
     Log.i(TAG_TIMELINE, "Mass upload: ${uris.size} picture(s) selected — adding to unassigned pool")
+    val counter = java.util.concurrent.atomic.AtomicInteger(uris.size)
     uris.forEach { uri ->
       runCatching {
         context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
       }
-      photoViewModel.addUnassignedPhotoOffline(context, uri)
+      photoViewModel.addUnassignedPhotoOffline(context, uri) {
+        if (counter.decrementAndGet() == 0) {
+          // Last photo done — refresh on main thread
+          refresh()
+          unassignedPhotosLoading = false
+        }
+      }
     }
-    refresh()
-    unassignedPhotosLoading = false
   }
 
   val massUploadPermissionLauncher = rememberLauncherForActivityResult(
