@@ -817,12 +817,21 @@ object OfflineStore {
             AFTER_KEY -> "after trip"
             else -> dayIso
         }
-        val existing = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
-            targetDay != null && p.visitDate?.localDate == targetDay
+
+        // Find or create the day's "Unassigned" place — holds photos assigned to this day
+        // but not tied to a specific location. This is the "day unassigned pool".
+        val unassignedPlaceName = "Unassigned ${label}"
+        val existingUnassigned = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
+            p.name == unassignedPlaceName && p.visitDate?.localDate == targetDay
         }
-        val target = existing ?: addPlace(
+        val existingLocationPlace = placesByTrip[trip.id].orEmpty().firstOrNull { p ->
+            targetDay != null && p.visitDate?.localDate == targetDay && p.name != unassignedPlaceName
+        }
+
+        // Prefer an existing location-based place on this day; otherwise use/create the Unassigned place
+        val target = existingLocationPlace ?: existingUnassigned ?: addPlace(
             tripId = trip.id,
-            name = if (dayIso.isNotBlank()) "Photos $label" else "Photos",
+            name = unassignedPlaceName,
             visitDate = targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
         )
 
