@@ -1,13 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     dependencies {
-        // Pin KGP above AGP's default (2.2.10) for OpenMapView 0.21 (requires Kotlin 2.3+)
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0'
+        // Pin KGP above AGP's default
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'
     }
 }
 
 plugins {
-    id 'com.android.application' version '9.5.0' apply false
+    id 'com.android.application' version '9.5.1' apply false
     // AGP 9 has built-in Kotlin — do not apply org.jetbrains.kotlin.android
     id 'org.jetbrains.kotlin.plugin.compose' version '2.4.21' apply false
     id 'org.jetbrains.kotlin.plugin.parcelize' version '2.4.21' apply false
