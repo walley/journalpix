@@ -486,7 +486,15 @@ fun TimelineScreen(navController:NavController, tripId:String) {
               }
             }
             // Unassigned photos section
-            val unassignedPhotos = OfflineStore.getUnassignedPhotos()
+            val allUnassignedPhotos = OfflineStore.getUnassignedPhotos()
+            // Filter: trip unassigned pool only shows photos without a valid day assignment
+            // (no takenAt date, or takenAt date doesn't match any trip day)
+            val tripDays = timeline?.timeline?.mapNotNull { it.date }?.filter { it != OfflineStore.BEFORE_KEY && it != OfflineStore.AFTER_KEY }?.toSet() ?: emptySet()
+            val unassignedPhotos = allUnassignedPhotos.filter { photo ->
+                photo.takenAt?.localDate?.let { it.toString() }.let { date ->
+                    !tripDays.contains(date)
+                } ?: true  // no takenAt date = truly unassigned
+            }
             // Combine real photos from store + pending skeleton placeholders
             val showUnassignedSection = unassignedPhotos.isNotEmpty() || pendingUnassignedCount > 0
             if (showUnassignedSection) {
