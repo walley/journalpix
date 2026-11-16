@@ -781,6 +781,7 @@ object OfflineStore {
         )
         unassignedPhotos[photo.id] = photo
         markPending(photo.id)
+        com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
         return photo
     }
 
@@ -829,6 +830,7 @@ object OfflineStore {
             photosByPlace[oldPlaceId]?.removeAll { it.id == photoId }
         }
         unassignedPhotos.remove(photoId)
+        com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
         val moved = photo.copy(placeId = target.id)
         val dest = photosByPlace.getOrPut(target.id) { mutableListOf() }
         if (dest.none { it.id == photoId }) dest.add(moved)
@@ -988,6 +990,7 @@ object OfflineStore {
         android.util.Log.i(TAG, "deletePhotoLocal: photoId=$photoId")
         photosByPlace.values.forEach { it.removeAll { p -> p.id == photoId } }
         unassignedPhotos.remove(photoId)
+        com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
         markPending(photoId)
         persist()
     }
@@ -1036,6 +1039,7 @@ object OfflineStore {
             photosByPlace[oldPlaceId]?.removeAll { it.id == photoId }
         }
         unassignedPhotos.remove(photoId)
+        com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
         val moved = photo.copy(placeId = target.id)
         val dest = photosByPlace.getOrPut(target.id) { mutableListOf() }
         if (dest.none { it.id == photoId }) dest.add(moved)

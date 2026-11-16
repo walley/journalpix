@@ -104,6 +104,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   // Day-pool photo dialog: detect existing place within 50m, or offer to create one
   var selectedDayPhoto by remember {mutableStateOf<PhotoResponse?>(null)}
   val expandedDays = remember {mutableStateMapOf<String, Boolean>()}
+  // Loading state for unassigned photos pool
+  var unassignedPhotosLoading by remember {mutableStateOf(false)}
 
   // Drag-and-drop state for reordering places within a day
   var draggedPlaceId by remember {mutableStateOf<String?>(null)}
@@ -228,6 +230,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
       photoViewModel.addUnassignedPhotoOffline(context, uri)
     }
     refresh()
+    unassignedPhotosLoading = false
   }
 
   val massUploadPermissionLauncher = rememberLauncherForActivityResult(
@@ -248,6 +251,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   }
 
   fun startMassUpload() {
+    unassignedPhotosLoading = true
     val needed = requiredMediaPermissions()
     if (needed.isNotEmpty()) massUploadPermissionLauncher.launch(needed.toTypedArray())
     else pickMultipleImagesLauncher.launch("image/*")
@@ -277,6 +281,11 @@ fun TimelineScreen(navController:NavController, tripId:String) {
   // place detail in create mode; this screen only reloads when the store changes:
   LaunchedEffect(AppSession.placesVersion.value) {
     Log.i(TAG_TIMELINE, "placesVersion=${AppSession.placesVersion.value} — reloading timeline from OfflineStore")
+    refresh()
+  }
+  // Also reload when unassigned photos change (mass upload adds photos to the pool)
+  LaunchedEffect(AppSession.unassignedPhotosVersion.value) {
+    Log.i(TAG_TIMELINE, "unassignedPhotosVersion=${AppSession.unassignedPhotosVersion.value} — refreshing for pool update")
     refresh()
   }
 
@@ -467,7 +476,8 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             }
             // Unassigned photos section
             val unassignedPhotos = OfflineStore.getUnassignedPhotos()
-            if (unassignedPhotos.isNotEmpty()) {
+            val showUnassignedSection = unassignedPhotos.isNotEmpty() || unassignedPhotosLoading
+            if (showUnassignedSection) {
               item {
                 Column(
                   modifier = Modifier
@@ -483,32 +493,47 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                   ) {
                     items(
-                      items = unassignedPhotos, key = {it.id}) {photo ->
+                      items = if (unassignedPhotos.isNotEmpty()) unassignedPhotos else (1..4).map { "loading-" + it },
+                      key = { (it as Any).let { if (it is PhotoResponse) it.id else it.toString() } }) { item: Any ->
                       Column(
                         modifier = Modifier
                           .size(80.dp)
                           .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
                           .clickable {
-                            Log.i(TAG_TIMELINE, "Unassigned photo tapped: " + photo.id + " — showing EXIF dialog")
-                            selectedUnassignedPhoto = photo
+                            if (item is PhotoResponse) {
+                              Log.i(TAG_TIMELINE, "Unassigned photo tapped: " + item.id + " — showing EXIF dialog")
+                              selectedUnassignedPhoto = item
+                            }
                           }
                       ) {
                         Box(
                           modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Black.copy(alpha = 0.1f))
-                        ) {
-                          AsyncImage(
-                            model = photoThumbRequest(LocalContext.current, photo, 240),
-                            contentDescription = photo.caption ?: "Photo",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                          )
-                        }
+                          ) {
+                            if (item is PhotoResponse) {
+                              AsyncImage(
+                                model = photoThumbRequest(LocalContext.current, item, 240),
+                                contentDescription = item.caption ?: "Photo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                              )
+                            } else {
+                              // Loading placeholder
+                              Box(
+                                modifier = Modifier
+                                  .fillMaxSize()
+                                  .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(8.dp)
+                                  )
+                              )
+                            }
+                          }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                          text = photo.takenAt?.timeLabel() ?: "No date", style = MaterialTheme.typography.bodySmall, maxLines = 1
+                          text = if (item is PhotoResponse) item.takenAt?.timeLabel() ?: "No date" else "",
+                          style = MaterialTheme.typography.bodySmall, maxLines = 1
                         )
                       }
                     }

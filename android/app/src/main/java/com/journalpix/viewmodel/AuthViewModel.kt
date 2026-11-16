@@ -35,8 +35,17 @@ object AppSession {
      */
     val placesVersion = mutableStateOf(0)
 
+    /**
+     * Bumped when unassigned photos are added/removed so the pool UI updates immediately.
+     */
+    val unassignedPhotosVersion = mutableStateOf(0)
+
     fun notifyDataChanged() {
         placesVersion.value = placesVersion.value + 1
+    }
+
+    fun notifyUnassignedPhotosChanged() {
+        unassignedPhotosVersion.value = unassignedPhotosVersion.value + 1
     }
 
     /** Place pending coordinate/address update from map selection: lat, lon, name. */
