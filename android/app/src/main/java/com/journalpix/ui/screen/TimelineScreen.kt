@@ -315,8 +315,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
         rawDate = rawDate,
         dayItem = dayItem,
         isBeforeAfter = isBeforeAfter,
-        dayNumber = if (isBeforeAfter) 0 else inRangeSeen,
-        dayPhotos = dayItem.places.flatMap { it.photos }
+        dayNumber = if (isBeforeAfter) 0 else inRangeSeen, dayPhotos = dayItem.unassignedPhotos + dayItem.places.flatMap {it.photos}
       )
     }
   }
@@ -587,8 +586,7 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                   dayNumber = dm.dayNumber,
                   date = rawDate,
                   isBeforeAfter = isBeforeAfter,
-                  placeCount = dayItem.places.size,
-                  photoCount = dayItem.places.sumOf {it.photos.size},
+                  placeCount = dayItem.places.size, photoCount = dayItem.unassignedPhotos.size + dayItem.places.sumOf {it.photos.size},
                   expanded = expanded,
                   onToggle = {
                     expandedDays[dayKey] = !(expandedDays[dayKey] ?: true)
@@ -604,29 +602,42 @@ fun TimelineScreen(navController:NavController, tripId:String) {
                     startAddPhoto(newPlace.id)
                   })
               }
-              // Day photo pool — all photos of this day's places, right under the day title bar
-              val dayPhotos = dm.dayPhotos
-              if (dayPhotos.isNotEmpty()) {
-                item(key = "day-photos-$dayKey") {
-                  LazyRow(
+              // Day unassigned photos section — photos assigned to this day without a location place
+              val dayUnassignedPhotos = dayItem.unassignedPhotos
+              if (dayUnassignedPhotos.isNotEmpty()) {
+                item(key = "day-unassigned-photos-$dayKey") {
+                  Surface(
                     modifier = Modifier
                       .fillMaxWidth()
-                      .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                      .padding(horizontal = 16.dp, vertical = 6.dp), shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh
                   ) {
-                    items(items = dayPhotos, key = { "dayphoto_" + it.id }) { photo ->
-                      AsyncImage(
-                        model = photoThumbRequest(LocalContext.current, photo, 180),
-                        contentDescription = photo.caption ?: "Photo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                          .size(56.dp)
-                          .clip(RoundedCornerShape(8.dp))
-                          .clickable {
-                            Log.i(TAG_TIMELINE, "Day-pool photo tapped: ${photo.id} — checking for a place within 50m")
-                            selectedDayPhoto = photo
-                          }
+                    Column(
+                      modifier = Modifier.padding(12.dp)
+                    ) {
+                      Text(
+                        text = "Unassigned Day Photos",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                       )
+                      LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                      ) {
+                        items(items = dayUnassignedPhotos, key = {"dayphoto_" + it.id}) {photo ->
+                          AsyncImage(
+                            model = photoThumbRequest(LocalContext.current, photo, 180),
+                            contentDescription = photo.caption ?: "Photo",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                              .size(60.dp)
+                              .clip(RoundedCornerShape(8.dp))
+                              .clickable {
+                                Log.i(TAG_TIMELINE, "Day-pool photo tapped: ${photo.id} — checking for a place within 50m")
+                                selectedDayPhoto = photo
+                              })
+                        }
+                      }
                     }
                   }
                 }
@@ -1043,10 +1054,9 @@ fun TimelineScreen(navController:NavController, tripId:String) {
             val dayEntries = mutableListOf<Pair<String, String>>() // label to dayKey
             dayEntries.add("Before trip" to OfflineStore.BEFORE_KEY)
             timeline?.timeline?.forEach { d ->
-              if (d.date != null && d.date != OfflineStore.BEFORE_KEY && d.date != OfflineStore.AFTER_KEY) {
-                dayEntries.add((d.date ?: "Day ${d.day}") to d.date!!)
-              } else if (d.date == null) {
-                dayEntries.add("Day ${d.day}" to "")
+              val key = d.date ?: "day-${d.day}"
+              if (d.date != OfflineStore.BEFORE_KEY && d.date != OfflineStore.AFTER_KEY) {
+                dayEntries.add((d.date ?: "Day ${d.day}") to key)
               }
             }
             dayEntries.add("After trip" to OfflineStore.AFTER_KEY)
@@ -1204,10 +1214,9 @@ fun ShimmerPlaceholder() {
     // Simple static placeholder (gray) - animation can be added later when API is confirmed
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(8.dp)
-            )
+          .fillMaxSize()
+          .background(
+            MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)
+          )
     )
 }

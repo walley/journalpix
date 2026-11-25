@@ -96,7 +96,8 @@ data class TripTimeline(
  * when the trip has no start date.
  */
 data class TimelineItem(
-    val day: Int,
-    val date: String? = null,
-    val places: List<PlaceWithPhotos>
+  val day:Int,
+  val date:String? = null,
+  val places:List<PlaceWithPhotos>,
+  val unassignedPhotos:List<PhotoResponse> = emptyList(),
 )

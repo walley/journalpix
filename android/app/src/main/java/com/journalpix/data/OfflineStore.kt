@@ -468,31 +468,6 @@ object OfflineStore {
         return updated
     }
 
-/** Create a synthetic PlaceWithPhotos for the day's unassigned photos (display only). */
-private fun createUnassignedDayPlace(
-    dayKey: String,
-    label: String,
-    photos: List<PhotoResponse>,
-    dayNum: Int
-): PlaceWithPhotos {
-    return PlaceWithPhotos(
-        id = "unassigned-day-$dayKey",
-        tripId = "",
-        name = "Unassigned $label",
-        description = null,
-        latitude = null,
-        longitude = null,
-        address = null,
-        visitDate = photos.firstOrNull()?.takenAt,
-        orderIndex = 0,
-        transportFromPrevious = null,
-        createdAt = java.time.Instant.now().toString(),
-        photos = photos.sortedWith(compareBy({ photoSortKey(it) }, { it.orderIndex }))
-    )
-}
-
-
-
     fun timelineFor(tripId: String): TripTimeline {
         if (tripId.isBlank()) {
             android.util.Log.e(TAG, "timelineFor: tripId is BLANK — invalid trip, destroying demo leftovers")
@@ -527,7 +502,7 @@ private fun createUnassignedDayPlace(
                 place.copy(photos = photos)
             }
 
-                val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+      val start = trip.startDate?.let {runCatching {LocalDate.parse(it)}.getOrNull()}
         val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
         // Collect unassigned photos that have a takenAt date matching a trip day
@@ -535,6 +510,16 @@ private fun createUnassignedDayPlace(
         val unassignedWithDates = unassignedPhotos.values
             .filter { it.takenAt?.localDate != null }
             .groupBy { it.takenAt!!.localDate.toString() }
+
+      val beforeUnassigned = unassignedPhotos.values.filter {p ->
+        val ld = p.takenAt?.localDate
+        ld != null && start != null && ld.isBefore(start)
+      }
+
+      val afterUnassigned = unassignedPhotos.values.filter {p ->
+        val ld = p.takenAt?.localDate
+        ld != null && end != null && ld.isAfter(end)
+      }
 
         val beforePlaces = mutableListOf<PlaceWithPhotos>()
         val afterPlaces = mutableListOf<PlaceWithPhotos>()
@@ -557,16 +542,15 @@ private fun createUnassignedDayPlace(
 
         val items = mutableListOf<TimelineItem>()
 
-        if (beforePlaces.isNotEmpty()) {
+      if (beforePlaces.isNotEmpty() || beforeUnassigned.isNotEmpty()) {
             val ordered = beforePlaces.sortedWith(
                 compareBy({ it.orderIndex }, { placeSortKey(it) })
             )
-            // Add unassigned photos for BEFORE_KEY day
-            val beforeUnassigned = unassignedWithDates[BEFORE_KEY] ?: emptyList()
-            val beforeDayPlaces = if (beforeUnassigned.isNotEmpty()) {
-                ordered + listOf(createUnassignedDayPlace(BEFORE_KEY, "Before trip", beforeUnassigned, 0))
-            } else ordered
-            items.add(TimelineItem(day = 0, date = BEFORE_KEY, places = beforeDayPlaces))
+        items.add(
+          TimelineItem(
+            day = 0, date = BEFORE_KEY, places = ordered, unassignedPhotos = beforeUnassigned.sortedWith(compareBy({photoSortKey(it)}, {it.orderIndex}))
+          )
+        )
         }
 
         // Group in-range places by trip day number.
@@ -593,12 +577,8 @@ private fun createUnassignedDayPlace(
                 .sortedWith(
                     compareBy({ it.orderIndex }, { placeSortKey(it) })
                 )
-              // Add unassigned photos for this day
-              val dayUnassigned = unassignedWithDates[dateStr] ?: emptyList()
-              val dayPlaces = if (dayUnassigned.isNotEmpty()) {
-                  list + listOf(createUnassignedDayPlace(dateStr, dateStr, dayUnassigned, dayNum))
-              } else list
-              items.add(TimelineItem(day = dayNum, date = dateStr, places = dayPlaces))
+            val dayUnassigned = (unassignedWithDates[dateStr] ?: emptyList()).sortedWith(compareBy({photoSortKey(it)}, {it.orderIndex}))
+            items.add(TimelineItem(day = dayNum, date = dateStr, places = list, unassignedPhotos = dayUnassigned))
               curr = curr.plusDays(1)
           }
           grouped.entries.filter { it.key !in 1 .. totalDays }
@@ -619,21 +599,21 @@ private fun createUnassignedDayPlace(
               }
         }
 
-        if (afterPlaces.isNotEmpty()) {
+      if (afterPlaces.isNotEmpty() || afterUnassigned.isNotEmpty()) {
             val ordered = afterPlaces.sortedWith(
                 compareBy({ it.orderIndex }, { placeSortKey(it) })
             )
-            val afterUnassigned = unassignedWithDates[AFTER_KEY] ?: emptyList()
-            val afterDayPlaces = if (afterUnassigned.isNotEmpty()) {
-                ordered + listOf(createUnassignedDayPlace(AFTER_KEY, "After trip", afterUnassigned, -1))
-            } else ordered
-            items.add(TimelineItem(day = -1, date = AFTER_KEY, places = afterDayPlaces))
+        items.add(
+          TimelineItem(
+            day = -1, date = AFTER_KEY, places = ordered, unassignedPhotos = afterUnassigned.sortedWith(compareBy({photoSortKey(it)}, {it.orderIndex}))
+          )
+        )
         }
 
+      val totalUnassignedWithDates = unassignedPhotos.values.count {it.takenAt?.localDate != null}
         return TripTimeline(
             trip = trip.copy(
-                placesCount = places.size,
-                photosCount = places.sumOf { it.photos.size } + unassignedWithDates.values.flatten().size
+                placesCount = places.size, photosCount = places.sumOf {it.photos.size} + totalUnassignedWithDates
             ),
             timeline = items
         )
@@ -836,52 +816,81 @@ private fun createUnassignedDayPlace(
     }
 
     /**
-     * Move a photo into the pool of a given trip day: assigns it to the first place whose
-     * visit date is that day, or creates a "Photos <day>" place for it. Returns the target place.
+     * Assign a photo to a specific day (from the explicit day picker).
+     * - Sets the photo's takenAt to the selected day (so it appears in that day's photo strip)
+     * - Keeps placeId = null (no location place created)
+     * - Photo stays in unassignedPhotos but now has a date → leaves trip unassigned pool
+     * - Returns true if successful, false otherwise
      */
-    /**
- * Assign a photo to a specific day (from the explicit day picker).
- * - Sets the photo's takenAt to the selected day (so it appears in that day's photo strip)
- * - Keeps placeId = null (no location place created)
- * - Photo stays in unassignedPhotos but now has a date → leaves trip unassigned pool
- * - Returns null (no PlaceWithPhotos created)
- */
-fun assignPhotoToDay(tripId: String, photoId: String, dayIso: String): PlaceWithPhotos? {
-    android.util.Log.i(TAG, "assignPhotoToDay: tripId=$tripId, photoId=$photoId, day=$dayIso")
-    val trip = trips[tripId]
-    if (trip == null || trip.id.isBlank()) {
-        android.util.Log.e(TAG, "assignPhotoToDay: tripId is BLANK/unknown — refusing")
-        return null
-    }
-    val photo = findPhoto(photoId) ?: return null
+    fun assignPhotoToDay(tripId:String, photoId:String, dayIso:String):Boolean {
+      android.util.Log.i(TAG, "assignPhotoToDay: tripId=$tripId, photoId=$photoId, day=$dayIso")
+      val trip = ensureDemoTrip(tripId)
+      if (trip.id.isBlank()) {
+        android.util.Log.e(TAG, "assignPhotoToDay: tripId is BLANK — refusing")
+        return false
+      }
+      val photo = findPhoto(photoId)
+      if (photo == null) {
+        android.util.Log.e(TAG, "assignPhotoToDay: photo $photoId NOT FOUND (known unassigned=${unassignedPhotos.keys})")
+        return false
+      }
 
-    val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-    val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-    val targetDay = when (dayIso) {
+      val start = trip.startDate?.let {runCatching {LocalDate.parse(it)}.getOrNull()}
+      val end = trip.endDate?.let {runCatching {LocalDate.parse(it)}.getOrNull()}
+      val targetDay = when (dayIso) {
         BEFORE_KEY -> start?.minusDays(1) ?: LocalDate.now().minusDays(1)
         AFTER_KEY -> end?.plusDays(1) ?: LocalDate.now()
-        else -> runCatching { LocalDate.parse(dayIso) }.getOrNull()
+        else -> {
+          runCatching {LocalDate.parse(dayIso)}.getOrNull() ?: dayIso.removePrefix("day-").toIntOrNull()?.let {dayNum ->
+            start?.plusDays((dayNum - 1).toLong())
+          }
+        }
+      }
+      val targetDate = targetDay?.toString() ?: dayIso
+      val photoLocalDate = photo.takenAt?.localDate
+
+      val newTakenAt = when {
+        dayIso == BEFORE_KEY -> {
+          if (photoLocalDate != null && (start == null || photoLocalDate.isBefore(start))) {
+            photo.takenAt
+          } else {
+            targetDay?.let {ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id)} ?: photo.takenAt
+          }
+        }
+
+        dayIso == AFTER_KEY -> {
+          if (photoLocalDate != null && (end == null || photoLocalDate.isAfter(end))) {
+            photo.takenAt
+          } else {
+            targetDay?.let {ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id)} ?: photo.takenAt
+          }
+        }
+
+        else -> {
+          if (photoLocalDate != null && photoLocalDate.toString() == targetDate) {
+            photo.takenAt
+          } else {
+            targetDay?.let {ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id)} ?: photo.takenAt
+          }
+        }
+      }
+
+      // If previously assigned to a place, remove from that place
+      val oldPlaceId = photo.placeId
+      if (oldPlaceId != null && oldPlaceId.isNotEmpty()) {
+        photosByPlace[oldPlaceId]?.removeAll {it.id == photoId}
+      }
+
+      // Update photo: set takenAt to selected day, keep placeId = null
+      val updated = photo.copy(takenAt = newTakenAt, placeId = null)
+      unassignedPhotos[photoId] = updated
+      com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
+      markPending(photoId)
+      persist()
+
+      android.util.Log.i(TAG, "assignPhotoToDay: photo $photoId assigned to day '$targetDate' (no place created)")
+      return true
     }
-    val targetDate = targetDay?.toString() ?: dayIso
-
-    // If photo already has EXIF takenAt with a valid date, preserve it.
-    // Otherwise, set takenAt to the selected day (so it appears in that day's strip).
-    val newTakenAt = if (photo.takenAt?.localDate != null) {
-        photo.takenAt
-    } else {
-        targetDay?.let { ZonedTime.fromLocal(it.atStartOfDay(), ZoneId.systemDefault().id) }
-    }
-
-    // Update photo: set takenAt to selected day, keep placeId = null
-    val updated = photo.copy(takenAt = newTakenAt, placeId = null)
-    unassignedPhotos[photoId] = updated
-    com.journalpix.viewmodel.AppSession.notifyUnassignedPhotosChanged()
-    markPending(photoId)
-    persist()
-
-    android.util.Log.i(TAG, "assignPhotoToDay: photo $photoId assigned to day '$targetDate' (no place created)")
-    return null // No PlaceWithPhotos created - photo goes to day unassigned pool (day photo strip)
-}
 
     fun addPhoto(
         placeId: String,
@@ -1098,9 +1107,9 @@ fun assignPhotoToDay(tripId: String, photoId: String, dayIso: String): PlaceWith
      */
     fun createPlaceForPhoto(tripId: String, photoId: String, address: String?): PlaceWithPhotos? {
         android.util.Log.i(TAG, "createPlaceForPhoto: tripId=$tripId, photoId=$photoId, address=$address")
-        val trip = trips[tripId]
-        if (trip == null || trip.id.isBlank()) {
-            android.util.Log.e(TAG, "createPlaceForPhoto: tripId is BLANK/unknown — refusing")
+      val trip = ensureDemoTrip(tripId)
+      if (trip.id.isBlank()) {
+        android.util.Log.e(TAG, "createPlaceForPhoto: tripId is BLANK — refusing")
             return null
         }
         val photo = findPhoto(photoId)

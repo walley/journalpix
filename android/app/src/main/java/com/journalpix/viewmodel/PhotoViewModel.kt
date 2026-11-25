@@ -184,11 +184,11 @@ class PhotoViewModel : ViewModel() {
         }
     }
 
-    /** Move a photo into a trip day's pool (assigns it to that day's place). */
+  /** Move a photo into a trip day's pool (assigns it to that day). */
     fun assignPhotoToDay(tripId: String, photoId: String, dayIso: String, onDone: () -> Unit = {}) {
-        val target = OfflineStore.assignPhotoToDay(tripId, photoId, dayIso)
-        if (target != null) {
-            android.util.Log.i("JPXPV", "assignPhotoToDay: photo $photoId moved to place ${target.id} for day $dayIso")
+    val success = OfflineStore.assignPhotoToDay(tripId, photoId, dayIso)
+    if (success) {
+      android.util.Log.i("JPXPV", "assignPhotoToDay: photo $photoId assigned to day $dayIso")
         } else {
             android.util.Log.e("JPXPV", "assignPhotoToDay: FAILED — photo $photoId not moved to day '$dayIso' (trip=$tripId)")
             errorMessage.value = "Could not move photo to day"
